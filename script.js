@@ -601,61 +601,57 @@ function importSong(event) {
 
 function loadSongFromDropdown(filename) {
   if (!filename) return;
-  console.log(`Attempting to load: ${filename}`); // Debug
+  console.log(`Attempting to load: ${filename}`);
   if (filename === 'pneuma.js') {
     if (typeof loadPneuma === 'function') {
       console.log("Calling loadPneuma");
       loadPneuma();
     } else {
-      fetch(filename)
-        .then(response => {
-          if (!response.ok) throw new Error('Failed to fetch Pneuma file');
-          return response.text();
-        })
-        .then(text => {
-          eval(text);
-          console.log("Fetched and evaluated pneuma.js");
-          loadPneuma();
-        })
-        .catch(error => alert(`Failed to load song: ${error.message}`));
+      fetch(filename).then(response => response.text()).then(text => {
+        eval(text);
+        console.log("Fetched and evaluated pneuma.js");
+        loadPneuma();
+      }).catch(error => alert(`Failed to load song: ${error.message}`));
     }
   } else if (filename === 'satisfaction.js') {
     if (typeof loadSatisfaction === 'function') {
       console.log("Calling loadSatisfaction");
       loadSatisfaction();
     } else {
-      fetch(filename)
-        .then(response => response.text())
-        .then(text => {
-          eval(text);
-          console.log("Fetched and evaluated satisfaction.js");
-          loadSatisfaction();
-        })
-        .catch(error => alert(`Failed to load song: ${error.message}`));
+      fetch(filename).then(response => response.text()).then(text => {
+        eval(text);
+        console.log("Fetched and evaluated satisfaction.js");
+        loadSatisfaction();
+      }).catch(error => alert(`Failed to load song: ${error.message}`));
     }
   } else if (filename === 'dirtyLaundry.js') {
     if (typeof loadDirtyLaundry === 'function') {
       console.log("Calling loadDirtyLaundry");
       loadDirtyLaundry();
     } else {
-      fetch(filename)
-        .then(response => {
-          if (!response.ok) throw new Error('Failed to fetch Dirty Laundry file');
-          return response.text();
-        })
-        .then(text => {
-          eval(text);
-          console.log("Fetched and evaluated dirtyLaundry.js");
-          loadDirtyLaundry();
-        })
-        .catch(error => alert(`Failed to load song: ${error.message}`));
+      fetch(filename).then(response => response.text()).then(text => {
+        eval(text);
+        console.log("Fetched and evaluated dirtyLaundry.js");
+        loadDirtyLaundry();
+      }).catch(error => alert(`Failed to load song: ${error.message}`));
+    }
+  } else if (filename === 'invincible.js') {
+    if (typeof loadInvincible === 'function') {
+      console.log("Calling loadInvincible");
+      loadInvincible();
+    } else {
+      fetch(filename).then(response => {
+        if (!response.ok) throw new Error('Failed to fetch Invincible file');
+        return response.text();
+      }).then(text => {
+        eval(text);
+        console.log("Fetched and evaluated invincible.js");
+        loadInvincible();
+      }).catch(error => alert(`Failed to load song: ${error.message}`));
     }
   } else {
     fetch(filename)
-      .then(response => {
-        if (!response.ok) throw new Error('Failed to fetch song file');
-        return response.json();
-      })
+      .then(response => response.json())
       .then(data => loadSongData(data))
       .catch(error => alert(`Failed to load song: ${error.message}`));
   }
@@ -721,7 +717,8 @@ function populateSongDropdown() {
     'pneuma.js',
     'Echoes of Joy.json',
     'satisfaction.js',
-    'dirtyLaundry.js'
+    'dirtyLaundry.js',
+    'invincible.js' // Add this
   ];
   availableSongs.forEach(song => {
     const option = document.createElement('option');
