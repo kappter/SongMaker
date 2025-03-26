@@ -8,7 +8,7 @@ const songDropdown = document.getElementById('song-dropdown');
 const toggleFormBtn = document.getElementById('toggle-form-btn');
 const formContent = document.getElementById('form-content');
 const printSongName = document.getElementById('print-song-name');
-const songmakerTitle = document.getElementById('songmaker-title'); // New reference
+const songmakerTitle = document.getElementById('songmaker-title');
 let draggedBlock = null;
 let selectedBlock = null;
 let currentSongName = 'Echoes of Joy';
@@ -21,10 +21,25 @@ let lastBeatTime = 0;
 let soundEnabled = true;
 let isDarkMode = true;
 let isFormCollapsed = false;
+
 const validTimeSignatures = ['4/4', '3/4', '6/8', '2/4', '5/4', '7/8', '12/8', '9/8', '11/8', '15/8', '13/8', '10/4', '8/8', '14/8', '16/8', '7/4'];
 const tickSound = new Audio('tick.wav');
 const tockSound = new Audio('tock.wav');
 let activeSounds = [];
+
+const partTypes = ['intro', 'verse', 'chorus', 'bridge', 'outro', 'interlude', 'pre-chorus', 'solo'];
+const rootNotes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+const modes = ['Ionian', 'Dorian', 'Phrygian', 'Lydian', 'Mixolydian', 'Aeolian', 'Locrian'];
+const feels = ['Happiness', 'Sadness', 'Tension', 'Euphoria', 'Calmness', 'Anger', 'Mystical', 'Rebellion', 'Triumph', 'Bliss', 'Frustration', 'Atmospheric', 'Trippy', 'Awakening', 'Intense', 'Climactic'];
+const sampleLyrics = [
+  "Lost in the night, searching for light",
+  "Dreams take flight, under the sky",
+  "Echoes call me, through the storm",
+  "Time moves slow, in shadows deep",
+  "Rise above, feel the beat",
+  "Whispers fade, into the void",
+  "",
+];
 
 // Time Manager Class
 class TimeManager {
@@ -95,7 +110,41 @@ function updateTitle(newTitle) {
   currentSongName = newTitle || 'Untitled';
   document.getElementById('song-name').value = currentSongName;
   printSongName.textContent = currentSongName;
-  songmakerTitle.textContent = `${currentSongName} - SongMaker`; // Update main title
+  songmakerTitle.textContent = `${currentSongName} - SongMaker`;
+}
+
+function randomizeSong() {
+  const blockCount = Math.floor(Math.random() * 4) + 3; // 3-6 blocks
+  const songStructure = [];
+  
+  // Ensure intro and outro, fill middle with variety
+  songStructure.push('intro');
+  for (let i = 1; i < blockCount - 1; i++) {
+    const middleParts = ['verse', 'chorus', 'bridge', 'interlude', 'pre-chorus', 'solo'];
+    songStructure.push(middleParts[Math.floor(Math.random() * middleParts.length)]);
+  }
+  songStructure.push('outro');
+
+  const rootNote = rootNotes[Math.floor(Math.random() * rootNotes.length)];
+  const mode = modes[Math.floor(Math.random() * modes.length)];
+  const tempo = Math.floor(Math.random() * (160 - 60 + 1)) + 60; // 60-160 BPM
+  const timeSignature = validTimeSignatures[Math.floor(Math.random() * validTimeSignatures.length)];
+
+  const randomSong = {
+    songName: `Random Song ${Math.floor(Math.random() * 1000)}`,
+    blocks: songStructure.map(type => ({
+      type,
+      measures: Math.floor(Math.random() * 12) + 4, // 4-15 measures
+      rootNote,
+      mode,
+      tempo,
+      timeSignature,
+      feel: feels[Math.floor(Math.random() * feels.length)],
+      lyrics: sampleLyrics[Math.floor(Math.random() * sampleLyrics.length)]
+    }))
+  };
+
+  loadSongData(randomSong);
 }
 
 function formatPart(part) {
@@ -676,7 +725,7 @@ function loadSongData(songData) {
   timeline.innerHTML = '';
   if (selectedBlock) clearSelection();
 
-  updateTitle(songData.songName); // Ensure title updates 
+  updateTitle(songData.songName);
 
   songData.blocks.forEach(({ type, measures, rootNote, mode, tempo, timeSignature, feel, lyrics }) => {
     const block = document.createElement('div');
@@ -744,4 +793,5 @@ initialBlocks.forEach(({ type, measures, rootNote, mode, tempo, timeSignature, f
 updateTitle(currentSongName);
 calculateTimings();
 document.body.setAttribute('data-theme', 'dark');
+initialBlocks();
 populateSongDropdown();
