@@ -1,14 +1,14 @@
 :root {
-  --bg: #1e2227;
-  --fg: #d3d7db;
-  --form-bg: #2e333a;
-  --button-bg: #3b4048;
-  --button-hover: #4a5059;
-  --highlight: #5a626c;
-  --timeline-bg: #252a30;
-  --block-bg: #3b4048;
-  --block-selected: #5a626c;
-  --block-playing: #6b7582;
+  --bg: #1a2526;          /* Cooler, deeper teal-gray */
+  --fg: #b8c7cc;          /* Softer, cooler light blue-gray */
+  --form-bg: #2a363b;     /* Darker, cooler slate */
+  --button-bg: #3c4b50;   /* Cool blue-gray buttons */
+  --button-hover: #4e5e66;/* Slightly lighter hover */
+  --highlight: #5c7278;   /* Cool muted teal highlight */
+  --timeline-bg: #223237; /* Darker, cooler timeline */
+  --block-bg: #3c4b50;    /* Matches buttons */
+  --block-selected: #5c7278; /* Cooler selected state */
+  --block-playing: #6e8a92; /* Lighter cool tone for playing */
 }
 
 [data-theme="light"] {
