@@ -572,7 +572,48 @@ function resetPlayback() {
   calculateTimings();
 }
 
-// ... (Previous code remains unchanged up to exportSong) ...
+function loadSongData(songData) {
+  if (!songData.songName || !Array.isArray(songData.blocks)) {
+    throw new Error('Invalid song file format: missing songName or blocks array.');
+  }
+
+  for (let i = 0; i < songData.blocks.length; i++) {
+    const error = validateBlock(songData.blocks[i]);
+    if (error) {
+      throw new Error(`Block ${i + 1}: ${error}`);
+    }
+  }
+
+  if (isPlaying) {
+    isPlaying = false;
+    playBtn.textContent = 'Play';
+    resetPlayback();
+  }
+
+  timeline.innerHTML = '';
+  if (selectedBlock) clearSelection();
+
+  updateTitle(songData.songName);
+
+  songData.blocks.forEach(({ type, measures, rootNote, mode, tempo, timeSignature, feel, lyrics }) => {
+    const block = document.createElement('div');
+    block.classList.add('song-block', type);
+    block.setAttribute('data-measures', measures);
+    block.setAttribute('data-tempo', tempo);
+    block.setAttribute('data-time-signature', timeSignature);
+    block.setAttribute('data-feel', feel || '');
+    block.setAttribute('data-lyrics', lyrics || '');
+    block.setAttribute('data-root-note', rootNote);
+    block.setAttribute('data-mode', mode);
+    block.innerHTML = `<span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote, mode)} ${mode} ${tempo}b ${feel || ''}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span><span class="tooltip">${lyrics || 'No lyrics'}</span>`;
+    updateBlockSize(block);
+    setupBlock(block);
+    timeline.appendChild(block);
+  });
+
+  calculateTimings();
+  console.log(`Loaded song: ${songData.songName}`);
+}
 
 function exportSong() {
   const blocks = Array.from(timeline.querySelectorAll('.song-block')).map(block => ({
@@ -649,111 +690,75 @@ function importSong(event) {
 }
 
 function loadSongFromDropdown(filename) {
-  if (!filename) return;
-  console.log(`Attempting to load: ${filename}`);
-  if (filename === 'pneuma.js') {
-    if (typeof loadPneuma === 'function') loadPneuma();
-    else fetch(filename).then(r => r.text()).then(t => { eval(t); loadPneuma(); }).catch(e => alert(`Failed: ${e.message}`));
-  } else if (filename === 'satisfaction.js') {
-    if (typeof loadSatisfaction === 'function') loadSatisfaction();
-    else fetch(filename).then(r => r.text()).then(t => { eval(t); loadSatisfaction(); }).catch(e => alert(`Failed: ${e.message}`));
-  } else if (filename === 'dirtyLaundry.js') {
-    if (typeof loadDirtyLaundry === 'function') loadDirtyLaundry();
-    else fetch(filename).then(r => r.text()).then(t => { eval(t); loadDirtyLaundry(); }).catch(e => alert(`Failed: ${e.message}`));
-  } else if (filename === 'invincible.js') {
-    if (typeof loadInvincible === 'function') loadInvincible();
-    else fetch(filename).then(r => r.text()).then(t => { eval(t); loadInvincible(); }).catch(e => alert(`Failed: ${e.message}`));
-  } else if (filename === 'astroworld.js') {
-    if (typeof loadAstroworld === 'function') loadAstroworld();
-    else fetch(filename).then(r => r.text()).then(t => { eval(t); loadAstroworld(); }).catch(e => alert(`Failed: ${e.message}`));
-  } else if (filename === 'astrothunder.js') {
-    if (typeof loadAstrothunder === 'function') {
-      console.log("Calling loadAstrothunder");
-      loadAstrothunder();
+  if (!filename) {
+    console.log("No song selected, skipping load.");
+    return;
+  }
+  console.log(`Dropdown selected: ${filename}`);
+
+  const loadFunctions = {
+    'pneuma.js': loadPneuma,
+    'satisfaction.js': loadSatisfaction,
+    'dirtyLaundry.js': loadDirtyLaundry,
+    'invincible.js': loadInvincible,
+    'astroworld.js': loadAstroworld,
+    'astrothunder.js': loadAstrothunder
+  };
+
+  if (filename in loadFunctions) {
+    if (typeof loadFunctions[filename] === 'function') {
+      console.log(`Calling ${filename.replace('.js', '')} load function`);
+      loadFunctions[filename]();
     } else {
+      console.log(`Load function for ${filename} not found, fetching file...`);
       fetch(filename)
         .then(response => {
-          if (!response.ok) throw new Error('Failed to fetch ASTROTHUNDER file');
+          if (!response.ok) throw new Error(`Failed to fetch ${filename}: ${response.status}`);
           return response.text();
         })
         .then(text => {
           eval(text);
-          console.log("Fetched and evaluated astrothunder.js");
-          loadAstrothunder();
+          console.log(`Evaluated ${filename}`);
+          if (typeof loadFunctions[filename] === 'function') {
+            loadFunctions[filename]();
+          } else {
+            console.error(`After fetch, ${filename} load function still not defined`);
+          }
         })
-        .catch(error => alert(`Failed to load song: ${error.message}`));
+        .catch(error => {
+          console.error(`Error loading ${filename}: ${error.message}`);
+          alert(`Failed to load song: ${error.message}`);
+        });
     }
-  } else {
+  } else if (filename === 'Echoes of Joy.json') {
     fetch(filename)
-      .then(response => response.json())
-      .then(data => loadSongData(data))
-      .catch(error => alert(`Failed to load song: ${error.message}`));
+      .then(response => {
+        if (!response.ok) throw new Error(`Failed to fetch ${filename}`);
+        return response.json();
+      })
+      .then(data => {
+        console.log(`Loaded JSON: ${filename}`);
+        loadSongData(data);
+      })
+      .catch(error => {
+        console.error(`Error loading JSON ${filename}: ${error.message}`);
+        alert(`Failed to load song: ${error.message}`);
+      });
+  } else {
+    console.error(`Unknown file: ${filename}`);
+    alert(`Unsupported song file: ${filename}`);
   }
-}
-
-function loadSongFile(file) {
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      const songData = JSON.parse(e.target.result);
-      loadSongData(songData);
-    } catch (error) {
-      alert(`Failed to load song: ${error.message}`);
-    }
-  };
-  reader.readAsText(file);
-}
-
-function loadSongData(songData) {
-  if (!songData.songName || !Array.isArray(songData.blocks)) {
-    throw new Error('Invalid song file format: missing songName or blocks array.');
-  }
-
-  for (let i = 0; i < songData.blocks.length; i++) {
-    const error = validateBlock(songData.blocks[i]);
-    if (error) {
-      throw new Error(`Block ${i + 1}: ${error}`);
-    }
-  }
-
-  if (isPlaying) {
-    isPlaying = false;
-    playBtn.textContent = 'Play';
-    resetPlayback();
-  }
-
-  timeline.innerHTML = '';
-  if (selectedBlock) clearSelection();
-
-  updateTitle(songData.songName);
-
-  songData.blocks.forEach(({ type, measures, rootNote, mode, tempo, timeSignature, feel, lyrics }) => {
-    const block = document.createElement('div');
-    block.classList.add('song-block', type);
-    block.setAttribute('data-measures', measures);
-    block.setAttribute('data-tempo', tempo);
-    block.setAttribute('data-time-signature', timeSignature);
-    block.setAttribute('data-feel', feel || '');
-    block.setAttribute('data-lyrics', lyrics || '');
-    block.setAttribute('data-root-note', rootNote);
-    block.setAttribute('data-mode', mode);
-    block.innerHTML = `<span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote, mode)} ${mode} ${tempo}b ${feel || ''}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span><span class="tooltip">${lyrics || 'No lyrics'}</span>`;
-    updateBlockSize(block);
-    setupBlock(block);
-    timeline.appendChild(block);
-  });
-
-  calculateTimings();
 }
 
 function populateSongDropdown() {
   const availableSongs = [
     'pneuma.js',
+    'Echoes of Joy.json',
     'satisfaction.js',
     'dirtyLaundry.js',
     'invincible.js',
-    'astroworld.js', // Assuming this is STARGAZING
-    'astrothunder.js' // Add this
+    'astroworld.js',
+    'astrothunder.js'
   ];
   availableSongs.forEach(song => {
     const option = document.createElement('option');
@@ -761,6 +766,7 @@ function populateSongDropdown() {
     option.textContent = song.replace('.json', '').replace('.js', '');
     songDropdown.appendChild(option);
   });
+  console.log("Dropdown populated with options.");
 }
 
 // ... (Remaining code unchanged: initialBlocks, setup, etc.) ...
