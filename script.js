@@ -8,6 +8,7 @@ const songDropdown = document.getElementById('song-dropdown');
 const toggleFormBtn = document.getElementById('toggle-form-btn');
 const formContent = document.getElementById('form-content');
 const printSongName = document.getElementById('print-song-name');
+const songmakerTitle = document.getElementById('songmaker-title'); // New reference
 let draggedBlock = null;
 let selectedBlock = null;
 let currentSongName = 'Echoes of Joy';
@@ -20,11 +21,10 @@ let lastBeatTime = 0;
 let soundEnabled = true;
 let isDarkMode = true;
 let isFormCollapsed = false;
-
 const validTimeSignatures = ['4/4', '3/4', '6/8', '2/4', '5/4', '7/8', '12/8', '9/8', '11/8', '15/8', '13/8', '10/4', '8/8', '14/8', '16/8', '7/4'];
 const tickSound = new Audio('tick.wav');
 const tockSound = new Audio('tock.wav');
-let activeSounds = []; // Track all playing audio instances
+let activeSounds = [];
 
 // Time Manager Class
 class TimeManager {
@@ -87,15 +87,15 @@ function toggleTheme() {
 
 function toggleForm() {
   isFormCollapsed = !isFormCollapsed;
-  formContent.classList.toggle('collapsed', isFormCollapsed);
+  formContent.classList.toggle('collapsed');
   toggleFormBtn.textContent = isFormCollapsed ? 'Show Parameters' : 'Hide Parameters';
 }
 
-function updateTitle(songName) {
-  currentSongName = songName || 'SongMaker';
-  document.title = `${currentSongName} - SongMaker`;
-  printSongName.textContent = currentSongName;
+function updateTitle(newTitle) {
+  currentSongName = newTitle || 'Untitled';
   document.getElementById('song-name').value = currentSongName;
+  printSongName.textContent = currentSongName;
+  songmakerTitle.textContent = `${currentSongName} - SongMaker`; // Update main title
 }
 
 function formatPart(part) {
@@ -676,7 +676,7 @@ function loadSongData(songData) {
   timeline.innerHTML = '';
   if (selectedBlock) clearSelection();
 
-  updateTitle(songData.songName);
+  updateTitle(songData.songName); // Ensure title updates 
 
   songData.blocks.forEach(({ type, measures, rootNote, mode, tempo, timeSignature, feel, lyrics }) => {
     const block = document.createElement('div');
@@ -700,7 +700,6 @@ function loadSongData(songData) {
 function populateSongDropdown() {
   const availableSongs = [
     'pneuma.js',
-    'Echoes of Joy.json',
     'satisfaction.js',
     'dirtyLaundry.js',
     'invincible.js',
