@@ -34,7 +34,7 @@ body {
   font-family: 'Roboto', sans-serif;
   background-color: var(--bg);
   color: var(--fg);
-  padding: 20px;
+  padding: 10px;
 }
 
 .container {
@@ -106,13 +106,14 @@ body {
 
 .form-actions button,
 .controls button {
-  padding: 10px 20px;
+  padding: 12px 18px;
   background-color: var(--button-bg);
   border: none;
   border-radius: 4px;
   color: var(--fg);
   cursor: pointer;
   transition: background-color 0.2s;
+  min-width: 100px;
 }
 
 .form-actions button:hover,
@@ -133,6 +134,8 @@ body {
   border: none;
   border-radius: 4px;
   color: var(--fg);
+  width: 100%;
+  max-width: 200px;
 }
 
 .current-block-display {
@@ -165,12 +168,13 @@ body {
 
 .song-block {
   background-color: var(--block-bg);
-  padding: 10px;
+  padding: 15px;
   border-radius: 4px;
   cursor: move;
   flex-shrink: 0;
   text-align: center;
   position: relative;
+  min-width: 100px;
 }
 
 .song-block.selected {
@@ -226,6 +230,55 @@ body {
 
 .print-only {
   display: none;
+}
+
+@media (max-width: 768px) {
+  .container {
+    max-width: 100%;
+  }
+  .form-header h3#songmaker-title {
+    font-size: 1.2em;
+    max-width: 60%;
+  }
+  .timeline {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  .song-block {
+    width: 100px !important;
+    margin-bottom: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    padding: 5px;
+  }
+  .form-header h3#songmaker-title {
+    font-size: 1em;
+    max-width: 50%;
+  }
+  .form-column {
+    min-width: 100%;
+  }
+  .form-column input,
+  .form-column select,
+  .form-column textarea {
+    padding: 6px;
+    font-size: 0.9em;
+  }
+  .form-actions {
+    flex-direction: column;
+  }
+  .controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .controls select {
+    max-width: 100%;
+  }
 }
 
 @media print {
