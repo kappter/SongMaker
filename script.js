@@ -659,3 +659,5 @@ function initialBlocks() {
 
 initialBlocks();
 populateSongDropdown();
+isDarkMode = true;
+toggleTheme(); // Ensure dark mode is applied
