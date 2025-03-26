@@ -589,7 +589,8 @@ function calculateTimings() {
 
 function updateBlockSize(block) {
   const measures = parseInt(block.getAttribute('data-measures'));
-  block.style.width = `${measures * 20}px`;
+  const baseWidth = window.innerWidth <= 768 ? 100 : measures * 20; // Fixed 100px on tablet/mobile
+  block.style.width = `${baseWidth}px`;
 }
 
 function setupBlock(block) {
@@ -603,13 +604,26 @@ function setupBlock(block) {
       const allBlocks = Array.from(timeline.querySelectorAll('.song-block'));
       const fromIndex = allBlocks.indexOf(draggedBlock);
       const toIndex = allBlocks.indexOf(block);
-      if (fromIndex < toIndex) {
-        block.after(draggedBlock);
-      } else {
-        block.before(draggedBlock);
-      }
+      if (fromIndex < toIndex) block.after(draggedBlock);
+      else block.before(draggedBlock);
       calculateTimings();
     }
+  });
+  // Add touch support
+  block.addEventListener('touchstart', e => draggedBlock = block);
+  block.addEventListener('touchmove', e => e.preventDefault());
+  block.addEventListener('touchend', e => {
+    const touch = e.changedTouches[0];
+    const target = document.elementFromPoint(touch.clientX, touch.clientY).closest('.song-block');
+    if (draggedBlock && target && draggedBlock !== target) {
+      const allBlocks = Array.from(timeline.querySelectorAll('.song-block'));
+      const fromIndex = allBlocks.indexOf(draggedBlock);
+      const toIndex = allBlocks.indexOf(target);
+      if (fromIndex < toIndex) target.after(draggedBlock);
+      else target.before(draggedBlock);
+      calculateTimings();
+    }
+    draggedBlock = null;
   });
   block.addEventListener('click', () => {
     if (selectedBlock) selectedBlock.classList.remove('selected');
