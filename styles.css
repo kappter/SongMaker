@@ -113,7 +113,7 @@ button {
 }
 
 button:hover {
-  background: darken(var(--accent-color), 10%);
+  background: #e55a5a; /* Slightly darker shade of accent color */
 }
 
 .controls {
@@ -121,6 +121,23 @@ button:hover {
   gap: 10px;
   margin-bottom: 20px;
   flex-wrap: wrap;
+  align-items: center;
+}
+
+.controls select {
+  padding: 8px;
+  border-radius: 4px;
+  background: var(--form-bg);
+  color: var(--text-color);
+  border: 1px solid var(--text-color);
+}
+
+.controls input[type="file"] {
+  padding: 8px;
+  background: var(--form-bg);
+  border: 1px solid var(--text-color);
+  border-radius: 4px;
+  color: var(--text-color);
 }
 
 .current-block-display {
@@ -155,7 +172,7 @@ button:hover {
 
 .timeline {
   display: grid;
-  grid-template-columns: repeat(4, 1fr); /* 4 columns */
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); /* 4 blocks per row on 1200px container */
   gap: 10px;
   padding: 10px;
   background: var(--form-bg);
@@ -172,7 +189,7 @@ button:hover {
   transition: opacity 0.2s;
 }
 
-/* Default Style (unchanged) */
+/* Default Style */
 .song-block.intro { background: linear-gradient(45deg, #4a4e58, #6b7280); }
 .song-block.verse { background: linear-gradient(45deg, #5a606b, #7b8490); }
 .song-block.chorus { background: linear-gradient(45deg, #6b7280, #8b949f); }
@@ -180,6 +197,7 @@ button:hover {
 .song-block.outro { background: linear-gradient(45deg, #8b949f, #abb4bf); }
 .song-block.solo { background: linear-gradient(45deg, #9ba4af, #bbc4cf); }
 .song-block.interlude { background: linear-gradient(45deg, #abb4bf, #cbd4df); }
+.song-block.pre-chorus { background: linear-gradient(45deg, #7b8490, #9ba4af); }
 
 /* Vibrant Style */
 .song-block.vibrant.intro { background: linear-gradient(45deg, #ff4d4d, #ff7878); }
@@ -189,6 +207,7 @@ button:hover {
 .song-block.vibrant.outro { background: linear-gradient(45deg, #ab47bc, #ce93d8); }
 .song-block.vibrant.solo { background: linear-gradient(45deg, #7b1fa2, #ab47bc); }
 .song-block.vibrant.interlude { background: linear-gradient(45deg, #0288d1, #4fc3f7); }
+.song-block.vibrant.pre-chorus { background: linear-gradient(45deg, #00c4b4, #4dd0e1); }
 
 /* Pastel Style */
 .song-block.pastel.intro { background: linear-gradient(45deg, #ffcccb, #ffebee); }
@@ -198,6 +217,7 @@ button:hover {
 .song-block.pastel.outro { background: linear-gradient(45deg, #d1c4e9, #ede7f6); }
 .song-block.pastel.solo { background: linear-gradient(45deg, #b2dfdb, #e0f2f1); }
 .song-block.pastel.interlude { background: linear-gradient(45deg, #fff9c4, #fffde7); }
+.song-block.pastel.pre-chorus { background: linear-gradient(45deg, #f8bbd0, #fce4ec); }
 
 /* Monochrome Style */
 .song-block.monochrome.intro { background: linear-gradient(45deg, #333333, #4d4d4d); }
@@ -207,6 +227,7 @@ button:hover {
 .song-block.monochrome.outro { background: linear-gradient(45deg, #999999, #b3b3b3); }
 .song-block.monochrome.solo { background: linear-gradient(45deg, #b3b3b3, #cccccc); }
 .song-block.monochrome.interlude { background: linear-gradient(45deg, #cccccc, #e6e6e6); }
+.song-block.monochrome.pre-chorus { background: linear-gradient(45deg, #808080, #999999); }
 
 .song-block.playing {
   border: 2px solid var(--accent-color);
@@ -251,6 +272,10 @@ button:hover {
   width: 20px;
   height: 20px;
   cursor: pointer;
+  font-size: 0.8em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .time-calculator {
