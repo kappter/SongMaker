@@ -12,7 +12,10 @@
     <div class="add-block-form">
       <div class="form-header">
         <h3>SongMaker</h3>
-        <button id="toggle-form-btn" onclick="toggleForm()">Hide Parameters</button>
+        <div class="form-header-buttons">
+          <button id="toggle-form-btn" onclick="toggleForm()">Hide Parameters</button>
+          <button onclick="printSong()">Print</button> <!-- Moved Print button here -->
+        </div>
       </div>
       <div id="form-content" class="form-content">
         <div style="flex: 0 0 100%;">
@@ -144,7 +147,6 @@
       <select id="song-dropdown" onchange="loadSongFromDropdown(this.value)">
         <option value="">Select a Song</option>
       </select>
-      <button onclick="printSong()">Print</button>
       <button onclick="randomizeSong()">Randomize</button>
     </div>
     <div id="current-block-display" class="current-block-display">
