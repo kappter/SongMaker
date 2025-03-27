@@ -1,409 +1,300 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  font-family: 'Roboto', sans-serif;
-  background: var(--bg-color);
-  color: var(--text-color);
-  transition: background 0.3s, color 0.3s;
-}
-
-[data-theme="dark"] {
-  --bg-color: #2b2f38;
+:root {
+  --background: #1e2525;
   --text-color: #e0e0e0;
-  --form-bg: #3b4048;
-  --accent-color: #ff6b6b;
-  --block-bg: linear-gradient(45deg, #4a4e58, #5a606b);
-  --selected-bg: #ff6b6b;
+  --form-bg: #2c3434;
+  --border-color: #4a5555;
+  --block-bg: #3b4048;
+  --delete-btn-bg: #ff5555;
+  --delete-btn-text: #ffffff;
+  --tooltip-bg: #555;
+  --tooltip-text: #fff;
 }
 
 [data-theme="light"] {
-  --bg-color: #f0f0f0;
+  --background: #f0f0f0;
   --text-color: #333;
-  --form-bg: #ffffff;
-  --accent-color: #e63946;
-  --block-bg: linear-gradient(45deg, #d3d3d3, #e0e0e0);
-  --selected-bg: #e63946;
+  --form-bg: #d0d0d0;
+  --border-color: #888;
+  --block-bg: #e0e0e0;
+  --delete-btn-bg: #ff3333;
+  --delete-btn-text: #ffffff;
+  --tooltip-bg: #333;
+  --tooltip-text: #fff;
 }
 
-.container {
-  max-width: 1200px;
-  margin: 20px auto;
-  padding: 0 20px;
+body {
+  font-family: Arial, sans-serif;
+  background: var(--background);
+  color: var(--text-color);
+  margin: 0;
+  padding: 0;
 }
 
-.add-block-form {
-  background: var(--form-bg);
+header {
+  text-align: center;
   padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-  margin-bottom: 20px;
 }
 
-.form-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
+h1, h2 {
+  margin: 0;
 }
 
-.form-header h3 {
-  font-size: 1.5em;
-  color: var(--accent-color);
-}
-
-.form-header-buttons {
-  display: flex;
-  gap: 10px;
-}
-
-.form-content {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 15px;
-  transition: max-height 0.3s ease, opacity 0.3s ease;
-}
-
-.form-content.collapsed {
-  max-height: 0;
-  opacity: 0;
-  overflow: hidden;
-}
-
-.form-column {
-  flex: 1;
-  min-width: 200px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-label {
-  font-weight: 500;
-  color: var(--text-color);
-}
-
-input, select, textarea {
-  padding: 8px;
-  border: 1px solid var(--text-color);
-  border-radius: 4px;
-  background: var(--bg-color);
-  color: var(--text-color);
-  font-size: 1em;
-}
-
-textarea {
-  resize: vertical;
-  min-height: 60px;
-}
-
-.form-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 15px;
-}
-
-button {
-  padding: 8px 16px;
-  background: var(--accent-color);
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background 0.2s;
-}
-
-button:hover {
-  background: #e55a5a;
+h2 {
+  font-size: 1.2em;
+  color: #bbb;
 }
 
 .controls {
   display: flex;
+  justify-content: center;
   gap: 10px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.controls select {
-  padding: 8px;
-  border-radius: 4px;
-  background: var(--form-bg);
-  color: var(--text-color);
-  border: 1px solid var(--text-color);
-}
-
-.controls input[type="file"] {
-  padding: 8px;
-  background: var(--form-bg);
-  border: 1px solid var(--text-color);
-  border-radius: 4px;
-  color: var(--text-color);
-}
-
-.current-block-display {
-  background: var(--form-bg);
   padding: 10px;
+  flex-wrap: wrap;
+}
+
+button, select, .file-input-label {
+  padding: 8px 16px;
+  background: var(--form-bg);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
-  margin-bottom: 20px;
-  text-align: center;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
-
-.current-block-display .label {
-  display: block;
-  font-weight: 500;
-  margin-bottom: 5px;
-}
-
-.current-block-display .info {
+  cursor: pointer;
   font-size: 0.9em;
-  opacity: 0.8;
 }
 
-@keyframes pulse {
-  0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.05); opacity: 0.8; }
-  100% { transform: scale(1); opacity: 1; }
+button:hover, select:hover, .file-input-label:hover {
+  background: #4a5555;
 }
 
-.pulse {
-  animation: pulse 0.5s infinite;
+.file-input-label {
+  display: inline-block;
+  position: relative;
 }
 
-.timeline {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 10px;
+.file-input-label input[type="file"] {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+}
+
+#current-block-display {
+  text-align: center;
+  padding: 10px;
+  background: var(--form-bg);
+  border-radius: 4px;
+  margin: 10px auto;
+  max-width: 600px;
+}
+
+#current-block-display .label {
+  display: block;
+  font-weight: bold;
+}
+
+#current-block-display .info {
+  display: block;
+  font-size: 0.9em;
+  color: #bbb;
+}
+
+#time-calculator {
+  text-align: center;
+  padding: 10px;
+  font-size: 0.9em;
+  color: #bbb;
+}
+
+.form-container {
+  max-width: 800px;
+  margin: 0 auto;
   padding: 10px;
   background: var(--form-bg);
   border-radius: 8px;
-  min-height: 100px;
 }
 
-.song-block {
-  background: var(--block-bg);
+#toggle-form-btn {
+  display: block;
+  margin: 0 auto 10px;
+}
+
+#form-content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
   padding: 10px;
-  border-radius: 4px;
-  position: relative;
-  cursor: move;
-  transition: opacity 0.2s;
 }
 
-.song-block.intro { background: linear-gradient(45deg, #4a4e58, #6b7280); }
-.song-block.verse { background: linear-gradient(45deg, #5a606b, #7b8490); }
-.song-block.chorus { background: linear-gradient(45deg, #6b7280, #8b949f); }
-.song-block.bridge { background: linear-gradient(45deg, #7b8490, #9ba4af); }
-.song-block.outro { background: linear-gradient(45deg, #8b949f, #abb4bf); }
-.song-block.solo { background: linear-gradient(45deg, #9ba4af, #bbc4cf); }
-.song-block.interlude { background: linear-gradient(45deg, #abb4bf, #cbd4df); }
-.song-block.pre-chorus { background: linear-gradient(45deg, #7b8490, #9ba4af); }
+#form-content.collapsed {
+  display: none;
+}
 
-.song-block.vibrant.intro { background: linear-gradient(45deg, #ff4d4d, #ff7878); }
-.song-block.vibrant.verse { background: linear-gradient(45deg, #ff6f61, #ff9a8b); }
-.song-block.vibrant.chorus { background: linear-gradient(45deg, #ff8c00, #ffb347); }
-.song-block.vibrant.bridge { background: linear-gradient(45deg, #00c4b4, #4dd0e1); }
-.song-block.vibrant.outro { background: linear-gradient(45deg, #ab47bc, #ce93d8); }
-.song-block.vibrant.solo { background: linear-gradient(45deg, #7b1fa2, #ab47bc); }
-.song-block.vibrant.interlude { background: linear-gradient(45deg, #0288d1, #4fc3f7); }
-.song-block.vibrant.pre-chorus { background: linear-gradient(45deg, #00c4b4, #4dd0e1); }
+#form-content label {
+  flex: 1 1 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
 
-.song-block.pastel.intro { background: linear-gradient(45deg, #ffcccb, #ffebee); }
-.song-block.pastel.verse { background: linear-gradient(45deg, #c8e6c9, #dcedc8); }
-.song-block.pastel.chorus { background: linear-gradient(45deg, #b3e5fc, #e1f5fe); }
-.song-block.pastel.bridge { background: linear-gradient(45deg, #f8bbd0, #fce4ec); }
-.song-block.pastel.outro { background: linear-gradient(45deg, #d1c4e9, #ede7f6); }
-.song-block.pastel.solo { background: linear-gradient(45deg, #b2dfdb, #e0f2f1); }
-.song-block.pastel.interlude { background: linear-gradient(45deg, #fff9c4, #fffde7); }
-.song-block.pastel.pre-chorus { background: linear-gradient(45deg, #f8bbd0, #fce4ec); }
+#form-content input,
+#form-content select,
+#form-content textarea {
+  padding: 5px;
+  background: var(--background);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
 
-.song-block.monochrome.intro { background: linear-gradient(45deg, #333333, #4d4d4d); }
-.song-block.monochrome.verse { background: linear-gradient(45deg, #4d4d4d, #666666); }
-.song-block.monochrome.chorus { background: linear-gradient(45deg, #666666, #808080); }
-.song-block.monochrome.bridge { background: linear-gradient(45deg, #808080, #999999); }
-.song-block.monochrome.outro { background: linear-gradient(45deg, #999999, #b3b3b3); }
-.song-block.monochrome.solo { background: linear-gradient(45deg, #b3b3b3, #cccccc); }
-.song-block.monochrome.interlude { background: linear-gradient(45deg, #cccccc, #e6e6e6); }
-.song-block.monochrome.pre-chorus { background: linear-gradient(45deg, #808080, #999999); }
+#form-content textarea {
+  resize: vertical;
+}
+
+#form-content button {
+  flex: 0 0 auto;
+}
+
+/* Timeline layout: Use Flexbox with wrapping */
+#timeline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 20px;
+}
+
+/* Song block styles: Adjust for horizontal sizing */
+.song-block {
+  position: relative;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--block-bg);
+  color: var(--text-color);
+  cursor: move;
+  transition: transform 0.2s, border-color 0.3s;
+  height: 120px;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  overflow: auto;
+}
+
+.song-block:hover {
+  transform: scale(1.02);
+}
 
 .song-block.playing {
-  border: 2px solid var(--accent-color);
+  border-color: #00ff00;
 }
 
 .song-block.selected {
-  background: var(--selected-bg);
+  border-color: #ffaa00;
 }
 
+/* Block styles */
 .song-block .label {
-  font-size: 0.9em;
-  color: var(--text-color);
+  display: block;
+  font-size: 0.85em;
+  line-height: 1.1;
+  text-align: center;
   white-space: pre-wrap;
+  word-wrap: break-word;
+  max-height: 100%;
 }
 
 .song-block .tooltip {
-  visibility: hidden;
-  background: var(--bg-color);
-  color: var(--text-color);
-  padding: 5px;
-  border-radius: 4px;
   position: absolute;
-  z-index: 1;
-  top: 100%;
+  bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
+  background: var(--tooltip-bg);
+  color: var(--tooltip-text);
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 0.8em;
   white-space: nowrap;
+  display: none;
+  z-index: 10;
 }
 
 .song-block:hover .tooltip {
-  visibility: visible;
+  display: block;
 }
 
-.delete-btn {
+.song-block .delete-btn {
   position: absolute;
   top: 5px;
   right: 5px;
-  background: #ff4d4d;
-  color: white;
+  background: var(--delete-btn-bg);
+  color: var(--delete-btn-text);
   border: none;
   border-radius: 50%;
   width: 20px;
   height: 20px;
-  cursor: pointer;
-  font-size: 0.8em;
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  font-size: 0.8em;
+  z-index: 5;
 }
 
-.time-calculator {
-  margin-top: 20px;
-  font-size: 0.9em;
-  color: var(--text-color);
-  text-align: center;
+.song-block .delete-btn:hover {
+  background: #ff7777;
 }
 
-.print-only {
-  display: none;
+/* Block style variations */
+.song-block.default { background: var(--block-bg); }
+.song-block.vibrant { background: linear-gradient(45deg, #ff6b6b, #feca57); color: #000; }
+.song-block.pastel { background: linear-gradient(45deg, #a0c4ff, #c4f5c7); color: #000; }
+.song-block.monochrome { background: linear-gradient(45deg, #666, #999); color: #fff; }
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
 }
 
+.pulse {
+  animation: pulse 1s infinite;
+}
+
+/* Print styles */
 @media print {
-  /* Ensure background colors and gradients are printed */
   body {
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-    background: #fff; /* White background for print */
-    color: #333; /* Dark text for readability */
+    background: #fff;
+    color: #000;
   }
 
-  /* Hide elements we don't want in the print view */
-  .add-block-form, .controls, .current-block-display, .time-calculator {
+  header, .controls, .form-container, #current-block-display, #time-calculator {
     display: none;
   }
 
-  /* Show the song name at the top */
-  .print-only {
-    display: block;
-    font-size: 1.5em;
-    text-align: center;
-    margin-bottom: 20px;
-    color: #333;
+  #timeline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
   }
 
-  /* Style the container for print */
-  .container {
-    margin: 0;
-    padding: 10px;
-    max-width: 100%;
-  }
-
-  /* Style the timeline for print */
-  .timeline {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 10px;
-    padding: 10px;
-    background: #fff; /* White background for the timeline */
-    border-radius: 8px;
-    min-height: auto;
-  }
-
-  /* Ensure song blocks retain their styling */
   .song-block {
+    overflow: visible;
     break-inside: avoid;
-    background: var(--block-bg) !important; /* Fallback background */
-    padding: 10px;
-    border-radius: 4px;
-    position: relative;
-    color: #333; /* Dark text for readability */
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+    flex: 0 0 auto;
+    background: #fff;
+    border: 1px solid #000;
+    color: #000;
   }
 
-  /* Reapply type-specific gradients for default style */
-  .song-block.intro { background: linear-gradient(45deg, #4a4e58, #6b7280) !important; }
-  .song-block.verse { background: linear-gradient(45deg, #5a606b, #7b8490) !important; }
-  .song-block.chorus { background: linear-gradient(45deg, #6b7280, #8b949f) !important; }
-  .song-block.bridge { background: linear-gradient(45deg, #7b8490, #9ba4af) !important; }
-  .song-block.outro { background: linear-gradient(45deg, #8b949f, #abb4bf) !important; }
-  .song-block.solo { background: linear-gradient(45deg, #9ba4af, #bbc4cf) !important; }
-  .song-block.interlude { background: linear-gradient(45deg, #abb4bf, #cbd4df) !important; }
-  .song-block.pre-chorus { background: linear-gradient(45deg, #7b8490, #9ba4af) !important; }
-
-  /* Reapply vibrant style gradients */
-  .song-block.vibrant.intro { background: linear-gradient(45deg, #ff4d4d, #ff7878) !important; }
-  .song-block.vibrant.verse { background: linear-gradient(45deg, #ff6f61, #ff9a8b) !important; }
-  .song-block.vibrant.chorus { background: linear-gradient(45deg, #ff8c00, #ffb347) !important; }
-  .song-block.vibrant.bridge { background: linear-gradient(45deg, #00c4b4, #4dd0e1) !important; }
-  .song-block.vibrant.outro { background: linear-gradient(45deg, #ab47bc, #ce93d8) !important; }
-  .song-block.vibrant.solo { background: linear-gradient(45deg, #7b1fa2, #ab47bc) !important; }
-  .song-block.vibrant.interlude { background: linear-gradient(45deg, #0288d1, #4fc3f7) !important; }
-  .song-block.vibrant.pre-chorus { background: linear-gradient(45deg, #00c4b4, #4dd0e1) !important; }
-
-  /* Reapply pastel style gradients */
-  .song-block.pastel.intro { background: linear-gradient(45deg, #ffcccb, #ffebee) !important; }
-  .song-block.pastel.verse { background: linear-gradient(45deg, #c8e6c9, #dcedc8) !important; }
-  .song-block.pastel.chorus { background: linear-gradient(45deg, #b3e5fc, #e1f5fe) !important; }
-  .song-block.pastel.bridge { background: linear-gradient(45deg, #f8bbd0, #fce4ec) !important; }
-  .song-block.pastel.outro { background: linear-gradient(45deg, #d1c4e9, #ede7f6) !important; }
-  .song-block.pastel.solo { background: linear-gradient(45deg, #b2dfdb, #e0f2f1) !important; }
-  .song-block.pastel.interlude { background: linear-gradient(45deg, #fff9c4, #fffde7) !important; }
-  .song-block.pastel.pre-chorus { background: linear-gradient(45deg, #f8bbd0, #fce4ec) !important; }
-
-  /* Reapply monochrome style gradients */
-  .song-block.monochrome.intro { background: linear-gradient(45deg, #333333, #4d4d4d) !important; }
-  .song-block.monochrome.verse { background: linear-gradient(45deg, #4d4d4d, #666666) !important; }
-  .song-block.monochrome.chorus { background: linear-gradient(45deg, #666666, #808080) !important; }
-  .song-block.monochrome.bridge { background: linear-gradient(45deg, #808080, #999999) !important; }
-  .song-block.monochrome.outro { background: linear-gradient(45deg, #999999, #b3b3b3) !important; }
-  .song-block.monochrome.solo { background: linear-gradient(45deg, #b3b3b3, #cccccc) !important; }
-  .song-block.monochrome.interlude { background: linear-gradient(45deg, #cccccc, #e6e6e6) !important; }
-  .song-block.monochrome.pre-chorus { background: linear-gradient(45deg, #808080, #999999) !important; }
-
-  /* Ensure the block labels are styled for print */
-  .song-block .label {
-    font-size: 0.9em;
-    color: #333; /* Dark text for readability */
-    white-space: pre-wrap;
-  }
-
-  /* Hide elements that shouldn't appear in print */
+  .song-block .delete-btn,
   .song-block .tooltip {
     display: none;
   }
 
-  .song-block.playing {
-    border: none; /* Remove playing border in print */
-  }
-
-  .song-block.selected {
-    background: var(--block-bg) !important; /* Remove selected background in print */
-  }
-
-  .delete-btn {
-    display: none; /* Hide delete buttons in print */
+  h2#print-song-name {
+    display: block;
+    text-align: center;
+    color: #000;
   }
 }
