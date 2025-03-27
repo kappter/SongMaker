@@ -57,7 +57,7 @@ body {
 
 .form-header-buttons {
   display: flex;
-  gap: 10px; /* Space between Hide Parameters and Print buttons */
+  gap: 10px; /* Space between Hide Parameters, Print, and Light Mode buttons */
 }
 
 .form-content {
