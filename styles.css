@@ -55,6 +55,11 @@ body {
   color: var(--accent-color);
 }
 
+.form-header-buttons {
+  display: flex;
+  gap: 10px; /* Space between Hide Parameters and Print buttons */
+}
+
 .form-content {
   display: flex;
   flex-wrap: wrap;
