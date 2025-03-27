@@ -780,9 +780,6 @@ function printSong() {
   window.print();
 }
 
-// Remove the default song data for "Echoes of Joy" since we'll load a random song
-// const defaultSongData = { ... }; // Removed
-
 // Initialize the dropdown and load a random song on page load
 populateSongDropdown();
 
