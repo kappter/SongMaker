@@ -57,7 +57,7 @@ body {
 
 .form-header-buttons {
   display: flex;
-  gap: 10px; /* Space between Hide Parameters, Print, and Light Mode buttons */
+  gap: 10px;
 }
 
 .form-content {
@@ -291,8 +291,119 @@ button:hover {
 }
 
 @media print {
-  .print-only { display: block; font-size: 1.5em; text-align: center; margin-bottom: 20px; }
-  .add-block-form, .controls, .current-block-display, .time-calculator { display: none; }
-  .timeline { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
-  .song-block { break-inside: avoid; }
+  /* Ensure background colors and gradients are printed */
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    background: #fff; /* White background for print */
+    color: #333; /* Dark text for readability */
+  }
+
+  /* Hide elements we don't want in the print view */
+  .add-block-form, .controls, .current-block-display, .time-calculator {
+    display: none;
+  }
+
+  /* Show the song name at the top */
+  .print-only {
+    display: block;
+    font-size: 1.5em;
+    text-align: center;
+    margin-bottom: 20px;
+    color: #333;
+  }
+
+  /* Style the container for print */
+  .container {
+    margin: 0;
+    padding: 10px;
+    max-width: 100%;
+  }
+
+  /* Style the timeline for print */
+  .timeline {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    padding: 10px;
+    background: #fff; /* White background for the timeline */
+    border-radius: 8px;
+    min-height: auto;
+  }
+
+  /* Ensure song blocks retain their styling */
+  .song-block {
+    break-inside: avoid;
+    background: var(--block-bg) !important; /* Fallback background */
+    padding: 10px;
+    border-radius: 4px;
+    position: relative;
+    color: #333; /* Dark text for readability */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Reapply type-specific gradients for default style */
+  .song-block.intro { background: linear-gradient(45deg, #4a4e58, #6b7280) !important; }
+  .song-block.verse { background: linear-gradient(45deg, #5a606b, #7b8490) !important; }
+  .song-block.chorus { background: linear-gradient(45deg, #6b7280, #8b949f) !important; }
+  .song-block.bridge { background: linear-gradient(45deg, #7b8490, #9ba4af) !important; }
+  .song-block.outro { background: linear-gradient(45deg, #8b949f, #abb4bf) !important; }
+  .song-block.solo { background: linear-gradient(45deg, #9ba4af, #bbc4cf) !important; }
+  .song-block.interlude { background: linear-gradient(45deg, #abb4bf, #cbd4df) !important; }
+  .song-block.pre-chorus { background: linear-gradient(45deg, #7b8490, #9ba4af) !important; }
+
+  /* Reapply vibrant style gradients */
+  .song-block.vibrant.intro { background: linear-gradient(45deg, #ff4d4d, #ff7878) !important; }
+  .song-block.vibrant.verse { background: linear-gradient(45deg, #ff6f61, #ff9a8b) !important; }
+  .song-block.vibrant.chorus { background: linear-gradient(45deg, #ff8c00, #ffb347) !important; }
+  .song-block.vibrant.bridge { background: linear-gradient(45deg, #00c4b4, #4dd0e1) !important; }
+  .song-block.vibrant.outro { background: linear-gradient(45deg, #ab47bc, #ce93d8) !important; }
+  .song-block.vibrant.solo { background: linear-gradient(45deg, #7b1fa2, #ab47bc) !important; }
+  .song-block.vibrant.interlude { background: linear-gradient(45deg, #0288d1, #4fc3f7) !important; }
+  .song-block.vibrant.pre-chorus { background: linear-gradient(45deg, #00c4b4, #4dd0e1) !important; }
+
+  /* Reapply pastel style gradients */
+  .song-block.pastel.intro { background: linear-gradient(45deg, #ffcccb, #ffebee) !important; }
+  .song-block.pastel.verse { background: linear-gradient(45deg, #c8e6c9, #dcedc8) !important; }
+  .song-block.pastel.chorus { background: linear-gradient(45deg, #b3e5fc, #e1f5fe) !important; }
+  .song-block.pastel.bridge { background: linear-gradient(45deg, #f8bbd0, #fce4ec) !important; }
+  .song-block.pastel.outro { background: linear-gradient(45deg, #d1c4e9, #ede7f6) !important; }
+  .song-block.pastel.solo { background: linear-gradient(45deg, #b2dfdb, #e0f2f1) !important; }
+  .song-block.pastel.interlude { background: linear-gradient(45deg, #fff9c4, #fffde7) !important; }
+  .song-block.pastel.pre-chorus { background: linear-gradient(45deg, #f8bbd0, #fce4ec) !important; }
+
+  /* Reapply monochrome style gradients */
+  .song-block.monochrome.intro { background: linear-gradient(45deg, #333333, #4d4d4d) !important; }
+  .song-block.monochrome.verse { background: linear-gradient(45deg, #4d4d4d, #666666) !important; }
+  .song-block.monochrome.chorus { background: linear-gradient(45deg, #666666, #808080) !important; }
+  .song-block.monochrome.bridge { background: linear-gradient(45deg, #808080, #999999) !important; }
+  .song-block.monochrome.outro { background: linear-gradient(45deg, #999999, #b3b3b3) !important; }
+  .song-block.monochrome.solo { background: linear-gradient(45deg, #b3b3b3, #cccccc) !important; }
+  .song-block.monochrome.interlude { background: linear-gradient(45deg, #cccccc, #e6e6e6) !important; }
+  .song-block.monochrome.pre-chorus { background: linear-gradient(45deg, #808080, #999999) !important; }
+
+  /* Ensure the block labels are styled for print */
+  .song-block .label {
+    font-size: 0.9em;
+    color: #333; /* Dark text for readability */
+    white-space: pre-wrap;
+  }
+
+  /* Hide elements that shouldn't appear in print */
+  .song-block .tooltip {
+    display: none;
+  }
+
+  .song-block.playing {
+    border: none; /* Remove playing border in print */
+  }
+
+  .song-block.selected {
+    background: var(--block-bg) !important; /* Remove selected background in print */
+  }
+
+  .delete-btn {
+    display: none; /* Hide delete buttons in print */
+  }
 }
