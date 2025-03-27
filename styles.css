@@ -154,15 +154,16 @@ button:hover, select:hover, .file-input-label:hover {
   flex: 0 0 auto;
 }
 
-/* Timeline layout: Use Flexbox with wrapping */
+/* Timeline layout: Revert to CSS Grid */
 #timeline {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 20px;
   padding: 20px;
+  grid-auto-rows: minmax(100px, auto);
 }
 
-/* Song block styles: Adjust for horizontal sizing */
+/* Song block styles: Adjust for vertical sizing */
 .song-block {
   position: relative;
   border: 2px solid var(--border-color);
@@ -172,13 +173,12 @@ button:hover, select:hover, .file-input-label:hover {
   color: var(--text-color);
   cursor: move;
   transition: transform 0.2s, border-color 0.3s;
-  height: 120px;
-  flex: 0 0 auto;
+  min-height: 100px;
+  overflow: auto;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  overflow: auto;
 }
 
 .song-block:hover {
@@ -273,15 +273,14 @@ button:hover, select:hover, .file-input-label:hover {
   }
 
   #timeline {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 20px;
   }
 
   .song-block {
     overflow: visible;
     break-inside: avoid;
-    flex: 0 0 auto;
     background: #fff;
     border: 1px solid #000;
     color: #000;
