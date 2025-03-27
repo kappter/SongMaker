@@ -8,7 +8,6 @@ const songDropdown = document.getElementById('song-dropdown');
 const toggleFormBtn = document.getElementById('toggle-form-btn');
 const formContent = document.getElementById('form-content');
 const printSongName = document.getElementById('print-song-name');
-const songmakerTitle = document.getElementById('songmaker-title');
 let draggedBlock = null;
 let selectedBlock = null;
 let currentSongName = 'Echoes of Joy';
@@ -26,20 +25,6 @@ const validTimeSignatures = ['4/4', '3/4', '6/8', '2/4', '5/4', '7/8', '12/8', '
 const tickSound = new Audio('tick.wav');
 const tockSound = new Audio('tock.wav');
 let activeSounds = [];
-
-const partTypes = ['intro', 'verse', 'chorus', 'bridge', 'outro', 'interlude', 'pre-chorus', 'solo'];
-const rootNotes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-const modes = ['Ionian', 'Dorian', 'Phrygian', 'Lydian', 'Mixolydian', 'Aeolian', 'Locrian'];
-const feels = ['Happiness', 'Sadness', 'Tension', 'Euphoria', 'Calmness', 'Anger', 'Mystical', 'Rebellion', 'Triumph', 'Bliss', 'Frustration', 'Atmospheric', 'Trippy', 'Awakening', 'Intense', 'Climactic'];
-const sampleLyrics = [
-  "Lost in the night, searching for light",
-  "Dreams take flight, under the sky",
-  "Echoes call me, through the storm",
-  "Time moves slow, in shadows deep",
-  "Rise above, feel the beat",
-  "Whispers fade, into the void",
-  "",
-];
 
 class TimeManager {
   constructor(tempo, beatsPerMeasure, totalBeats, callback) {
@@ -103,6 +88,16 @@ function toggleForm() {
   isFormCollapsed = !isFormCollapsed;
   formContent.classList.toggle('collapsed');
   toggleFormBtn.textContent = isFormCollapsed ? 'Show Parameters' : 'Hide Parameters';
+}
+
+function changeBlockStyle(style) {
+  const blocks = document.querySelectorAll('.song-block');
+  blocks.forEach(block => {
+    // Remove previous style classes
+    block.classList.remove('default', 'vibrant', 'pastel', 'monochrome');
+    // Add new style class
+    if (style) block.classList.add(style);
+  });
 }
 
 function updateTitle(newTitle) {
@@ -372,12 +367,14 @@ function loadSongFromDropdown(filename) {
 
 function loadSongData(songData) {
   if (!songData.songName || !Array.isArray(songData.blocks)) {
-    throw new Error('Invalid song file format.');
+    throw new Error('Invalid song file format: missing songName or blocks array.');
   }
 
   for (let i = 0; i < songData.blocks.length; i++) {
     const error = validateBlock(songData.blocks[i]);
-    if (error) throw new Error(`Block ${i + 1}: ${error}`);
+    if (error) {
+      throw new Error(`Block ${i + 1}: ${error}`);
+    }
   }
 
   if (isPlaying) {
@@ -406,6 +403,11 @@ function loadSongData(songData) {
     setupBlock(block);
     timeline.appendChild(block);
   });
+
+  const styleDropdown = document.getElementById('style-dropdown');
+  if (styleDropdown.value) {
+    changeBlockStyle(styleDropdown.value);
+  }
 
   calculateTimings();
   console.log(`Song loaded: ${songData.songName}`);
