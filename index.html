@@ -11,7 +11,7 @@
   <div class="container">
     <div class="add-block-form">
       <div class="form-header">
-        <h3 id="songmaker-title">SongMaker</h3>
+        <h3>SongMaker</h3>
         <button id="toggle-form-btn" onclick="toggleForm()">Hide Parameters</button>
       </div>
       <div id="form-content" class="form-content">
@@ -134,11 +134,17 @@
       <button id="theme-btn" onclick="toggleTheme()">Light Mode</button>
       <button onclick="exportSong()">Export Song</button>
       <input type="file" id="import-song" accept=".json" onchange="importSong(event)">
+      <select id="style-dropdown" onchange="changeBlockStyle(this.value)">
+        <option value="">Select Block Style</option>
+        <option value="default">Default</option>
+        <option value="vibrant">Vibrant</option>
+        <option value="pastel">Pastel</option>
+        <option value="monochrome">Monochrome</option>
+      </select>
       <select id="song-dropdown" onchange="loadSongFromDropdown(this.value)">
         <option value="">Select a Song</option>
       </select>
       <button onclick="printSong()">Print</button>
-      <button onclick="randomizeSong()">Randomize</button>
     </div>
     <div id="current-block-display" class="current-block-display">
       <span class="label">No block playing</span>
