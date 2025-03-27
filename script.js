@@ -100,7 +100,10 @@ function changeBlockStyle(style) {
 
 function randomizeSong() {
   const blocks = Array.from(timeline.children);
-  if (blocks.length === 0) return;
+  if (blocks.length === 0) {
+    alert("No blocks to randomize. Please load a song or add blocks to the timeline.");
+    return;
+  }
 
   // Fisher-Yates shuffle
   for (let i = blocks.length - 1; i > 0; i--) {
@@ -719,6 +722,20 @@ function loadSongFromDropdown(filename) {
             alert(`Failed to load song: ${error.message}`);
           });
       }
+    } else if (filename === 'Echoes of Joy.json') {
+      fetch(filename)
+        .then(response => {
+          if (!response.ok) throw new Error('Failed to fetch Echoes of Joy file');
+          return response.json();
+        })
+        .then(data => {
+          loadSongData(data);
+          console.log(`Loaded JSON song: ${filename}`);
+        })
+        .catch(error => {
+          console.error(`Failed to load Echoes of Joy: ${error.message}`);
+          alert(`Failed to load song: ${error.message}`);
+        });
     } else {
       fetch(filename)
         .then(response => {
@@ -743,8 +760,8 @@ function loadSongFromDropdown(filename) {
 
 function populateSongDropdown() {
   const availableSongs = [
-    'pneuma.js',
     'Echoes of Joy.json',
+    'pneuma.js',
     'satisfaction.js',
     'dirtyLaundry.js',
     'invincible.js',
@@ -763,5 +780,21 @@ function printSong() {
   window.print();
 }
 
-// Initialize the dropdown on page load
+// Remove the default song data for "Echoes of Joy" since we'll load a random song
+// const defaultSongData = { ... }; // Removed
+
+// Initialize the dropdown and load a random song on page load
 populateSongDropdown();
+
+// Load a random song on page load
+const availableSongs = [
+  'Echoes of Joy.json',
+  'pneuma.js',
+  'satisfaction.js',
+  'dirtyLaundry.js',
+  'invincible.js',
+  'astroworld.js',
+  'astrothunder.js'
+];
+const randomSong = availableSongs[Math.floor(Math.random() * availableSongs.length)];
+loadSongFromDropdown(randomSong);
