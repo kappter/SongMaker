@@ -14,7 +14,8 @@
         <h3>SongMaker</h3>
         <div class="form-header-buttons">
           <button id="toggle-form-btn" onclick="toggleForm()">Hide Parameters</button>
-          <button onclick="printSong()">Print</button> <!-- Moved Print button here -->
+          <button onclick="printSong()">Print</button>
+          <button id="theme-btn" onclick="toggleTheme()">Light Mode</button> <!-- Moved Light Mode button here -->
         </div>
       </div>
       <div id="form-content" class="form-content">
@@ -134,7 +135,6 @@
     <div class="controls">
       <button id="play-btn" onclick="togglePlay()">Play</button>
       <button id="sound-btn" onclick="toggleSound()">Sound On</button>
-      <button id="theme-btn" onclick="toggleTheme()">Light Mode</button>
       <button onclick="exportSong()">Export Song</button>
       <input type="file" id="import-song" accept=".json" onchange="importSong(event)">
       <select id="style-dropdown" onchange="changeBlockStyle(this.value)">
