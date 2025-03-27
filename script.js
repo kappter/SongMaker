@@ -203,8 +203,10 @@ function validateBlock(block) {
 
 function updateBlockSize(block) {
   const measures = parseInt(block.getAttribute('data-measures'));
-  // Revert to setting height based on measures: 10px per measure, with a minimum of 100px
-  block.style.height = `${Math.max(100, measures * 10)}px`;
+  // Set width based on measures: 20px per measure, with a minimum of 100px
+  block.style.width = `${Math.max(100, measures * 20)}px`;
+  // Set a fixed height (already set in CSS, but can override here if needed)
+  block.style.height = '120px';
 }
 
 function setupBlock(block) {
