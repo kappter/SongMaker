@@ -113,7 +113,7 @@ button {
 }
 
 button:hover {
-  background: #e55a5a; /* Slightly darker shade of accent color */
+  background: #e55a5a;
 }
 
 .controls {
@@ -172,7 +172,7 @@ button:hover {
 
 .timeline {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); /* 4 blocks per row on 1200px container */
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 10px;
   padding: 10px;
   background: var(--form-bg);
@@ -189,7 +189,6 @@ button:hover {
   transition: opacity 0.2s;
 }
 
-/* Default Style */
 .song-block.intro { background: linear-gradient(45deg, #4a4e58, #6b7280); }
 .song-block.verse { background: linear-gradient(45deg, #5a606b, #7b8490); }
 .song-block.chorus { background: linear-gradient(45deg, #6b7280, #8b949f); }
@@ -199,7 +198,6 @@ button:hover {
 .song-block.interlude { background: linear-gradient(45deg, #abb4bf, #cbd4df); }
 .song-block.pre-chorus { background: linear-gradient(45deg, #7b8490, #9ba4af); }
 
-/* Vibrant Style */
 .song-block.vibrant.intro { background: linear-gradient(45deg, #ff4d4d, #ff7878); }
 .song-block.vibrant.verse { background: linear-gradient(45deg, #ff6f61, #ff9a8b); }
 .song-block.vibrant.chorus { background: linear-gradient(45deg, #ff8c00, #ffb347); }
@@ -209,7 +207,6 @@ button:hover {
 .song-block.vibrant.interlude { background: linear-gradient(45deg, #0288d1, #4fc3f7); }
 .song-block.vibrant.pre-chorus { background: linear-gradient(45deg, #00c4b4, #4dd0e1); }
 
-/* Pastel Style */
 .song-block.pastel.intro { background: linear-gradient(45deg, #ffcccb, #ffebee); }
 .song-block.pastel.verse { background: linear-gradient(45deg, #c8e6c9, #dcedc8); }
 .song-block.pastel.chorus { background: linear-gradient(45deg, #b3e5fc, #e1f5fe); }
@@ -219,7 +216,6 @@ button:hover {
 .song-block.pastel.interlude { background: linear-gradient(45deg, #fff9c4, #fffde7); }
 .song-block.pastel.pre-chorus { background: linear-gradient(45deg, #f8bbd0, #fce4ec); }
 
-/* Monochrome Style */
 .song-block.monochrome.intro { background: linear-gradient(45deg, #333333, #4d4d4d); }
 .song-block.monochrome.verse { background: linear-gradient(45deg, #4d4d4d, #666666); }
 .song-block.monochrome.chorus { background: linear-gradient(45deg, #666666, #808080); }
