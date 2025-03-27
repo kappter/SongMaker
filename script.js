@@ -774,16 +774,28 @@ function loadSongFromDropdown(filename) {
     } else if (filename === 'Echoes of Joy.json') {
       fetch(filename)
         .then(response => {
-          if (!response.ok) throw new Error('Failed to fetch Echoes of Joy file');
-          return response.json();
+          if (!response.ok) throw new Error(`Failed to fetch Echoes of Joy file: ${response.statusText}`);
+          return response.text(); // Get text first to debug parsing issues
         })
-        .then(data => {
+        .then(text => {
+          let data;
+          try {
+            data = JSON.parse(text);
+          } catch (e) {
+            throw new Error(`Invalid JSON format in Echoes of Joy.json: ${e.message}`);
+          }
           loadSongData(data);
           console.log(`Loaded JSON song: ${filename}`);
         })
         .catch(error => {
           console.error(`Failed to load Echoes of Joy: ${error.message}`);
           alert(`Failed to load song: ${error.message}`);
+          // Fallback: Load a different song to avoid a blank timeline
+          const fallbackSong = availableSongs.find(song => song !== 'Echoes of Joy.json');
+          if (fallbackSong) {
+            console.log(`Falling back to ${fallbackSong}`);
+            loadSongFromDropdown(fallbackSong);
+          }
         });
     } else {
       fetch(filename)
