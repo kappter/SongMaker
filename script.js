@@ -203,10 +203,7 @@ function validateBlock(block) {
 
 function updateBlockSize(block) {
   const measures = parseInt(block.getAttribute('data-measures'));
-  // Set width based on measures: 20px per measure, with a minimum of 100px
-  block.style.width = `${Math.max(100, measures * 20)}px`;
-  // Set a fixed height (already set in CSS, but can override here if needed)
-  block.style.height = '120px';
+  block.style.height = `${Math.max(100, measures * 10)}px`;
 }
 
 function setupBlock(block) {
@@ -264,8 +261,6 @@ function setupBlock(block) {
     calculateTimings();
   });
   block.appendChild(deleteBtn);
-
-  updateBlockSize(block); // Ensure the block size is updated after setup
 }
 
 function addBlock() {
@@ -779,28 +774,16 @@ function loadSongFromDropdown(filename) {
     } else if (filename === 'Echoes of Joy.json') {
       fetch(filename)
         .then(response => {
-          if (!response.ok) throw new Error(`Failed to fetch Echoes of Joy file: ${response.statusText}`);
-          return response.text(); // Get text first to debug parsing issues
+          if (!response.ok) throw new Error('Failed to fetch Echoes of Joy file');
+          return response.json();
         })
-        .then(text => {
-          let data;
-          try {
-            data = JSON.parse(text);
-          } catch (e) {
-            throw new Error(`Invalid JSON format in Echoes of Joy.json: ${e.message}`);
-          }
+        .then(data => {
           loadSongData(data);
           console.log(`Loaded JSON song: ${filename}`);
         })
         .catch(error => {
           console.error(`Failed to load Echoes of Joy: ${error.message}`);
           alert(`Failed to load song: ${error.message}`);
-          // Fallback: Load a different song to avoid a blank timeline
-          const fallbackSong = availableSongs.find(song => song !== 'Echoes of Joy.json');
-          if (fallbackSong) {
-            console.log(`Falling back to ${fallbackSong}`);
-            loadSongFromDropdown(fallbackSong);
-          }
         });
     } else {
       fetch(filename)
