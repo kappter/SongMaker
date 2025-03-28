@@ -157,7 +157,7 @@ function randomizeSong() {
     block.setAttribute('data-lyrics', lyrics);
     block.setAttribute('data-root-note', rootNote);
     block.setAttribute('data-mode', mode);
-    block.innerHTML = `<span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote, mode)} ${mode} ${tempo}b ${feel}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span><span class="tooltip">${lyrics || 'No lyrics'}</span>`;
+    block.innerHTML = `<span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote)} ${mode} ${tempo}b ${feel}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span><span class="tooltip">${lyrics || 'No lyrics'}</span>`;
     updateBlockSize(block);
     setupBlock(block);
     timeline.appendChild(block);
@@ -180,10 +180,8 @@ function formatPart(part) {
   return part.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 }
 
-function abbreviateKey(rootNote, mode) {
-  const isFlat = rootNote.includes('#');
-  const simpleMode = mode.split(' ')[0];
-  return `${rootNote}${isFlat ? '' : ''} ${simpleMode}`;
+function abbreviateKey(rootNote) {
+  return rootNote; // Simply return the root note (e.g., "C" or "C#")
 }
 
 function truncateLyrics(lyrics) {
@@ -294,7 +292,7 @@ function addBlock() {
   block.setAttribute('data-lyrics', lyrics);
   block.setAttribute('data-root-note', rootNote);
   block.setAttribute('data-mode', mode);
-  block.innerHTML = `<span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote, mode)} ${mode} ${tempo}b ${feel}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span><span class="tooltip">${lyrics || 'No lyrics'}</span>`;
+  block.innerHTML = `<span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote)} ${mode} ${tempo}b ${feel}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span><span class="tooltip">${lyrics || 'No lyrics'}</span>`;
   updateBlockSize(block);
   setupBlock(block);
   timeline.appendChild(block);
@@ -336,7 +334,7 @@ function updateBlock() {
   selectedBlock.setAttribute('data-lyrics', lyrics);
   selectedBlock.setAttribute('data-root-note', rootNote);
   selectedBlock.setAttribute('data-mode', mode);
-  selectedBlock.innerHTML = `<span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote, mode)} ${mode} ${tempo}b ${feel}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span><span class="tooltip">${lyrics || 'No lyrics'}</span>`;
+  selectedBlock.innerHTML = `<span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote)} ${mode} ${tempo}b ${feel}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span><span class="tooltip">${lyrics || 'No lyrics'}</span>`;
   updateBlockSize(selectedBlock);
 
   const deleteBtn = document.createElement('button');
@@ -504,7 +502,7 @@ function playSong(timings, totalSeconds, totalBeats) {
         const mode = currentTiming.block.getAttribute('data-mode');
 
         currentBlockDisplay.innerHTML = `
-          <span class="label">${formatPart(currentTiming.block.classList[1])}: ${currentTiming.block.getAttribute('data-time-signature')} ${currentTiming.totalMeasures}m<br>${abbreviateKey(rootNote, mode)} ${mode} ${currentTiming.tempo}b ${currentTiming.block.getAttribute('data-feel')}</span>
+          <span class="label">${formatPart(currentTiming.block.classList[1])}: ${currentTiming.block.getAttribute('data-time-signature')} ${currentTiming.totalMeasures}m<br>${abbreviateKey(rootNote)} ${mode} ${currentTiming.tempo}b ${currentTiming.block.getAttribute('data-feel')}</span>
           <span class="info">Beat: ${blockBeat} of ${currentTiming.totalBeats} | Measure: ${blockMeasure} of ${currentTiming.totalMeasures} | Block: ${blockNum} of ${totalBlocks}</span>
         `;
 
@@ -637,7 +635,7 @@ function loadSongData(songData) {
     block.setAttribute('data-lyrics', lyrics || '');
     block.setAttribute('data-root-note', rootNote);
     block.setAttribute('data-mode', mode);
-    block.innerHTML = `<span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote, mode)} ${mode} ${tempo}b ${feel || ''}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span><span class="tooltip">${lyrics || 'No lyrics'}</span>`;
+    block.innerHTML = `<span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote)} ${mode} ${tempo}b ${feel || ''}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span><span class="tooltip">${lyrics || 'No lyrics'}</span>`;
     updateBlockSize(block);
     setupBlock(block);
     timeline.appendChild(block);
