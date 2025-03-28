@@ -7,6 +7,12 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body data-theme="dark">
+  <!-- Print Title (hidden on screen, visible in print) -->
+  <div id="print-title" class="print-only">
+    <h1 id="print-song-title"></h1>
+    <h2>TuneTetris</h2>
+  </div>
+
   <header>
     <h1>TuneTetris</h1>
     <h2 id="print-song-name">Echoes of Joy</h2>
@@ -21,6 +27,11 @@
   <footer>
     <div id="time-calculator">Current Time: 0:00 / Total Duration: 0:00 | Song Beat: 0 of 0 | Block: 0 of 0 (Measure: 0 of 0)</div>
   </footer>
+
+  <!-- Print Footer (hidden on screen, visible in print) -->
+  <div id="print-footer" class="print-only">
+    <p>© 2025 TuneTetris. All rights reserved. | App by Ken Kapptie</p>
+  </div>
 
   <div id="controls">
     <button id="play-btn">Play</button>
