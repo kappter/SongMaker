@@ -42,8 +42,8 @@
   <!-- Main Content Section -->
   <main>
     <div class="form-container">
-      <button id="toggle-form-btn" onclick="toggleForm()">Hide Parameters</button>
-      <div id="form-content">
+      <button id="toggle-form-btn" onclick="toggleForm()">Show Parameters</button>
+      <div id="form-content" class="collapsed">
         <label>Type:
           <select id="part-type">
             <option value="intro">Intro</option>
@@ -158,14 +158,16 @@
       </div>
     </div>
 
+    <!-- Moved current-block-display here, right below the form -->
+    <div id="current-block-display">
+      <span class="label">No block playing</span>
+    </div>
+
     <div id="timeline"></div>
   </main>
 
   <!-- Footer Section -->
   <footer>
-    <div id="current-block-display">
-      <span class="label">No block playing</span>
-    </div>
     <div id="time-calculator">
       Current Time: 0:00 / Total Duration: 0:00 | Song Beat: 0 of 0 | Block: 0 of 0 (Measure: 0 of 0)
     </div>
