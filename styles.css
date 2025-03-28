@@ -175,7 +175,7 @@ main {
   flex-wrap: wrap;
   gap: 20px;
   padding: 20px;
-  max-width: 1200px;
+  max-width: 960;
   margin: 0 auto;
   justify-content: center; /* Center-align the blocks */
 }
