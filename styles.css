@@ -146,7 +146,7 @@ main {
   flex: 0 0 auto;
 }
 
-/* Current Block Display Styles (Moved to Main) */
+/* Current Block Display Styles */
 #current-block-display {
   text-align: center;
   padding: 10px;
@@ -188,15 +188,14 @@ main {
   color: var(--text-color);
   cursor: move;
   transition: transform 0.2s, border-color 0.3s;
-  width: 200px;
-  height: 100px;
+  height: 100px; /* Fixed height */
   flex: 0 0 auto;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  overflow: auto; /* Keeping the text overflow fix */
+  /* Removed overflow: auto to let text spill out */
 }
 
 .song-block:hover {
@@ -218,7 +217,6 @@ main {
   text-align: center;
   white-space: pre-wrap;
   word-wrap: break-word;
-  max-height: 100%;
 }
 
 .song-block .tooltip {
@@ -262,8 +260,56 @@ main {
   background: #ff7777;
 }
 
-/* Block Style Variations */
-.song-block.default { background: var(--block-bg); }
+/* Part-Type Specific Colors (Dark Theme) */
+.song-block.intro { background: #4a5e4a; } /* Dark green */
+.song-block.verse { background: #3b4a5e; } /* Dark blue */
+.song-block.refrain { background: #5e3b4a; } /* Dark red */
+.song-block.pre-chorus { background: #4a5e3b; } /* Dark olive */
+.song-block.chorus { background: #5e4a3b; } /* Dark orange */
+.song-block.post-chorus { background: #3b5e4a; } /* Dark teal */
+.song-block.bridge { background: #4a3b5e; } /* Dark purple */
+.song-block.outro { background: #5e5e3b; } /* Dark yellow */
+.song-block.elision { background: #3b4a4a; } /* Dark cyan */
+.song-block.solo { background: #5e3b5e; } /* Dark magenta */
+.song-block.ad-lib { background: #4a5e5e; } /* Dark turquoise */
+.song-block.hook { background: #5e4a4a; } /* Dark coral */
+.song-block.interlude { background: #3b5e3b; } /* Dark lime */
+.song-block.breakdown { background: #4a4a5e; } /* Dark indigo */
+.song-block.drop { background: #5e3b3b; } /* Dark crimson */
+.song-block.coda { background: #3b4a3b; } /* Dark forest */
+.song-block.modulation { background: #5e5e4a; } /* Dark gold */
+.song-block.tag { background: #4a3b4a; } /* Dark maroon */
+.song-block.chorus-reprise { background: #3b5e5e; } /* Dark aqua */
+.song-block.countermelody { background: #5e4a5e; } /* Dark violet */
+.song-block.instrumental-verse-chorus { background: #4a5e4a; } /* Dark emerald */
+.song-block.false-ending { background: #5e3b4a; } /* Dark ruby */
+
+/* Adjust colors for Light Theme */
+[data-theme="light"] .song-block.intro { background: #a0c4a0; color: #333; }
+[data-theme="light"] .song-block.verse { background: #90a0c4; color: #333; }
+[data-theme="light"] .song-block.refrain { background: #c490a0; color: #333; }
+[data-theme="light"] .song-block.pre-chorus { background: #a0c490; color: #333; }
+[data-theme="light"] .song-block.chorus { background: #c4a090; color: #333; }
+[data-theme="light"] .song-block.post-chorus { background: #90c4a0; color: #333; }
+[data-theme="light"] .song-block.bridge { background: #a090c4; color: #333; }
+[data-theme="light"] .song-block.outro { background: #c4c490; color: #333; }
+[data-theme="light"] .song-block.elision { background: #90a0a0; color: #333; }
+[data-theme="light"] .song-block.solo { background: #c490c4; color: #333; }
+[data-theme="light"] .song-block.ad-lib { background: #a0c4c4; color: #333; }
+[data-theme="light"] .song-block.hook { background: #c4a0a0; color: #333; }
+[data-theme="light"] .song-block.interlude { background: #90c490; color: #333; }
+[data-theme="light"] .song-block.breakdown { background: #a0a0c4; color: #333; }
+[data-theme="light"] .song-block.drop { background: #c49090; color: #333; }
+[data-theme="light"] .song-block.coda { background: #90a090; color: #333; }
+[data-theme="light"] .song-block.modulation { background: #c4c4a0; color: #333; }
+[data-theme="light"] .song-block.tag { background: #a090a0; color: #333; }
+[data-theme="light"] .song-block.chorus-reprise { background: #90c4c4; color: #333; }
+[data-theme="light"] .song-block.countermelody { background: #c4a0c4; color: #333; }
+[data-theme="light"] .song-block.instrumental-verse-chorus { background: #a0c4a0; color: #333; }
+[data-theme="light"] .song-block.false-ending { background: #c490a0; color: #333; }
+
+/* Block Style Variations (Higher specificity to override part-type colors) */
+.song-block.default { background: var(--block-bg); color: var(--text-color); }
 .song-block.vibrant { background: linear-gradient(45deg, #ff6b6b, #feca57); color: #000; }
 .song-block.pastel { background: linear-gradient(45deg, #a0c4ff, #c4f5c7); color: #000; }
 .song-block.monochrome { background: linear-gradient(45deg, #666, #999); color: #fff; }
@@ -278,7 +324,7 @@ main {
   animation: pulse 1s infinite;
 }
 
-/* Footer Styles (Now only contains time-calculator) */
+/* Footer Styles */
 footer {
   padding: 20px;
   background: var(--footer-bg);
@@ -319,7 +365,6 @@ footer {
     overflow: visible;
     break-inside: avoid;
     flex: 0 0 auto;
-    width: 200px;
     height: 100px;
     background: #fff;
     border: 1px solid #000;
