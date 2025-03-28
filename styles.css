@@ -146,6 +146,27 @@ main {
   flex: 0 0 auto;
 }
 
+/* Current Block Display Styles (Moved to Main) */
+#current-block-display {
+  text-align: center;
+  padding: 10px;
+  background: var(--form-bg);
+  border-radius: 4px;
+  margin: 0 auto 20px auto;
+  max-width: 600px;
+}
+
+#current-block-display .label {
+  display: block;
+  font-weight: bold;
+}
+
+#current-block-display .info {
+  display: block;
+  font-size: 0.9em;
+  color: #bbb;
+}
+
 /* Timeline Styles: Center-aligned blocks */
 #timeline {
   display: flex;
@@ -257,31 +278,12 @@ main {
   animation: pulse 1s infinite;
 }
 
-/* Footer Styles */
+/* Footer Styles (Now only contains time-calculator) */
 footer {
   padding: 20px;
   background: var(--footer-bg);
   border-top: 1px solid var(--border-color);
   text-align: center;
-}
-
-#current-block-display {
-  padding: 10px;
-  background: var(--form-bg);
-  border-radius: 4px;
-  margin: 0 auto 10px auto;
-  max-width: 600px;
-}
-
-#current-block-display .label {
-  display: block;
-  font-weight: bold;
-}
-
-#current-block-display .info {
-  display: block;
-  font-size: 0.9em;
-  color: #bbb;
 }
 
 #time-calculator {
@@ -296,7 +298,7 @@ footer {
     color: #000;
   }
 
-  header, nav, .form-container, footer {
+  header, nav, .form-container, #current-block-display, footer {
     display: none;
   }
 
