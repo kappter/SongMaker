@@ -7,7 +7,6 @@ const themeBtn = document.getElementById('theme-btn');
 const songDropdown = document.getElementById('song-dropdown');
 const toggleFormBtn = document.getElementById('toggle-form-btn');
 const formContent = document.getElementById('form-content');
-const printSongName = document.getElementById('print-song-name');
 let draggedBlock = null;
 let selectedBlock = null;
 let currentSongName = 'Echoes of Joy';
@@ -19,7 +18,7 @@ let blockMeasure = 0;
 let lastBeatTime = 0;
 let soundEnabled = true;
 let isDarkMode = true;
-let isFormCollapsed = false;
+let isFormCollapsed = true; // Form is collapsed by default
 
 const validTimeSignatures = ['4/4', '3/4', '6/8', '2/4', '5/4', '7/8', '12/8', '9/8', '11/8', '15/8', '13/8', '10/4', '8/8', '14/8', '16/8', '7/4'];
 const tickSound = new Audio('tick.wav');
@@ -173,7 +172,6 @@ function randomizeSong() {
 function updateTitle(name) {
   currentSongName = name;
   document.title = `${name} - SongMaker`;
-  printSongName.textContent = name;
 }
 
 function formatPart(part) {
@@ -202,7 +200,7 @@ function validateBlock(block) {
 }
 
 function updateBlockSize(block) {
-  // No dynamic sizing needed; dimensions are fixed in CSS (width: 200px; height: 100px)
+  // Dimensions are fixed in CSS (width: 200px; height: 120px)
 }
 
 function setupBlock(block) {
@@ -261,7 +259,7 @@ function setupBlock(block) {
   });
   block.appendChild(deleteBtn);
 
-  updateBlockSize(block); // Call updateBlockSize, though it’s empty in this version
+  updateBlockSize(block);
 }
 
 function addBlock() {
@@ -431,7 +429,7 @@ function playLeadIn(timings, totalSeconds, totalBeats) {
   const beatDuration = 60 / firstBlock.tempo;
   const leadInBeats = 4;
 
-  currentBlockDisplay.style.backgroundColor = '#3b4048';
+  currentBlockDisplay.style.backgroundColor = '#5a6268';
   currentBlockDisplay.innerHTML = `
     <span class="label">Lead-In</span>
     <span class="info">Beat: 0 of ${leadInBeats}</span>
@@ -776,7 +774,7 @@ function loadSongFromDropdown(filename) {
       fetch(filename)
         .then(response => {
           if (!response.ok) throw new Error(`Failed to fetch Echoes of Joy file: ${response.statusText}`);
-          return response.text(); // Get text first to debug parsing issues
+          return response.text();
         })
         .then(text => {
           let data;
@@ -791,7 +789,6 @@ function loadSongFromDropdown(filename) {
         .catch(error => {
           console.error(`Failed to load Echoes of Joy: ${error.message}`);
           alert(`Failed to load song: ${error.message}`);
-          // Fallback: Load a different song to avoid a blank timeline
           const fallbackSong = availableSongs.find(song => song !== 'Echoes of Joy.json');
           if (fallbackSong) {
             console.log(`Falling back to ${fallbackSong}`);
