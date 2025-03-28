@@ -19,7 +19,7 @@ let blockMeasure = 0;
 let lastBeatTime = 0;
 let soundEnabled = true;
 let isDarkMode = true;
-let isFormCollapsed = false;
+let isFormCollapsed = true; // Changed to true to collapse form by default
 
 const validTimeSignatures = ['4/4', '3/4', '6/8', '2/4', '5/4', '7/8', '12/8', '9/8', '11/8', '15/8', '13/8', '10/4', '8/8', '14/8', '16/8', '7/4'];
 const tickSound = new Audio('tick.wav');
