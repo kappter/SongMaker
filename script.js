@@ -27,6 +27,10 @@ const tockSound = new Audio('tock.wav');
 let activeSounds = [];
 let activeTimeManagers = [];
 
+// Add error handling for audio loading
+tickSound.onerror = () => console.error("Failed to load tick.wav");
+tockSound.onerror = () => console.error("Failed to load tock.wav");
+
 class TimeManager {
   constructor(tempo, beatsPerMeasure, totalBeats, callback) {
     this.tempo = tempo;
@@ -445,7 +449,7 @@ function playLeadIn(timings, totalSeconds, totalBeats) {
   const timeManager = new TimeManager(firstBlock.tempo, 4, leadInBeats - 1, ({ elapsedTime, beat, isFirstBeat }) => {
     if (soundEnabled) {
       const sound = (isFirstBeat && beat === 0 ? tockSound : tickSound).cloneNode();
-      sound.play();
+      sound.play().catch(err => console.error("Error playing sound during lead-in:", err));
       activeSounds.push(sound);
     }
     currentBlockDisplay.innerHTML = `
@@ -481,6 +485,13 @@ function playSong(timings, totalSeconds, totalBeats) {
     const blockDuration = currentTiming.duration;
     const totalBlockBeats = currentTiming.totalBeats;
 
+    // Stop any existing sounds before starting the new block
+    activeSounds.forEach(sound => {
+      sound.pause();
+      sound.currentTime = 0;
+    });
+    activeSounds = [];
+
     const timeManager = new TimeManager(
       currentTiming.tempo,
       currentTiming.beatsPerMeasure,
@@ -491,11 +502,11 @@ function playSong(timings, totalSeconds, totalBeats) {
         currentTime = blockStartTime + elapsedTime;
         currentBeat = Math.floor(currentTime * beatsPerSecond);
 
-        if (soundEnabled && (beat === 0 || elapsedTime - (lastBeatTime - blockStartTime) >= 1 / beatsPerSecond)) {
+        // Simplified sound playback: play on every beat
+        if (soundEnabled) {
           const sound = (isFirstBeat ? tockSound : tickSound).cloneNode();
-          sound.play();
+          sound.play().catch(err => console.error("Error playing sound:", err));
           activeSounds.push(sound);
-          lastBeatTime = blockStartTime + elapsedTime;
         }
 
         const totalBlocks = timings.length;
@@ -508,7 +519,6 @@ function playSong(timings, totalSeconds, totalBeats) {
           <span class="info">Beat: ${blockBeat} of ${currentTiming.totalBeats} | Measure: ${blockMeasure} of ${currentTiming.totalMeasures} | Block: ${blockNum} of ${totalBlocks}</span>
         `;
 
-        // Updated: Use blockNum and totalBlocks for the block counter in the footer
         timeCalculator.textContent = `Current Time: ${formatDuration(currentTime)} / Total Duration: ${formatDuration(totalSeconds)} | Song Beat: ${currentBeat} of ${totalBeats} | Block: ${blockNum} of ${totalBlocks} (Measure: ${blockMeasure} of ${currentTiming.totalMeasures})`;
       }
     );
@@ -788,7 +798,7 @@ function loadSongFromDropdown(filename) {
       fetch(filename)
         .then(response => {
           if (!response.ok) throw new Error(`Failed to fetch Echoes of Joy file: ${response.statusText}`);
-          return response.text(); // Get text first to debug parsing issues
+          return response.text();
         })
         .then(text => {
           let data;
@@ -803,7 +813,6 @@ function loadSongFromDropdown(filename) {
         .catch(error => {
           console.error(`Failed to load Echoes of Joy: ${error.message}`);
           alert(`Failed to load song: ${error.message}`);
-          // Fallback: Load a different song to avoid a blank timeline
           const fallbackSong = availableSongs.find(song => song !== 'Echoes of Joy.json');
           if (fallbackSong) {
             console.log(`Falling back to ${fallbackSong}`);
@@ -857,7 +866,6 @@ function printSong() {
 // Initialize the dropdown and load a random song on page load
 populateSongDropdown();
 
-// Load a random song on page load
 const availableSongs = [
   'Echoes of Joy.json',
   'pneuma.js',
