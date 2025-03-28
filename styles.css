@@ -95,8 +95,10 @@ button:hover, select:hover, .file-input-label:hover {
 main {
   flex: 1;
   padding: 20px;
+  padding-bottom: 60px; /* Add padding to prevent overlap with fixed footer */
 }
 
+/* Form Container */
 .form-container {
   max-width: 800px;
   margin: 0 auto 20px auto;
@@ -195,7 +197,6 @@ main {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  /* Removed overflow: auto to let text spill out */
 }
 
 .song-block:hover {
@@ -324,12 +325,17 @@ main {
   animation: pulse 1s infinite;
 }
 
-/* Footer Styles */
+/* Footer Styles (Fixed at Bottom) */
 footer {
-  padding: 20px;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 10px;
   background: var(--footer-bg);
   border-top: 1px solid var(--border-color);
   text-align: center;
+  z-index: 1000; /* Ensure footer stays above other content */
 }
 
 #time-calculator {
