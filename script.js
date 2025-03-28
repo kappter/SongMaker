@@ -25,6 +25,7 @@ const validTimeSignatures = ['4/4', '3/4', '6/8', '2/4', '5/4', '7/8', '12/8', '
 const tickSound = new Audio('tick.wav');
 const tockSound = new Audio('tock.wav');
 let activeSounds = [];
+let activeTimeManagers = []; // New array to track TimeManager instances
 
 class TimeManager {
   constructor(tempo, beatsPerMeasure, totalBeats, callback) {
@@ -201,8 +202,8 @@ function validateBlock(block) {
 
 function updateBlockSize(block) {
   const measures = parseInt(block.getAttribute('data-measures'));
-  const baseWidth = 120; // New base width for 4 measures (previously 200px)
-  const minWidth = 60; // New minimum width (previously 100px)
+  const baseWidth = 120; // Base width for 4 measures
+  const minWidth = 60; // Minimum width
   const width = Math.max(minWidth, (measures / 4) * baseWidth); // Scale width based on measures
   block.style.width = `${width}px`;
 }
@@ -455,6 +456,7 @@ function playLeadIn(timings, totalSeconds, totalBeats) {
     timeCalculator.textContent = `Current Time: ${formatDuration(currentTime)} / Total Duration: ${formatDuration(totalSeconds)} | Song Beat: ${currentBeat} of ${totalBeats} | Block: ${blockBeat} of 0 (Measure: ${blockMeasure} of 0)`;
   });
 
+  activeTimeManagers.push(timeManager); // Track the TimeManager instance
   timeManager.start();
 
   setTimeout(() => {
@@ -510,6 +512,7 @@ function playSong(timings, totalSeconds, totalBeats) {
       }
     );
 
+    activeTimeManagers.push(timeManager); // Track the TimeManager instance
     timeManager.start();
 
     setTimeout(() => {
@@ -539,24 +542,36 @@ function updateCurrentBlock(timing) {
 }
 
 function resetPlayback() {
+  // Stop all TimeManager instances
+  activeTimeManagers.forEach(manager => manager.stop());
+  activeTimeManagers = []; // Clear the array
+
+  // Stop all sounds
+  activeSounds.forEach(sound => {
+    sound.pause();
+    sound.currentTime = 0;
+  });
+  activeSounds = []; // Clear the array
+
+  // Reset all timing variables
   currentTime = 0;
   currentBeat = 0;
   blockBeat = 0;
   blockMeasure = 0;
   lastBeatTime = 0;
 
-  activeSounds.forEach(sound => {
-    sound.pause();
-    sound.currentTime = 0;
-  });
-  activeSounds = [];
+  // Reset playback state
+  isPlaying = false;
 
+  // Reset UI
   const previousBlock = timeline.querySelector('.playing');
   if (previousBlock) previousBlock.classList.remove('playing');
   currentBlockDisplay.classList.remove('pulse');
   currentBlockDisplay.style.animation = '';
   currentBlockDisplay.style.background = 'var(--form-bg)';
   currentBlockDisplay.innerHTML = '<span class="label">No block playing</span>';
+
+  // Update timings display
   calculateTimings();
 }
 
