@@ -215,4 +215,94 @@ button:hover, select:hover, .file-input-label:hover {
   transform: translateX(-50%);
   background: var(--tooltip-bg);
   color: var(--tooltip-text);
-  padding: 5px
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 0.8em;
+  white-space: nowrap;
+  display: none;
+  z-index: 10;
+}
+
+.song-block:hover .tooltip {
+  display: block;
+}
+
+.song-block .delete-btn {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: var(--delete-btn-bg);
+  color: var(--delete-btn-text);
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.8em;
+  z-index: 5;
+}
+
+.song-block .delete-btn:hover {
+  background: #ff7777;
+}
+
+/* Block style variations */
+.song-block.default { background: var(--block-bg); }
+.song-block.vibrant { background: linear-gradient(45deg, #ff6b6b, #feca57); color: #000; }
+.song-block.pastel { background: linear-gradient(45deg, #a0c4ff, #c4f5c7); color: #000; }
+.song-block.monochrome { background: linear-gradient(45deg, #666, #999); color: #fff; }
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.pulse {
+  animation: pulse 1s infinite;
+}
+
+/* Print styles */
+@media print {
+  body {
+    background: #fff;
+    color: #000;
+  }
+
+  header, .controls, .form-container, #current-block-display, #time-calculator {
+    display: none;
+  }
+
+  #timeline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .song-block {
+    overflow: visible;
+    break-inside: avoid;
+    flex: 0 0 auto;
+    width: 200px;
+    height: 100px;
+    background: #fff;
+    border: 1px solid #000;
+    color: #000;
+  }
+
+  .song-block .delete-btn,
+  .song-block .tooltip {
+    display: none;
+  }
+
+  h2#print-song-name {
+    display: block;
+    text-align: center;
+    color: #000;
+  }
+}
