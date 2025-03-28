@@ -99,24 +99,73 @@ function changeBlockStyle(style) {
 }
 
 function randomizeSong() {
-  const blocks = Array.from(timeline.children);
-  if (blocks.length === 0) {
-    alert("No blocks to randomize. Please load a song or add blocks to the timeline.");
-    return;
-  }
-
-  // Fisher-Yates shuffle
-  for (let i = blocks.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [blocks[i], blocks[j]] = [blocks[j], blocks[i]];
-  }
-
-  // Clear and re-append blocks in new order
+  // Clear the existing timeline
   timeline.innerHTML = '';
-  blocks.forEach(block => {
+  if (selectedBlock) clearSelection();
+
+  // Define possible values for block properties
+  const partTypes = [
+    'intro', 'verse', 'refrain', 'pre-chorus', 'chorus', 'post-chorus', 'bridge', 'outro',
+    'elision', 'solo', 'ad-lib', 'hook', 'interlude', 'breakdown', 'drop', 'coda',
+    'modulation', 'tag', 'chorus-reprise', 'countermelody', 'instrumental-verse-chorus', 'false-ending'
+  ];
+  const rootNotes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+  const modes = [
+    'Ionian', 'Dorian', 'Phrygian', 'Lydian', 'Mixolydian', 'Aeolian', 'Locrian',
+    'Harmonic Minor', 'Melodic Minor', 'Blues Scale', 'Pentatonic Major', 'Pentatonic Minor', 'Whole Tone'
+  ];
+  const feels = [
+    'Happiness', 'Sadness', 'Tension', 'Euphoria', 'Calmness', 'Anger', 'Mystical',
+    'Rebellion', 'Triumph', 'Bliss', 'Frustration', 'Atmospheric', 'Trippy', 'Awakening', 'Intense', 'Climactic'
+  ];
+  const possibleLyrics = [
+    '', // Sometimes no lyrics
+    'La la la, here we go again...',
+    'Feel the rhythm, let it flow...',
+    'Shadows dancing in the moonlight...',
+    'Break free, let your spirit soar...',
+    'Echoes of a forgotten dream...'
+  ];
+
+  // Generate a random number of blocks (between 5 and 15)
+  const numBlocks = Math.floor(Math.random() * (15 - 5 + 1)) + 5;
+
+  // Generate random blocks
+  for (let i = 0; i < numBlocks; i++) {
+    const type = partTypes[Math.floor(Math.random() * partTypes.length)];
+    const measures = Math.floor(Math.random() * (16 - 1 + 1)) + 1; // 1 to 16 measures
+    const rootNote = rootNotes[Math.floor(Math.random() * rootNotes.length)];
+    const mode = modes[Math.floor(Math.random() * modes.length)];
+    const tempo = Math.floor(Math.random() * (180 - 60 + 1)) + 60; // 60 to 180 BPM
+    const timeSignature = validTimeSignatures[Math.floor(Math.random() * validTimeSignatures.length)];
+    const feel = feels[Math.floor(Math.random() * feels.length)];
+    const lyrics = possibleLyrics[Math.floor(Math.random() * possibleLyrics.length)];
+
+    const blockData = { type, measures, rootNote, mode, tempo, timeSignature, feel, lyrics };
+    const error = validateBlock(blockData);
+    if (error) {
+      console.error(`Generated block failed validation: ${error}`);
+      continue; // Skip invalid blocks (though our random values should all be valid)
+    }
+
+    const block = document.createElement('div');
+    block.classList.add('song-block', type);
+    block.setAttribute('data-measures', measures);
+    block.setAttribute('data-tempo', tempo);
+    block.setAttribute('data-time-signature', timeSignature);
+    block.setAttribute('data-feel', feel);
+    block.setAttribute('data-lyrics', lyrics);
+    block.setAttribute('data-root-note', rootNote);
+    block.setAttribute('data-mode', mode);
+    block.innerHTML = `<span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote, mode)} ${mode} ${tempo}b ${feel}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span><span class="tooltip">${lyrics || 'No lyrics'}</span>`;
+    updateBlockSize(block);
     setupBlock(block);
     timeline.appendChild(block);
-  });
+
+    // Apply current style
+    const styleDropdown = document.getElementById('style-dropdown');
+    if (styleDropdown.value) block.classList.add(styleDropdown.value);
+  }
 
   calculateTimings();
 }
@@ -153,8 +202,7 @@ function validateBlock(block) {
 }
 
 function updateBlockSize(block) {
-  const measures = parseInt(block.getAttribute('data-measures'));
-  block.style.height = `${Math.max(100, measures * 10)}px`;
+  // No dynamic sizing needed; dimensions are fixed in CSS (width: 200px; height: 100px)
 }
 
 function setupBlock(block) {
@@ -212,6 +260,8 @@ function setupBlock(block) {
     calculateTimings();
   });
   block.appendChild(deleteBtn);
+
+  updateBlockSize(block); // Call updateBlockSize, though it’s empty in this version
 }
 
 function addBlock() {
@@ -725,16 +775,28 @@ function loadSongFromDropdown(filename) {
     } else if (filename === 'Echoes of Joy.json') {
       fetch(filename)
         .then(response => {
-          if (!response.ok) throw new Error('Failed to fetch Echoes of Joy file');
-          return response.json();
+          if (!response.ok) throw new Error(`Failed to fetch Echoes of Joy file: ${response.statusText}`);
+          return response.text(); // Get text first to debug parsing issues
         })
-        .then(data => {
+        .then(text => {
+          let data;
+          try {
+            data = JSON.parse(text);
+          } catch (e) {
+            throw new Error(`Invalid JSON format in Echoes of Joy.json: ${e.message}`);
+          }
           loadSongData(data);
           console.log(`Loaded JSON song: ${filename}`);
         })
         .catch(error => {
           console.error(`Failed to load Echoes of Joy: ${error.message}`);
           alert(`Failed to load song: ${error.message}`);
+          // Fallback: Load a different song to avoid a blank timeline
+          const fallbackSong = availableSongs.find(song => song !== 'Echoes of Joy.json');
+          if (fallbackSong) {
+            console.log(`Falling back to ${fallbackSong}`);
+            loadSongFromDropdown(fallbackSong);
+          }
         });
     } else {
       fetch(filename)
