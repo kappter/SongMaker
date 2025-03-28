@@ -7,6 +7,7 @@ const themeBtn = document.getElementById('theme-btn');
 const songDropdown = document.getElementById('song-dropdown');
 const toggleFormBtn = document.getElementById('toggle-form-btn');
 const formContent = document.getElementById('form-content');
+const printSongName = document.getElementById('print-song-name');
 let draggedBlock = null;
 let selectedBlock = null;
 let currentSongName = 'Echoes of Joy';
@@ -18,7 +19,7 @@ let blockMeasure = 0;
 let lastBeatTime = 0;
 let soundEnabled = true;
 let isDarkMode = true;
-let isFormCollapsed = true;
+let isFormCollapsed = false;
 
 const validTimeSignatures = ['4/4', '3/4', '6/8', '2/4', '5/4', '7/8', '12/8', '9/8', '11/8', '15/8', '13/8', '10/4', '8/8', '14/8', '16/8', '7/4'];
 const tickSound = new Audio('tick.wav');
@@ -98,9 +99,11 @@ function changeBlockStyle(style) {
 }
 
 function randomizeSong() {
+  // Clear the existing timeline
   timeline.innerHTML = '';
   if (selectedBlock) clearSelection();
 
+  // Define possible values for block properties
   const partTypes = [
     'intro', 'verse', 'refrain', 'pre-chorus', 'chorus', 'post-chorus', 'bridge', 'outro',
     'elision', 'solo', 'ad-lib', 'hook', 'interlude', 'breakdown', 'drop', 'coda',
@@ -116,7 +119,7 @@ function randomizeSong() {
     'Rebellion', 'Triumph', 'Bliss', 'Frustration', 'Atmospheric', 'Trippy', 'Awakening', 'Intense', 'Climactic'
   ];
   const possibleLyrics = [
-    '',
+    '', // Sometimes no lyrics
     'La la la, here we go again...',
     'Feel the rhythm, let it flow...',
     'Shadows dancing in the moonlight...',
@@ -124,14 +127,16 @@ function randomizeSong() {
     'Echoes of a forgotten dream...'
   ];
 
+  // Generate a random number of blocks (between 5 and 15)
   const numBlocks = Math.floor(Math.random() * (15 - 5 + 1)) + 5;
 
+  // Generate random blocks
   for (let i = 0; i < numBlocks; i++) {
     const type = partTypes[Math.floor(Math.random() * partTypes.length)];
-    const measures = Math.floor(Math.random() * (16 - 1 + 1)) + 1;
+    const measures = Math.floor(Math.random() * (16 - 1 + 1)) + 1; // 1 to 16 measures
     const rootNote = rootNotes[Math.floor(Math.random() * rootNotes.length)];
     const mode = modes[Math.floor(Math.random() * modes.length)];
-    const tempo = Math.floor(Math.random() * (180 - 60 + 1)) + 60;
+    const tempo = Math.floor(Math.random() * (180 - 60 + 1)) + 60; // 60 to 180 BPM
     const timeSignature = validTimeSignatures[Math.floor(Math.random() * validTimeSignatures.length)];
     const feel = feels[Math.floor(Math.random() * feels.length)];
     const lyrics = possibleLyrics[Math.floor(Math.random() * possibleLyrics.length)];
@@ -140,7 +145,7 @@ function randomizeSong() {
     const error = validateBlock(blockData);
     if (error) {
       console.error(`Generated block failed validation: ${error}`);
-      continue;
+      continue; // Skip invalid blocks (though our random values should all be valid)
     }
 
     const block = document.createElement('div');
@@ -157,6 +162,7 @@ function randomizeSong() {
     setupBlock(block);
     timeline.appendChild(block);
 
+    // Apply current style
     const styleDropdown = document.getElementById('style-dropdown');
     if (styleDropdown.value) block.classList.add(styleDropdown.value);
   }
@@ -167,6 +173,7 @@ function randomizeSong() {
 function updateTitle(name) {
   currentSongName = name;
   document.title = `${name} - SongMaker`;
+  printSongName.textContent = name;
 }
 
 function formatPart(part) {
@@ -195,7 +202,7 @@ function validateBlock(block) {
 }
 
 function updateBlockSize(block) {
-  // Dimensions are fixed in CSS (width: 200px; height: 120px)
+  // No dynamic sizing needed; dimensions are fixed in CSS (width: 200px; height: 100px)
 }
 
 function setupBlock(block) {
@@ -288,6 +295,7 @@ function addBlock() {
   setupBlock(block);
   timeline.appendChild(block);
 
+  // Apply current style
   const styleDropdown = document.getElementById('style-dropdown');
   if (styleDropdown.value) block.classList.add(styleDropdown.value);
 
@@ -338,6 +346,7 @@ function updateBlock() {
   });
   selectedBlock.appendChild(deleteBtn);
 
+  // Reapply style
   const styleDropdown = document.getElementById('style-dropdown');
   if (styleDropdown.value) selectedBlock.classList.add(styleDropdown.value);
 
@@ -422,7 +431,7 @@ function playLeadIn(timings, totalSeconds, totalBeats) {
   const beatDuration = 60 / firstBlock.tempo;
   const leadInBeats = 4;
 
-  currentBlockDisplay.style.backgroundColor = '#5a6268';
+  currentBlockDisplay.style.backgroundColor = '#3b4048';
   currentBlockDisplay.innerHTML = `
     <span class="label">Lead-In</span>
     <span class="info">Beat: 0 of ${leadInBeats}</span>
@@ -767,7 +776,7 @@ function loadSongFromDropdown(filename) {
       fetch(filename)
         .then(response => {
           if (!response.ok) throw new Error(`Failed to fetch Echoes of Joy file: ${response.statusText}`);
-          return response.text();
+          return response.text(); // Get text first to debug parsing issues
         })
         .then(text => {
           let data;
@@ -782,6 +791,7 @@ function loadSongFromDropdown(filename) {
         .catch(error => {
           console.error(`Failed to load Echoes of Joy: ${error.message}`);
           alert(`Failed to load song: ${error.message}`);
+          // Fallback: Load a different song to avoid a blank timeline
           const fallbackSong = availableSongs.find(song => song !== 'Echoes of Joy.json');
           if (fallbackSong) {
             console.log(`Falling back to ${fallbackSong}`);
@@ -823,7 +833,6 @@ function populateSongDropdown() {
   availableSongs.forEach(song => {
     const option = document.createElement('option');
     option.value = song;
-    // Display the song name without the file extension
     option.textContent = song.replace('.json', '').replace('.js', '');
     songDropdown.appendChild(option);
   });
@@ -833,8 +842,10 @@ function printSong() {
   window.print();
 }
 
+// Initialize the dropdown and load a random song on page load
 populateSongDropdown();
 
+// Load a random song on page load
 const availableSongs = [
   'Echoes of Joy.json',
   'pneuma.js',
