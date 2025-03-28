@@ -400,7 +400,7 @@ function calculateTimings() {
     };
   });
 
-  timeCalculator.textContent = `Current Time: ${formatDuration(currentTime)} / Total Duration: ${formatDuration(totalSeconds)} | Song Beat: ${currentBeat} of ${totalBeats} | Block: ${blockBeat} of ${timings.length} (Measure: ${blockMeasure} of ${totalMeasures})`;
+  timeCalculator.textContent = `Current Time: ${formatDuration(currentTime)} / Total Duration: ${formatDuration(totalSeconds)} | Song Beat: ${currentBeat} of ${totalBeats} | Block: ${blockBeat} of ${totalBeats} (Measure: ${blockMeasure} of ${totalMeasures})`;
   return { timings, totalSeconds, totalBeats };
 }
 
@@ -508,7 +508,7 @@ function playSong(timings, totalSeconds, totalBeats) {
           <span class="info">Beat: ${blockBeat} of ${currentTiming.totalBeats} | Measure: ${blockMeasure} of ${currentTiming.totalMeasures} | Block: ${blockNum} of ${totalBlocks}</span>
         `;
 
-        timeCalculator.textContent = `Current Time: ${formatDuration(currentTime)} / Total Duration: ${formatDuration(totalSeconds)} | Song Beat: ${currentBeat} of ${totalBeats} | Block: ${blockNum} of ${totalBlocks} (Measure: ${blockMeasure} of ${currentTiming.totalMeasures})`;
+        timeCalculator.textContent = `Current Time: ${formatDuration(currentTime)} / Total Duration: ${formatDuration(totalSeconds)} | Song Beat: ${currentBeat} of ${totalBeats} | Block: ${blockBeat} of ${currentTiming.totalBeats} (Measure: ${blockMeasure} of ${currentTiming.totalMeasures})`;
       }
     );
 
@@ -561,12 +561,8 @@ function resetPlayback() {
 
   const previousBlock = timeline.querySelector('.playing');
   if (previousBlock) previousBlock.classList.remove('playing');
-
-  // Fully reset the animation state
   currentBlockDisplay.classList.remove('pulse');
-  currentBlockDisplay.style.animation = 'none'; // Use 'none' instead of empty string for clarity
-  // Force a reflow to ensure the animation is fully cleared
-  void currentBlockDisplay.offsetHeight; // Accessing offsetHeight triggers a reflow
+  currentBlockDisplay.style.animation = '';
   currentBlockDisplay.style.background = 'var(--form-bg)';
   currentBlockDisplay.innerHTML = '<span class="label">No block playing</span>';
 
