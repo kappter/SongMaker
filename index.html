@@ -3,28 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Echoes of Joy - SongMaker</title>
+  <title>SongMaker</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body data-theme="dark">
   <header>
-    <h1>SongMaker</h1>
-    <h2 id="print-song-name">Echoes of Joy</h2>
+    <h1>SONGMAKER</h1>
   </header>
 
   <div class="controls">
     <button id="play-btn" onclick="togglePlay()">Play</button>
     <button id="sound-btn" onclick="toggleSound()">Sound On</button>
-    <button id="theme-btn" onclick="toggleTheme()">Light Mode</button>
-    <button onclick="randomizeSong()">Randomize</button>
-    <button onclick="exportSong()">Export</button>
+    <button onclick="exportSong()">Export Song</button>
     <label class="file-input-label">
-      Import
+      Choose File
       <input type="file" accept=".json" onchange="importSong(event)">
     </label>
-    <button onclick="printSong()">Print</button>
     <select id="style-dropdown" onchange="changeBlockStyle(this.value)">
-      <option value="">Select Style</option>
+      <option value="">Select Block Style</option>
       <option value="default">Default</option>
       <option value="vibrant">Vibrant</option>
       <option value="pastel">Pastel</option>
@@ -33,6 +29,10 @@
     <select id="song-dropdown" onchange="loadSongFromDropdown(this.value)">
       <option value="">Select Song</option>
     </select>
+    <button onclick="randomizeSong()">Randomize</button>
+    <button id="toggle-form-btn" onclick="toggleForm()">Show Parameters</button>
+    <button onclick="printSong()">Print</button>
+    <button id="theme-btn" onclick="toggleTheme()">Light Mode</button>
   </div>
 
   <div id="current-block-display">
@@ -44,8 +44,7 @@
   </div>
 
   <div class="form-container">
-    <button id="toggle-form-btn" onclick="toggleForm()">Hide Parameters</button>
-    <div id="form-content">
+    <div id="form-content" class="collapsed">
       <label>Type:
         <select id="part-type">
           <option value="intro">Intro</option>
