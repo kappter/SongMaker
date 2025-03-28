@@ -19,7 +19,7 @@ let blockMeasure = 0;
 let lastBeatTime = 0;
 let soundEnabled = true;
 let isDarkMode = true;
-let isFormCollapsed = true; // Changed to true to collapse form by default
+let isFormCollapsed = true;
 
 const validTimeSignatures = ['4/4', '3/4', '6/8', '2/4', '5/4', '7/8', '12/8', '9/8', '11/8', '15/8', '13/8', '10/4', '8/8', '14/8', '16/8', '7/4'];
 const tickSound = new Audio('tick.wav');
@@ -202,7 +202,11 @@ function validateBlock(block) {
 }
 
 function updateBlockSize(block) {
-  // No dynamic sizing needed; dimensions are fixed in CSS (width: 200px; height: 100px)
+  const measures = parseInt(block.getAttribute('data-measures'));
+  const baseWidth = 200; // Base width for 4 measures
+  const minWidth = 100; // Minimum width to ensure usability
+  const width = Math.max(minWidth, (measures / 4) * baseWidth); // Scale width based on measures
+  block.style.width = `${width}px`;
 }
 
 function setupBlock(block) {
