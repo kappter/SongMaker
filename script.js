@@ -10,7 +10,7 @@ const formContent = document.getElementById('form-content');
 const printSongName = document.getElementById('print-song-name');
 let draggedBlock = null;
 let selectedBlock = null;
-let currentSongName = 'Echoes of Joy';
+let currentSongName = '(I Can’t Get No) Satisfaction';
 let isPlaying = false;
 let currentTime = 0;
 let currentBeat = 0;
@@ -892,7 +892,7 @@ function loadSongFromDropdown(filename) {
 
 function populateSongDropdown() {
   const availableSongs = [
-    'new-song', // Add "New Song" option
+    'new-song',
     'Echoes of Joy.json',
     'pneuma.js',
     'satisfaction.js',
@@ -913,18 +913,6 @@ function printSong() {
   window.print();
 }
 
-// Initialize the dropdown and load a random song on page load
+// Initialize the dropdown and load the "satisfaction" song on page load
 populateSongDropdown();
-
-const availableSongs = [
-  'new-song', // Add "New Song" option
-  'Echoes of Joy.json',
-  'pneuma.js',
-  'satisfaction.js',
-  'dirtyLaundry.js',
-  'invincible.js',
-  'astroworld.js',
-  'astrothunder.js'
-];
-const randomSong = availableSongs[Math.floor(Math.random() * availableSongs.length)];
-loadSongFromDropdown(randomSong);
+loadSongFromDropdown('satisfaction.js');
