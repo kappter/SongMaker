@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Echoes of Joy - TuneTetris</title>
+  <title>(I Can’t Get No) Satisfaction - TuneTetris</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body data-theme="dark">
   <header>
     <h1>TuneTetris</h1>
-    <h2 id="print-song-name">Echoes of Joy</h2>
+    <h2 id="print-song-name">(I Can’t Get No) Satisfaction</h2>
   </header>
 
   <div id="current-block-display">
@@ -24,9 +24,13 @@
 
   <div id="controls">
     <button id="play-btn">Play</button>
-    <button id="sound-btn">Sound On</button>
+    <button id="sound-btn">Sound Off</button>
     <button id="theme-btn">Light Mode</button>
-    <button id="toggle-form-btn">Show Parameters</button>
+    <button onclick="randomizeSong()">Randomize</button>
+    <button onclick="exportSong()">Export</button>
+    <input type="file" id="import-song" accept=".json" onchange="importSong(event)" style="display: none;">
+    <label for="import-song" class="custom-file-upload">Import</label>
+    <button onclick="printSong()">Print</button>
     <select id="style-dropdown" onchange="changeBlockStyle(this.value)">
       <option value="">Select Style</option>
       <option value="default">Default</option>
@@ -37,16 +41,13 @@
     <select id="song-dropdown" onchange="loadSongFromDropdown(this.value)">
       <option value="">Select Song</option>
     </select>
-    <button onclick="randomizeSong()">Randomize Song</button>
-    <button onclick="printSong()">Print Song</button>
-    <input type="file" id="import-song" accept=".json" onchange="importSong(event)" style="display: none;">
-    <label for="import-song" class="custom-file-upload">Import Song</label>
-    <button onclick="exportSong()">Export Song</button>
   </div>
+
+  <button id="toggle-form-btn">Show Parameters</button>
 
   <div id="form-content" class="collapsed">
     <label for="song-name">Song Name:</label>
-    <input type="text" id="song-name" value="Echoes of Joy" oninput="updateTitle(this.value)">
+    <input type="text" id="song-name" value="(I Can’t Get No) Satisfaction" oninput="updateTitle(this.value)">
     <label for="part-type">Part Type:</label>
     <select id="part-type">
       <option value="intro">Intro</option>
