@@ -203,7 +203,7 @@ function validateBlock(block) {
 function updateBlockSize(block) {
   const measures = parseInt(block.getAttribute('data-measures'));
   const baseWidth = 120; // Base width for 4 measures
-  const minWidth = 60; // Minimum width
+  const minWidth = 120; // Minimum width
   const width = Math.max(minWidth, (measures / 4) * baseWidth); // Scale width based on measures
   block.style.width = `${width}px`;
 }
