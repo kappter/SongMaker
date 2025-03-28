@@ -285,3 +285,100 @@ footer {
   background: var(--highlight);
   color: white;
 }
+
+/* Print-specific styles */
+@media print {
+  /* Hide elements that shouldn't be printed */
+  header, #current-block-display, footer, #controls, #form-content, .delete-btn, .custom-file-upload {
+    display: none !important;
+  }
+
+  /* Show print-only elements */
+  .print-only {
+    display: block !important;
+  }
+
+  /* Reset body styles for print */
+  body {
+    background: white;
+    color: black;
+    margin: 0;
+    padding: 1in;
+    display: block;
+  }
+
+  /* Print Title */
+  #print-title {
+    text-align: center;
+    margin-bottom: 1in;
+  }
+
+  #print-title h1 {
+    font-size: 2.5em;
+    margin: 0;
+    color: black;
+  }
+
+  #print-title h2 {
+    font-size: 1.5em;
+    margin: 0.5em 0 0;
+    font-weight: normal;
+    color: #333;
+  }
+
+  /* Timeline and Blocks */
+  #timeline {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    overflow-x: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .song-block {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin-bottom: 0.5in !important;
+    padding: 15px !important;
+    border: 2px solid #333 !important;
+    background: white !important;
+    color: black !important;
+    filter: none !important;
+    box-sizing: border-box;
+    page-break-inside: avoid; /* Prevent blocks from breaking across pages */
+  }
+
+  .song-block .label {
+    font-size: 1.2em !important;
+    line-height: 1.5;
+  }
+
+  .song-block .tooltip {
+    display: none !important;
+  }
+
+  /* Print Footer */
+  #print-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 0.9em;
+    color: #666;
+    padding: 10px 0;
+    border-top: 1px solid #ccc;
+  }
+
+  /* Ensure proper page breaks */
+  @page {
+    margin: 1in;
+  }
+}
+
+/* Hide print-only elements on screen */
+.print-only {
+  display: none;
+}
