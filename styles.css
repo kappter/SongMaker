@@ -1,13 +1,15 @@
 :root {
   --background: #1e2525;
   --text-color: #e0e0e0;
-  --form-bg: #2c3434;
-  --border-color: #4a5555;
-  --block-bg: #3b4048;
+  --form-bg: #5a6268; /* Lighter than before */
+  --border-color: #6b7378; /* Lighter border */
+  --block-bg: #5a6268; /* Lighter block background */
   --delete-btn-bg: #ff5555;
   --delete-btn-text: #ffffff;
   --tooltip-bg: #555;
   --tooltip-text: #fff;
+  --button-bg: #ff5555; /* Pinkish-red buttons */
+  --button-hover-bg: #ff7777;
 }
 
 [data-theme="light"] {
@@ -20,6 +22,8 @@
   --delete-btn-text: #ffffff;
   --tooltip-bg: #333;
   --tooltip-text: #fff;
+  --button-bg: #ff3333;
+  --button-hover-bg: #ff5555;
 }
 
 body {
@@ -35,13 +39,9 @@ header {
   padding: 20px;
 }
 
-h1, h2 {
+h1 {
   margin: 0;
-}
-
-h2 {
-  font-size: 1.2em;
-  color: #bbb;
+  text-transform: uppercase; /* SONGMAKER in uppercase */
 }
 
 .controls {
@@ -54,7 +54,7 @@ h2 {
 
 button, select, .file-input-label {
   padding: 8px 16px;
-  background: var(--form-bg);
+  background: var(--button-bg); /* Pinkish-red buttons */
   color: var(--text-color);
   border: 1px solid var(--border-color);
   border-radius: 4px;
@@ -63,7 +63,7 @@ button, select, .file-input-label {
 }
 
 button:hover, select:hover, .file-input-label:hover {
-  background: #4a5555;
+  background: var(--button-hover-bg); /* Lighter pink on hover */
 }
 
 .file-input-label {
@@ -103,6 +103,10 @@ button:hover, select:hover, .file-input-label:hover {
   padding: 10px;
   font-size: 0.9em;
   color: #bbb;
+  background: var(--form-bg);
+  border-radius: 4px;
+  margin: 10px auto;
+  max-width: 600px;
 }
 
 .form-container {
@@ -154,17 +158,15 @@ button:hover, select:hover, .file-input-label:hover {
   flex: 0 0 auto;
 }
 
-/* Timeline layout: Restore Flexbox with wrapping */
+/* Timeline layout */
 #timeline {
   display: flex;
   flex-wrap: wrap;
   gap: 20px;
   padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
 }
 
-/* Song block styles: Restore fixed dimensions */
+/* Song block styles */
 .song-block {
   position: relative;
   border: 2px solid var(--border-color);
@@ -175,7 +177,7 @@ button:hover, select:hover, .file-input-label:hover {
   cursor: move;
   transition: transform 0.2s, border-color 0.3s;
   width: 200px;
-  height: 100px;
+  height: 120px; /* Updated to match screenshot */
   flex: 0 0 auto;
   box-sizing: border-box;
   display: flex;
@@ -200,7 +202,7 @@ button:hover, select:hover, .file-input-label:hover {
 /* Block styles */
 .song-block .label {
   display: block;
-  font-size: 0.85em;
+  font-size: 0.9em; /* Slightly larger font size */
   line-height: 1.1;
   text-align: center;
   white-space: pre-wrap;
@@ -280,8 +282,6 @@ button:hover, select:hover, .file-input-label:hover {
     display: flex;
     flex-wrap: wrap;
     gap: 20px;
-    max-width: 1200px;
-    margin: 0 auto;
   }
 
   .song-block {
@@ -289,7 +289,7 @@ button:hover, select:hover, .file-input-label:hover {
     break-inside: avoid;
     flex: 0 0 auto;
     width: 200px;
-    height: 100px;
+    height: 120px;
     background: #fff;
     border: 1px solid #000;
     color: #000;
@@ -298,11 +298,5 @@ button:hover, select:hover, .file-input-label:hover {
   .song-block .delete-btn,
   .song-block .tooltip {
     display: none;
-  }
-
-  h2#print-song-name {
-    display: block;
-    text-align: center;
-    color: #000;
   }
 }
