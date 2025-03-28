@@ -27,10 +27,6 @@ const tockSound = new Audio('tock.wav');
 let activeSounds = [];
 let activeTimeManagers = [];
 
-// Add error handling for audio loading
-tickSound.onerror = () => console.error("Failed to load tick.wav");
-tockSound.onerror = () => console.error("Failed to load tock.wav");
-
 class TimeManager {
   constructor(tempo, beatsPerMeasure, totalBeats, callback) {
     this.tempo = tempo;
@@ -449,7 +445,7 @@ function playLeadIn(timings, totalSeconds, totalBeats) {
   const timeManager = new TimeManager(firstBlock.tempo, 4, leadInBeats - 1, ({ elapsedTime, beat, isFirstBeat }) => {
     if (soundEnabled) {
       const sound = (isFirstBeat && beat === 0 ? tockSound : tickSound).cloneNode();
-      sound.play().catch(err => console.error("Error playing sound during lead-in:", err));
+      sound.play();
       activeSounds.push(sound);
     }
     currentBlockDisplay.innerHTML = `
@@ -485,13 +481,6 @@ function playSong(timings, totalSeconds, totalBeats) {
     const blockDuration = currentTiming.duration;
     const totalBlockBeats = currentTiming.totalBeats;
 
-    // Stop any existing sounds before starting the new block
-    activeSounds.forEach(sound => {
-      sound.pause();
-      sound.currentTime = 0;
-    });
-    activeSounds = [];
-
     const timeManager = new TimeManager(
       currentTiming.tempo,
       currentTiming.beatsPerMeasure,
@@ -502,11 +491,11 @@ function playSong(timings, totalSeconds, totalBeats) {
         currentTime = blockStartTime + elapsedTime;
         currentBeat = Math.floor(currentTime * beatsPerSecond);
 
-        // Simplified sound playback: play on every beat
-        if (soundEnabled) {
+        if (soundEnabled && (beat === 0 || elapsedTime - (lastBeatTime - blockStartTime) >= 1 / beatsPerSecond)) {
           const sound = (isFirstBeat ? tockSound : tickSound).cloneNode();
-          sound.play().catch(err => console.error("Error playing sound:", err));
+          sound.play();
           activeSounds.push(sound);
+          lastBeatTime = blockStartTime + elapsedTime;
         }
 
         const totalBlocks = timings.length;
@@ -572,8 +561,12 @@ function resetPlayback() {
 
   const previousBlock = timeline.querySelector('.playing');
   if (previousBlock) previousBlock.classList.remove('playing');
+
+  // Fully reset the animation state
   currentBlockDisplay.classList.remove('pulse');
-  currentBlockDisplay.style.animation = '';
+  currentBlockDisplay.style.animation = 'none'; // Use 'none' instead of empty string for clarity
+  // Force a reflow to ensure the animation is fully cleared
+  void currentBlockDisplay.offsetHeight; // Accessing offsetHeight triggers a reflow
   currentBlockDisplay.style.background = 'var(--form-bg)';
   currentBlockDisplay.innerHTML = '<span class="label">No block playing</span>';
 
