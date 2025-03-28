@@ -558,23 +558,29 @@ function updateCurrentBlock(timing) {
 }
 
 function resetPlayback() {
+  // Stop all time managers
   activeTimeManagers.forEach(manager => manager.stop());
   activeTimeManagers = [];
 
+  // Stop all sounds
   activeSounds.forEach(sound => {
     sound.pause();
     sound.currentTime = 0;
   });
   activeSounds = [];
 
+  // Reset all counters
   currentTime = 0;
   currentBeat = 0;
   blockBeat = 0;
   blockMeasure = 0;
   lastBeatTime = 0;
 
+  // Reset playback state
   isPlaying = false;
+  playBtn.textContent = 'Play'; // Ensure the button text is reset
 
+  // Clear playing block and animation
   const previousBlock = timeline.querySelector('.playing');
   if (previousBlock) previousBlock.classList.remove('playing');
   currentBlockDisplay.classList.remove('pulse');
@@ -583,6 +589,7 @@ function resetPlayback() {
   currentBlockDisplay.style.background = 'var(--form-bg)';
   currentBlockDisplay.innerHTML = '<span class="label">No block playing</span>';
 
+  // Update the footer
   calculateTimings();
 }
 
@@ -678,6 +685,42 @@ function loadSongFromDropdown(filename) {
     console.log("No filename selected");
     return;
   }
+
+  // Handle "New Song" option
+  if (filename === 'new-song') {
+    // Stop playback if active
+    if (isPlaying) {
+      isPlaying = false;
+      playBtn.textContent = 'Play';
+      resetPlayback();
+    }
+
+    // Clear the timeline
+    timeline.innerHTML = '';
+
+    // Clear any selected block
+    if (selectedBlock) clearSelection();
+
+    // Expand the form
+    isFormCollapsed = false;
+    formContent.classList.remove('collapsed');
+    toggleFormBtn.textContent = 'Hide Parameters';
+
+    // Reset the song name to a default value
+    currentSongName = 'New Song';
+    document.getElementById('song-name').value = currentSongName;
+    updateTitle(currentSongName);
+
+    // Update timings to reflect the empty timeline
+    calculateTimings();
+
+    // Reset the style dropdown
+    const styleDropdown = document.getElementById('style-dropdown');
+    styleDropdown.value = '';
+
+    return;
+  }
+
   console.log(`Attempting to load: ${filename}`);
   try {
     if (filename === 'pneuma.js') {
@@ -849,6 +892,7 @@ function loadSongFromDropdown(filename) {
 
 function populateSongDropdown() {
   const availableSongs = [
+    'new-song', // Add "New Song" option
     'Echoes of Joy.json',
     'pneuma.js',
     'satisfaction.js',
@@ -860,7 +904,7 @@ function populateSongDropdown() {
   availableSongs.forEach(song => {
     const option = document.createElement('option');
     option.value = song;
-    option.textContent = song.replace('.json', '').replace('.js', '');
+    option.textContent = song === 'new-song' ? 'New Song' : song.replace('.json', '').replace('.js', '');
     songDropdown.appendChild(option);
   });
 }
@@ -873,6 +917,7 @@ function printSong() {
 populateSongDropdown();
 
 const availableSongs = [
+  'new-song', // Add "New Song" option
   'Echoes of Joy.json',
   'pneuma.js',
   'satisfaction.js',
