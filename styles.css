@@ -289,19 +289,25 @@ footer {
 /* Print-specific styles */
 @media print {
   /* Hide elements that shouldn't be printed */
-  header, #current-block-display, footer, #controls, #form-content, .delete-btn, .custom-file-upload {
-    display: none !important;
+  header,
+  #current-block-display,
+  footer,
+  #controls,
+  #form-content,
+  .delete-btn,
+  .custom-file-upload {
+    display: none;
   }
 
   /* Show print-only elements */
   .print-only {
-    display: block !important;
+    display: block;
   }
 
   /* Reset body styles for print */
   body {
-    background: white !important;
-    color: black !important;
+    background: white;
+    color: black;
     margin: 0;
     padding: 1in;
     display: block;
@@ -328,35 +334,35 @@ footer {
 
   /* Timeline and Blocks */
   #timeline {
-    display: block !important;
-    width: 100% !important;
-    max-width: none !important;
-    overflow-x: visible !important;
-    margin: 0 !important;
-    padding: 0 !important;
+    display: block;
+    width: 100%;
+    max-width: none;
+    overflow-x: visible;
+    margin: 0;
+    padding: 0;
   }
 
   .song-block {
-    display: block !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    margin-bottom: 0.5in !important;
-    padding: 15px !important;
-    border: 2px solid #333 !important;
-    background: white !important;
-    color: black !important;
-    filter: none !important;
+    display: block;
+    width: 100%;
+    min-width: 0;
+    margin-bottom: 0.5in;
+    padding: 15px;
+    border: 2px solid #333;
+    background: white;
+    color: black;
+    filter: none;
     box-sizing: border-box;
     page-break-inside: avoid; /* Prevent blocks from breaking across pages */
   }
 
   .song-block .label {
-    font-size: 1.2em !important;
+    font-size: 1.2em;
     line-height: 1.5;
   }
 
   .song-block .tooltip {
-    display: none !important;
+    display: none;
   }
 
   /* Print Footer */
