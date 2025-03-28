@@ -17,6 +17,7 @@ let currentBeat = 0;
 let blockBeat = 0;
 let blockMeasure = 0;
 let lastBeatTime = 0;
+let lastSoundTime = 0; // New variable to track the last time a sound was played
 let soundEnabled = true;
 let isDarkMode = true;
 let isFormCollapsed = true;
@@ -26,6 +27,8 @@ const tickSound = new Audio('tick.wav');
 const tockSound = new Audio('tock.wav');
 let activeSounds = [];
 let activeTimeManagers = [];
+
+const MIN_SOUND_INTERVAL = 0.2; // Minimum interval between sounds in seconds (adjust based on tick.wav/tock.wav duration)
 
 class TimeManager {
   constructor(tempo, beatsPerMeasure, totalBeats, callback) {
@@ -173,10 +176,8 @@ function randomizeSong() {
 
 function updateTitle(name) {
   currentSongName = name;
-  document.title = `${name} - TuneTetris`;
+  document.title = `${name} - TuneTetris`; // Updated app name
   printSongName.textContent = name;
-  // Update the print title as well
-  document.getElementById('print-song-title').textContent = name;
 }
 
 function formatPart(part) {
@@ -427,6 +428,7 @@ function togglePlay() {
     blockBeat = 0;
     blockMeasure = 0;
     lastBeatTime = 0;
+    lastSoundTime = 0; // Reset lastSoundTime when starting playback
     playLeadIn(timings, totalSeconds, totalBeats);
   }
 }
@@ -445,10 +447,12 @@ function playLeadIn(timings, totalSeconds, totalBeats) {
   currentBlockDisplay.style.animation = `pulse ${beatDuration}s infinite`;
 
   const timeManager = new TimeManager(firstBlock.tempo, 4, leadInBeats - 1, ({ elapsedTime, beat, isFirstBeat }) => {
-    if (soundEnabled) {
+    const currentTime = performance.now() / 1000;
+    if (soundEnabled && (currentTime - lastSoundTime) >= MIN_SOUND_INTERVAL) {
       const sound = (isFirstBeat && beat === 0 ? tockSound : tickSound).cloneNode();
       sound.play();
       activeSounds.push(sound);
+      lastSoundTime = currentTime; // Update lastSoundTime
     }
     currentBlockDisplay.innerHTML = `
       <span class="label">Lead-In</span>
@@ -493,10 +497,12 @@ function playSong(timings, totalSeconds, totalBeats) {
         currentTime = blockStartTime + elapsedTime;
         currentBeat = Math.floor(currentTime * beatsPerSecond);
 
-        if (soundEnabled && (beat === 0 || elapsedTime - (lastBeatTime - blockStartTime) >= 1 / beatsPerSecond)) {
+        const currentTimeNow = performance.now() / 1000;
+        if (soundEnabled && (currentTimeNow - lastSoundTime) >= MIN_SOUND_INTERVAL) {
           const sound = (isFirstBeat ? tockSound : tickSound).cloneNode();
           sound.play();
           activeSounds.push(sound);
+          lastSoundTime = currentTimeNow; // Update lastSoundTime
           lastBeatTime = blockStartTime + elapsedTime;
         }
 
@@ -558,17 +564,15 @@ function resetPlayback() {
   blockBeat = 0;
   blockMeasure = 0;
   lastBeatTime = 0;
+  lastSoundTime = 0; // Reset lastSoundTime
 
   isPlaying = false;
 
   const previousBlock = timeline.querySelector('.playing');
   if (previousBlock) previousBlock.classList.remove('playing');
-
-  // Fully reset the animation state
   currentBlockDisplay.classList.remove('pulse');
-  currentBlockDisplay.style.animation = 'none'; // Use 'none' instead of empty string for clarity
-  // Force a reflow to ensure the animation is fully cleared
-  void currentBlockDisplay.offsetHeight; // Accessing offsetHeight triggers a reflow
+  currentBlockDisplay.style.animation = 'none';
+  void currentBlockDisplay.offsetHeight; // Force a reflow to ensure the animation is fully cleared
   currentBlockDisplay.style.background = 'var(--form-bg)';
   currentBlockDisplay.innerHTML = '<span class="label">No block playing</span>';
 
