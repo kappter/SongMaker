@@ -25,7 +25,7 @@ const validTimeSignatures = ['4/4', '3/4', '6/8', '2/4', '5/4', '7/8', '12/8', '
 const tickSound = new Audio('tick.wav');
 const tockSound = new Audio('tock.wav');
 let activeSounds = [];
-let activeTimeManagers = []; // New array to track TimeManager instances
+let activeTimeManagers = [];
 
 class TimeManager {
   constructor(tempo, beatsPerMeasure, totalBeats, callback) {
@@ -173,7 +173,7 @@ function randomizeSong() {
 
 function updateTitle(name) {
   currentSongName = name;
-  document.title = `${name} - SongMaker`;
+  document.title = `${name} - TuneTetris`; // Updated app name
   printSongName.textContent = name;
 }
 
@@ -203,7 +203,7 @@ function validateBlock(block) {
 function updateBlockSize(block) {
   const measures = parseInt(block.getAttribute('data-measures'));
   const baseWidth = 120; // Base width for 4 measures
-  const minWidth = 120; // Minimum width
+  const minWidth = 120; // Updated minimum width to match 4 measures
   const width = Math.max(minWidth, (measures / 4) * baseWidth); // Scale width based on measures
   block.style.width = `${width}px`;
 }
@@ -400,7 +400,7 @@ function calculateTimings() {
     };
   });
 
-  timeCalculator.textContent = `Current Time: ${formatDuration(currentTime)} / Total Duration: ${formatDuration(totalSeconds)} | Song Beat: ${currentBeat} of ${totalBeats} | Block: ${blockBeat} of ${totalBeats} (Measure: ${blockMeasure} of ${totalMeasures})`;
+  timeCalculator.textContent = `Current Time: ${formatDuration(currentTime)} / Total Duration: ${formatDuration(totalSeconds)} | Song Beat: ${currentBeat} of ${totalBeats} | Block: ${blockBeat} of ${timings.length} (Measure: ${blockMeasure} of ${totalMeasures})`;
   return { timings, totalSeconds, totalBeats };
 }
 
@@ -456,7 +456,7 @@ function playLeadIn(timings, totalSeconds, totalBeats) {
     timeCalculator.textContent = `Current Time: ${formatDuration(currentTime)} / Total Duration: ${formatDuration(totalSeconds)} | Song Beat: ${currentBeat} of ${totalBeats} | Block: ${blockBeat} of 0 (Measure: ${blockMeasure} of 0)`;
   });
 
-  activeTimeManagers.push(timeManager); // Track the TimeManager instance
+  activeTimeManagers.push(timeManager);
   timeManager.start();
 
   setTimeout(() => {
@@ -508,11 +508,12 @@ function playSong(timings, totalSeconds, totalBeats) {
           <span class="info">Beat: ${blockBeat} of ${currentTiming.totalBeats} | Measure: ${blockMeasure} of ${currentTiming.totalMeasures} | Block: ${blockNum} of ${totalBlocks}</span>
         `;
 
-        timeCalculator.textContent = `Current Time: ${formatDuration(currentTime)} / Total Duration: ${formatDuration(totalSeconds)} | Song Beat: ${currentBeat} of ${totalBeats} | Block: ${blockBeat} of ${currentTiming.totalBeats} (Measure: ${blockMeasure} of ${currentTiming.totalMeasures})`;
+        // Updated: Use blockNum and totalBlocks for the block counter in the footer
+        timeCalculator.textContent = `Current Time: ${formatDuration(currentTime)} / Total Duration: ${formatDuration(totalSeconds)} | Song Beat: ${currentBeat} of ${totalBeats} | Block: ${blockNum} of ${totalBlocks} (Measure: ${blockMeasure} of ${currentTiming.totalMeasures})`;
       }
     );
 
-    activeTimeManagers.push(timeManager); // Track the TimeManager instance
+    activeTimeManagers.push(timeManager);
     timeManager.start();
 
     setTimeout(() => {
@@ -542,28 +543,23 @@ function updateCurrentBlock(timing) {
 }
 
 function resetPlayback() {
-  // Stop all TimeManager instances
   activeTimeManagers.forEach(manager => manager.stop());
-  activeTimeManagers = []; // Clear the array
+  activeTimeManagers = [];
 
-  // Stop all sounds
   activeSounds.forEach(sound => {
     sound.pause();
     sound.currentTime = 0;
   });
-  activeSounds = []; // Clear the array
+  activeSounds = [];
 
-  // Reset all timing variables
   currentTime = 0;
   currentBeat = 0;
   blockBeat = 0;
   blockMeasure = 0;
   lastBeatTime = 0;
 
-  // Reset playback state
   isPlaying = false;
 
-  // Reset UI
   const previousBlock = timeline.querySelector('.playing');
   if (previousBlock) previousBlock.classList.remove('playing');
   currentBlockDisplay.classList.remove('pulse');
@@ -571,7 +567,6 @@ function resetPlayback() {
   currentBlockDisplay.style.background = 'var(--form-bg)';
   currentBlockDisplay.innerHTML = '<span class="label">No block playing</span>';
 
-  // Update timings display
   calculateTimings();
 }
 
