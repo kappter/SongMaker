@@ -173,8 +173,10 @@ function randomizeSong() {
 
 function updateTitle(name) {
   currentSongName = name;
-  document.title = `${name} - TuneTetris`; // Updated app name
+  document.title = `${name} - TuneTetris`;
   printSongName.textContent = name;
+  // Update the print title as well
+  document.getElementById('print-song-title').textContent = name;
 }
 
 function formatPart(part) {
