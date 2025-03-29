@@ -697,48 +697,38 @@ function loadSongData(songData) {
   calculateTimings();
 }
 
-// ... (other existing code remains unchanged) ...
-
 function loadSongFromDropdown(filename) {
   if (!filename) {
     console.log("No filename selected");
     return;
   }
 
-  // Handle "New Song" option
   if (filename === 'new-song') {
-    // Stop any ongoing playback
     if (isPlaying) {
       isPlaying = false;
       playBtn.textContent = 'Play';
       resetPlayback();
     }
 
-    // Clear the timeline
     timeline.innerHTML = '';
     if (selectedBlock) clearSelection();
 
-    // Open the parameters form
     isFormCollapsed = false;
     formContent.classList.remove('collapsed');
     toggleFormBtn.textContent = 'Hide Parameters';
 
-    // Set the song name to "New Song"
     currentSongName = 'New Song';
     document.getElementById('song-name').value = currentSongName;
     updateTitle(currentSongName);
 
-    // Reset timings
     calculateTimings();
 
-    // Reset the style dropdown (optional, to ensure a clean slate)
     const styleDropdown = document.getElementById('style-dropdown');
     styleDropdown.value = '';
 
     return;
   }
 
-  // Existing logic for loading other songs
   console.log(`Attempting to load: ${filename}`);
   try {
     if (filename === 'pneuma.js') {
@@ -927,9 +917,10 @@ function loadSongFromDropdown(filename) {
     alert(`Error loading song: ${error.message}`);
   }
 }
+
 function populateSongDropdown() {
   const availableSongs = [
-    'new-song', // Added "New Song" as the first option
+    'new-song',
     'Echoes of Joy.json',
     'pneuma.js',
     'satisfaction.js',
@@ -946,6 +937,7 @@ function populateSongDropdown() {
     songDropdown.appendChild(option);
   });
 }
+
 function printSong() {
   window.print();
 }
