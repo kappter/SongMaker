@@ -661,6 +661,42 @@ function loadSongFromDropdown(filename) {
     console.log("No filename selected");
     return;
   }
+
+  // Handle "New Song" option
+  if (filename === 'new-song') {
+    // Stop playback if active
+    if (isPlaying) {
+      isPlaying = false;
+      playBtn.textContent = 'Play';
+      resetPlayback();
+    }
+
+    // Clear the timeline
+    timeline.innerHTML = '';
+
+    // Clear any selected block
+    if (selectedBlock) clearSelection();
+
+    // Expand the form
+    isFormCollapsed = false;
+    formContent.classList.remove('collapsed');
+    toggleFormBtn.textContent = 'Hide Parameters';
+
+    // Reset the song name to a default value
+    currentSongName = 'New Song';
+    document.getElementById('song-name').value = currentSongName;
+    updateTitle(currentSongName);
+
+    // Update timings to reflect the empty timeline
+    calculateTimings();
+
+    // Reset the style dropdown
+    const styleDropdown = document.getElementById('style-dropdown');
+    styleDropdown.value = '';
+
+    return;
+  }
+
   console.log(`Attempting to load: ${filename}`);
   try {
     if (filename === 'pneuma.js') {
@@ -783,6 +819,26 @@ function loadSongFromDropdown(filename) {
             alert(`Failed to load song: ${error.message}`);
           });
       }
+    } else if (filename === 'jambi.js') {
+      if (typeof loadJambi === 'function') {
+        console.log("Calling loadJambi");
+        loadJambi();
+      } else {
+        fetch(filename)
+          .then(response => {
+            if (!response.ok) throw new Error('Failed to fetch Jambi file');
+            return response.text();
+          })
+          .then(text => {
+            eval(text);
+            console.log("Fetched and evaluated jambi.js");
+            loadJambi();
+          })
+          .catch(error => {
+            console.error(`Failed to load Jambi: ${error.message}`);
+            alert(`Failed to load song: ${error.message}`);
+          });
+      }
     } else if (filename === 'Echoes of Joy.json') {
       fetch(filename)
         .then(response => {
@@ -832,22 +888,23 @@ function loadSongFromDropdown(filename) {
 
 function populateSongDropdown() {
   const availableSongs = [
+    'new-song',
     'Echoes of Joy.json',
     'pneuma.js',
     'satisfaction.js',
     'dirtyLaundry.js',
     'invincible.js',
     'astroworld.js',
-    'astrothunder.js'
+    'astrothunder.js',
+    'jambi.js' // Added Jambi
   ];
   availableSongs.forEach(song => {
     const option = document.createElement('option');
     option.value = song;
-    option.textContent = song.replace('.json', '').replace('.js', '');
+    option.textContent = song === 'new-song' ? 'New Song' : song.replace('.json', '').replace('.js', '');
     songDropdown.appendChild(option);
   });
 }
-
 function printSong() {
   window.print();
 }
