@@ -10,7 +10,7 @@ const formContent = document.getElementById('form-content');
 const printSongName = document.getElementById('print-song-name');
 let draggedBlock = null;
 let selectedBlock = null;
-let currentSongName = 'Echoes of Joy';
+let currentSongName = '(I Can’t Get No) Satisfaction';
 let isPlaying = false;
 let currentTime = 0;
 let currentBeat = 0;
@@ -22,11 +22,34 @@ let isDarkMode = true;
 let isFormCollapsed = true;
 
 const validTimeSignatures = [
-  '4/4', '3/4', '6/8', '2/4', '5/4', '7/8', '12/8', '9/8', '11/8', '15/8', '13/8', '10/4', '8/8', '14/8', '16/8', '7/4', '6/4'];
-const tickSound = new Audio('tick.wav');
-const tockSound = new Audio('tock.wav');
-let activeSounds = [];
-let activeTimeManagers = [];
+  '4/4', '3/4', '6/8', '2/4', '5/4', '7/8', '12/8', '9/8', '11/8', '15/8', '13/8', '10/4', '8/8', '14/8', '16/8', '7/4', '6/4'
+];
+
+// Initialize AudioContext for precise sound scheduling
+const audioContext = new AudioContext();
+let tickBuffer = null;
+let tockBuffer = null;
+let tickShortBuffer = null;
+let tockShortBuffer = null;
+
+// Preload audio files
+Promise.all([
+  fetch('tick.wav').then(response => response.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => tickBuffer = decoded),
+  fetch('tock.wav').then(response => response.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => tockBuffer = decoded),
+  fetch('tick_short.wav').then(response => response.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => tickShortBuffer = decoded),
+  fetch('tock_short.wav').then(response => response.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => tockShortBuffer = decoded)
+]).catch(error => console.error('Failed to load audio files:', error));
+
+// Function to play a sound buffer at a specific time
+function playSound(buffer, time) {
+  if (!buffer) return; // Ensure buffer is loaded
+  const source = audioContext.createBufferSource();
+  source.buffer = buffer;
+  source.connect(audioContext.destination);
+  source.start(time);
+}
+
+const TEMPO_THRESHOLD = 150; // Switch to short sounds above 150 BPM
 
 class TimeManager {
   constructor(tempo, beatsPerMeasure, totalBeats, callback) {
@@ -36,13 +59,14 @@ class TimeManager {
     this.callback = callback;
     this.startTime = null;
     this.lastBeat = -1;
-    this.beatDuration = 60 / tempo;
+    this.beatDuration = 60 / tempo; // Duration of one beat in seconds
     this.running = false;
   }
 
   start() {
     this.running = true;
     this.startTime = performance.now() / 1000;
+    this.lastBeat = -1;
     requestAnimationFrame(this.tick.bind(this));
   }
 
@@ -67,7 +91,7 @@ class TimeManager {
       });
     }
 
-    if (currentBeat <= this.totalBeats) {
+    if (currentBeat < this.totalBeats) {
       requestAnimationFrame(this.tick.bind(this));
     } else {
       this.stop();
@@ -101,11 +125,9 @@ function changeBlockStyle(style) {
 }
 
 function randomizeSong() {
-  // Clear the existing timeline
   timeline.innerHTML = '';
   if (selectedBlock) clearSelection();
 
-  // Define possible values for block properties
   const partTypes = [
     'intro', 'verse', 'refrain', 'pre-chorus', 'chorus', 'post-chorus', 'bridge', 'outro',
     'elision', 'solo', 'ad-lib', 'hook', 'interlude', 'breakdown', 'drop', 'coda',
@@ -121,7 +143,7 @@ function randomizeSong() {
     'Rebellion', 'Triumph', 'Bliss', 'Frustration', 'Atmospheric', 'Trippy', 'Awakening', 'Intense', 'Climactic'
   ];
   const possibleLyrics = [
-    '', // Sometimes no lyrics
+    '',
     'La la la, here we go again...',
     'Feel the rhythm, let it flow...',
     'Shadows dancing in the moonlight...',
@@ -129,16 +151,14 @@ function randomizeSong() {
     'Echoes of a forgotten dream...'
   ];
 
-  // Generate a random number of blocks (between 5 and 15)
   const numBlocks = Math.floor(Math.random() * (15 - 5 + 1)) + 5;
 
-  // Generate random blocks
   for (let i = 0; i < numBlocks; i++) {
     const type = partTypes[Math.floor(Math.random() * partTypes.length)];
-    const measures = Math.floor(Math.random() * (16 - 1 + 1)) + 1; // 1 to 16 measures
+    const measures = Math.floor(Math.random() * (16 - 1 + 1)) + 1;
     const rootNote = rootNotes[Math.floor(Math.random() * rootNotes.length)];
     const mode = modes[Math.floor(Math.random() * modes.length)];
-    const tempo = Math.floor(Math.random() * (180 - 60 + 1)) + 60; // 60 to 180 BPM
+    const tempo = Math.floor(Math.random() * (180 - 60 + 1)) + 60;
     const timeSignature = validTimeSignatures[Math.floor(Math.random() * validTimeSignatures.length)];
     const feel = feels[Math.floor(Math.random() * feels.length)];
     const lyrics = possibleLyrics[Math.floor(Math.random() * possibleLyrics.length)];
@@ -147,7 +167,7 @@ function randomizeSong() {
     const error = validateBlock(blockData);
     if (error) {
       console.error(`Generated block failed validation: ${error}`);
-      continue; // Skip invalid blocks (though our random values should all be valid)
+      continue;
     }
 
     const block = document.createElement('div');
@@ -164,7 +184,6 @@ function randomizeSong() {
     setupBlock(block);
     timeline.appendChild(block);
 
-    // Apply current style
     const styleDropdown = document.getElementById('style-dropdown');
     if (styleDropdown.value) block.classList.add(styleDropdown.value);
   }
@@ -174,7 +193,7 @@ function randomizeSong() {
 
 function updateTitle(name) {
   currentSongName = name;
-  document.title = `${name} - TuneTetris`; // Updated app name
+  document.title = `${name} - TuneTetris`;
   printSongName.textContent = name;
 }
 
@@ -183,7 +202,7 @@ function formatPart(part) {
 }
 
 function abbreviateKey(rootNote) {
-  return rootNote; // Simply return the root note (e.g., "C" or "C#")
+  return rootNote;
 }
 
 function truncateLyrics(lyrics) {
@@ -203,9 +222,9 @@ function validateBlock(block) {
 
 function updateBlockSize(block) {
   const measures = parseInt(block.getAttribute('data-measures'));
-  const baseWidth = 120; // Base width for 4 measures
-  const minWidth = 120; // Updated minimum width to match 4 measures
-  const width = Math.max(minWidth, (measures / 4) * baseWidth); // Scale width based on measures
+  const baseWidth = 120;
+  const minWidth = 120;
+  const width = Math.max(minWidth, (measures / 4) * baseWidth);
   block.style.width = `${width}px`;
 }
 
@@ -299,7 +318,6 @@ function addBlock() {
   setupBlock(block);
   timeline.appendChild(block);
 
-  // Apply current style
   const styleDropdown = document.getElementById('style-dropdown');
   if (styleDropdown.value) block.classList.add(styleDropdown.value);
 
@@ -350,7 +368,6 @@ function updateBlock() {
   });
   selectedBlock.appendChild(deleteBtn);
 
-  // Reapply style
   const styleDropdown = document.getElementById('style-dropdown');
   if (styleDropdown.value) selectedBlock.classList.add(styleDropdown.value);
 
@@ -372,6 +389,20 @@ function clearSelection() {
   document.getElementById('lyrics').value = '';
 }
 
+function getBeatsPerMeasure(timeSignature) {
+  const [numerator, denominator] = timeSignature.split('/').map(Number);
+  // Handle compound time signatures (e.g., 6/8, 9/8, 12/8)
+  if (denominator === 8 && numerator % 3 === 0) {
+    return numerator / 3; // Each beat is a dotted quarter note (3 eighth notes)
+  }
+  // For 6/4, treat as 6 quarter-note beats (not 2 dotted half-note beats, to match Jambi's feel)
+  if (timeSignature === '6/4') {
+    return 6;
+  }
+  // For simple time signatures (e.g., 4/4, 3/4) and others (e.g., 5/4), the numerator is the number of beats
+  return numerator;
+}
+
 function calculateTimings() {
   const blocks = Array.from(timeline.children);
   let totalSeconds = 0;
@@ -381,8 +412,8 @@ function calculateTimings() {
     const tempo = parseInt(block.getAttribute('data-tempo'));
     const measures = parseInt(block.getAttribute('data-measures'));
     const timeSignature = block.getAttribute('data-time-signature');
-    const beatsPerMeasure = parseInt(timeSignature.split('/')[0]);
-    const beatDuration = 60 / tempo;
+    const beatsPerMeasure = getBeatsPerMeasure(timeSignature);
+    const beatDuration = 60 / tempo; // Duration of one beat in seconds
     const totalBlockBeats = measures * beatsPerMeasure;
     const duration = totalBlockBeats * beatDuration;
 
@@ -401,7 +432,7 @@ function calculateTimings() {
     };
   });
 
-  timeCalculator.textContent = `Current Time: ${formatDuration(currentTime)} / Total Duration: ${formatDuration(totalSeconds)} | Song Beat: ${currentBeat} of ${totalBeats} | Block: ${blockBeat} of ${totalBeats} (Measure: ${blockMeasure} of ${totalMeasures})`;
+  timeCalculator.textContent = `Current Time: ${formatDuration(currentTime)} / Total Duration: ${formatDuration(totalSeconds)} | Song Beat: ${currentBeat} of ${totalBeats} | Block: ${blockBeat} of ${timings.length} (Measure: ${blockMeasure} of ${totalMeasures})`;
   return { timings, totalSeconds, totalBeats };
 }
 
@@ -435,6 +466,10 @@ function playLeadIn(timings, totalSeconds, totalBeats) {
   const beatDuration = 60 / firstBlock.tempo;
   const leadInBeats = 4;
 
+  const useShortSounds = firstBlock.tempo > TEMPO_THRESHOLD;
+  const currentTickBuffer = useShortSounds ? tickShortBuffer : tickBuffer;
+  const currentTockBuffer = useShortSounds ? tockShortBuffer : tockBuffer;
+
   currentBlockDisplay.style.backgroundColor = '#3b4048';
   currentBlockDisplay.innerHTML = `
     <span class="label">Lead-In</span>
@@ -443,12 +478,15 @@ function playLeadIn(timings, totalSeconds, totalBeats) {
   currentBlockDisplay.classList.add('pulse');
   currentBlockDisplay.style.animation = `pulse ${beatDuration}s infinite`;
 
-  const timeManager = new TimeManager(firstBlock.tempo, 4, leadInBeats - 1, ({ elapsedTime, beat, isFirstBeat }) => {
+  const startTime = audioContext.currentTime;
+  for (let beat = 0; beat < leadInBeats; beat++) {
+    const soundTime = startTime + (beat * beatDuration);
     if (soundEnabled) {
-      const sound = (isFirstBeat && beat === 0 ? tockSound : tickSound).cloneNode();
-      sound.play();
-      activeSounds.push(sound);
+      playSound(beat === 0 ? currentTockBuffer : currentTickBuffer, soundTime);
     }
+  }
+
+  const timeManager = new TimeManager(firstBlock.tempo, 4, leadInBeats - 1, ({ elapsedTime, beat, isFirstBeat }) => {
     currentBlockDisplay.innerHTML = `
       <span class="label">Lead-In</span>
       <span class="info">Beat: ${beat + 1} of ${leadInBeats}</span>
@@ -457,7 +495,6 @@ function playLeadIn(timings, totalSeconds, totalBeats) {
     timeCalculator.textContent = `Current Time: ${formatDuration(currentTime)} / Total Duration: ${formatDuration(totalSeconds)} | Song Beat: ${currentBeat} of ${totalBeats} | Block: ${blockBeat} of 0 (Measure: ${blockMeasure} of 0)`;
   });
 
-  activeTimeManagers.push(timeManager);
   timeManager.start();
 
   setTimeout(() => {
@@ -473,31 +510,41 @@ function playSong(timings, totalSeconds, totalBeats) {
   blockBeat = 0;
   blockMeasure = 1;
   let blockStartTime = 0;
+  let cumulativeBeats = 0;
 
   updateCurrentBlock(timings[currentIndex]);
 
   const runBlock = () => {
     const currentTiming = timings[currentIndex];
-    const beatsPerSecond = currentTiming.tempo / 60;
+    const beatDuration = 60 / currentTiming.tempo;
     const blockDuration = currentTiming.duration;
     const totalBlockBeats = currentTiming.totalBeats;
+
+    const useShortSounds = currentTiming.tempo > TEMPO_THRESHOLD;
+    const currentTickBuffer = useShortSounds ? tickShortBuffer : tickBuffer;
+    const currentTockBuffer = useShortSounds ? tockShortBuffer : tockBuffer;
+
+    // Schedule all beats for this block
+    const startTime = audioContext.currentTime + blockStartTime;
+    for (let beat = 0; beat < totalBlockBeats; beat++) {
+      const soundTime = startTime + (beat * beatDuration);
+      const isFirstBeat = beat % currentTiming.beatsPerMeasure === 0;
+      if (soundEnabled) {
+        playSound(isFirstBeat ? currentTockBuffer : currentTickBuffer, soundTime);
+      }
+    }
 
     const timeManager = new TimeManager(
       currentTiming.tempo,
       currentTiming.beatsPerMeasure,
       totalBlockBeats - 1,
       ({ elapsedTime, beat, measure, isFirstBeat }) => {
-        blockBeat = beat;
+        blockBeat = beat + 1;
         blockMeasure = measure;
         currentTime = blockStartTime + elapsedTime;
-        currentBeat = Math.floor(currentTime * beatsPerSecond);
+        currentBeat = cumulativeBeats + beat + 1;
 
-        if (soundEnabled && (beat === 0 || elapsedTime - (lastBeatTime - blockStartTime) >= 1 / beatsPerSecond)) {
-          const sound = (isFirstBeat ? tockSound : tickSound).cloneNode();
-          sound.play();
-          activeSounds.push(sound);
-          lastBeatTime = blockStartTime + elapsedTime;
-        }
+        lastBeatTime = blockStartTime + elapsedTime;
 
         const totalBlocks = timings.length;
         const blockNum = currentTiming.blockIndex + 1;
@@ -509,15 +556,15 @@ function playSong(timings, totalSeconds, totalBeats) {
           <span class="info">Beat: ${blockBeat} of ${currentTiming.totalBeats} | Measure: ${blockMeasure} of ${currentTiming.totalMeasures} | Block: ${blockNum} of ${totalBlocks}</span>
         `;
 
-        timeCalculator.textContent = `Current Time: ${formatDuration(currentTime)} / Total Duration: ${formatDuration(totalSeconds)} | Song Beat: ${currentBeat} of ${totalBeats} | Block: ${blockBeat} of ${currentTiming.totalBeats} (Measure: ${blockMeasure} of ${currentTiming.totalMeasures})`;
+        timeCalculator.textContent = `Current Time: ${formatDuration(currentTime)} / Total Duration: ${formatDuration(totalSeconds)} | Song Beat: ${currentBeat} of ${totalBeats} | Block: ${blockNum} of ${totalBlocks} (Measure: ${blockMeasure} of ${currentTiming.totalMeasures})`;
       }
     );
 
-    activeTimeManagers.push(timeManager);
     timeManager.start();
 
     setTimeout(() => {
       timeManager.stop();
+      cumulativeBeats += totalBlockBeats;
       currentIndex++;
       if (currentIndex < timings.length) {
         blockStartTime += blockDuration;
@@ -543,15 +590,6 @@ function updateCurrentBlock(timing) {
 }
 
 function resetPlayback() {
-  activeTimeManagers.forEach(manager => manager.stop());
-  activeTimeManagers = [];
-
-  activeSounds.forEach(sound => {
-    sound.pause();
-    sound.currentTime = 0;
-  });
-  activeSounds = [];
-
   currentTime = 0;
   currentBeat = 0;
   blockBeat = 0;
@@ -559,11 +597,13 @@ function resetPlayback() {
   lastBeatTime = 0;
 
   isPlaying = false;
+  playBtn.textContent = 'Play';
 
   const previousBlock = timeline.querySelector('.playing');
   if (previousBlock) previousBlock.classList.remove('playing');
   currentBlockDisplay.classList.remove('pulse');
-  currentBlockDisplay.style.animation = '';
+  currentBlockDisplay.style.animation = 'none';
+  void currentBlockDisplay.offsetHeight;
   currentBlockDisplay.style.background = 'var(--form-bg)';
   currentBlockDisplay.innerHTML = '<span class="label">No block playing</span>';
 
@@ -663,35 +703,26 @@ function loadSongFromDropdown(filename) {
     return;
   }
 
-  // Handle "New Song" option
   if (filename === 'new-song') {
-    // Stop playback if active
     if (isPlaying) {
       isPlaying = false;
       playBtn.textContent = 'Play';
       resetPlayback();
     }
 
-    // Clear the timeline
     timeline.innerHTML = '';
-
-    // Clear any selected block
     if (selectedBlock) clearSelection();
 
-    // Expand the form
     isFormCollapsed = false;
     formContent.classList.remove('collapsed');
     toggleFormBtn.textContent = 'Hide Parameters';
 
-    // Reset the song name to a default value
     currentSongName = 'New Song';
     document.getElementById('song-name').value = currentSongName;
     updateTitle(currentSongName);
 
-    // Update timings to reflect the empty timeline
     calculateTimings();
 
-    // Reset the style dropdown
     const styleDropdown = document.getElementById('style-dropdown');
     styleDropdown.value = '';
 
@@ -897,7 +928,7 @@ function populateSongDropdown() {
     'invincible.js',
     'astroworld.js',
     'astrothunder.js',
-    'jambi.js' // Added Jambi
+    'jambi.js'
   ];
   availableSongs.forEach(song => {
     const option = document.createElement('option');
@@ -906,21 +937,10 @@ function populateSongDropdown() {
     songDropdown.appendChild(option);
   });
 }
+
 function printSong() {
   window.print();
 }
 
-// Initialize the dropdown and load a random song on page load
 populateSongDropdown();
-
-const availableSongs = [
-  'Echoes of Joy.json',
-  'pneuma.js',
-  'satisfaction.js',
-  'dirtyLaundry.js',
-  'invincible.js',
-  'astroworld.js',
-  'astrothunder.js'
-];
-const randomSong = availableSongs[Math.floor(Math.random() * availableSongs.length)];
-loadSongFromDropdown(randomSong);
+loadSongFromDropdown('satisfaction.js');
