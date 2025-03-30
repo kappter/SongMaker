@@ -515,6 +515,8 @@ function playSong(timings, totalSeconds, totalBeats) {
   updateCurrentBlock(timings[currentIndex]);
 
   const runBlock = () => {
+    if (!isPlaying) return;
+
     const currentTiming = timings[currentIndex];
     const beatDuration = 60 / currentTiming.tempo;
     const blockDuration = currentTiming.duration;
@@ -524,17 +526,15 @@ function playSong(timings, totalSeconds, totalBeats) {
     const currentTickBuffer = useShortSounds ? tickShortBuffer : tickBuffer;
     const currentTockBuffer = useShortSounds ? tockShortBuffer : tockBuffer;
 
-    // Schedule all beats for this block
+    // Schedule beats: tock on first beat of each measure, tick on others
     const startTime = audioContext.currentTime + blockStartTime;
     for (let beat = 0; beat < totalBlockBeats; beat++) {
       const soundTime = startTime + (beat * beatDuration);
-      const isFirstBeat = beat % currentTiming.beatsPerMeasure === 0;
-      if (soundEnabled) {
-        playSound(isFirstBeat ? currentTockBuffer : currentTickBuffer, soundTime);
-      }
+      const isFirstBeatOfMeasure = beat % currentTiming.beatsPerMeasure === 0;
+      playSound(isFirstBeatOfMeasure ? currentTockBuffer : currentTickBuffer, soundTime);
     }
 
-    const timeManager = new TimeManager(
+    activeTimeManager = new TimeManager(
       currentTiming.tempo,
       currentTiming.beatsPerMeasure,
       totalBlockBeats - 1,
@@ -551,28 +551,35 @@ function playSong(timings, totalSeconds, totalBeats) {
         const rootNote = currentTiming.block.getAttribute('data-root-note');
         const mode = currentTiming.block.getAttribute('data-mode');
 
+        // Update current block display
         currentBlockDisplay.innerHTML = `
           <span class="label">${formatPart(currentTiming.block.classList[1])}: ${currentTiming.block.getAttribute('data-time-signature')} ${currentTiming.totalMeasures}m<br>${abbreviateKey(rootNote)} ${mode} ${currentTiming.tempo}b ${currentTiming.block.getAttribute('data-feel')}</span>
           <span class="info">Beat: ${blockBeat} of ${currentTiming.totalBeats} | Measure: ${blockMeasure} of ${currentTiming.totalMeasures} | Block: ${blockNum} of ${totalBlocks}</span>
         `;
 
         timeCalculator.textContent = `Current Time: ${formatDuration(currentTime)} / Total Duration: ${formatDuration(totalSeconds)} | Song Beat: ${currentBeat} of ${totalBeats} | Block: ${blockNum} of ${totalBlocks} (Measure: ${blockMeasure} of ${currentTiming.totalMeasures})`;
+
+        // Toggle green stroke on "one" count
+        if (isFirstBeat) {
+          currentTiming.block.classList.add('one-count');
+        } else {
+          currentTiming.block.classList.remove('one-count');
+        }
       }
     );
 
-    timeManager.start();
+    activeTimeManager.start();
 
     setTimeout(() => {
-      timeManager.stop();
+      if (activeTimeManager) activeTimeManager.stop();
+      activeTimeManager = null;
       cumulativeBeats += totalBlockBeats;
       currentIndex++;
-      if (currentIndex < timings.length) {
+      if (currentIndex < timings.length && isPlaying) {
         blockStartTime += blockDuration;
         updateCurrentBlock(timings[currentIndex]);
         runBlock();
       } else {
-        playBtn.textContent = 'Play';
-        isPlaying = false;
         resetPlayback();
       }
     }, blockDuration * 1000);
@@ -583,13 +590,20 @@ function playSong(timings, totalSeconds, totalBeats) {
 
 function updateCurrentBlock(timing) {
   const previousBlock = timeline.querySelector('.playing');
-  if (previousBlock) previousBlock.classList.remove('playing');
+  if (previousBlock) {
+    previousBlock.classList.remove('playing');
+    previousBlock.classList.remove('one-count'); // Clear one-count from previous block
+  }
   timing.block.classList.add('playing');
   const beatDuration = 60 / timing.tempo;
   currentBlockDisplay.style.animation = `pulse ${beatDuration}s infinite`;
 }
 
 function resetPlayback() {
+  if (activeTimeManager) {
+    activeTimeManager.stop();
+    activeTimeManager = null;
+  }
   currentTime = 0;
   currentBeat = 0;
   blockBeat = 0;
@@ -600,7 +614,10 @@ function resetPlayback() {
   playBtn.textContent = 'Play';
 
   const previousBlock = timeline.querySelector('.playing');
-  if (previousBlock) previousBlock.classList.remove('playing');
+  if (previousBlock) {
+    previousBlock.classList.remove('playing');
+    previousBlock.classList.remove('one-count'); // Ensure cleared on reset
+  }
   currentBlockDisplay.classList.remove('pulse');
   currentBlockDisplay.style.animation = 'none';
   void currentBlockDisplay.offsetHeight;
