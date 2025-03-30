@@ -2,4 +2,4 @@ Echoes of Joy – SongMaker is a versatile music creation tool for musicians and
 
 by Ken Kapptie
 
-![SongMaker](https://github.com/kappter/SongMaker/blob/main/tunepix.png?raw=true)
+[![SongMaker](https://github.com/kappter/SongMaker/blob/main/tunepix.png?raw=true)](https://kappter.github.io/SongMaker/)
