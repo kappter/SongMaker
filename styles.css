@@ -204,7 +204,11 @@ main {
 }
 
 .song-block.playing {
-  border-color: #00ff00;
+  /* border-color: #00ff00; */
+}
+
+.song-block.one-count {
+  border-color: #00ff00; /* Green stroke for "one" count */
 }
 
 .song-block.selected {
