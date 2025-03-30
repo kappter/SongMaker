@@ -16,12 +16,11 @@ let currentTime = 0;
 let currentBeat = 0;
 let blockBeat = 0;
 let blockMeasure = 0;
-let lastBeatTime = 0;
 let soundEnabled = true;
 let isDarkMode = true;
 let isFormCollapsed = true;
 let activeTimeManager = null;
-let scheduledSources = []; // Track audio sources for cancellation
+let scheduledSources = [];
 
 const validTimeSignatures = [
   '4/4', '3/4', '6/8', '2/4', '5/4', '7/8', '12/8', '9/8', '11/8', '15/8', '13/8', '10/4', '8/8', '14/8', '16/8', '7/4', '6/4'
@@ -46,7 +45,7 @@ function playSound(buffer, time) {
   source.buffer = buffer;
   source.connect(audioContext.destination);
   source.start(time);
-  return source; // Return source for tracking
+  return source;
 }
 
 const TEMPO_THRESHOLD = 150;
@@ -420,8 +419,7 @@ function calculateTimings() {
       beatsPerMeasure,
       totalBeats: totalBlockBeats,
       totalMeasures: measures,
-      duration,
-      startBeat: totalBeats - totalBlockBeats // Starting beat for this block
+      duration
     };
   });
 
@@ -449,8 +447,7 @@ function togglePlay() {
     currentBeat = 0;
     blockBeat = 0;
     blockMeasure = 0;
-    lastBeatTime = 0;
-    audioContext.resume(); // Ensure AudioContext is active
+    audioContext.resume();
     playLeadIn(timings, totalSeconds, totalBeats);
   }
 }
@@ -505,91 +502,79 @@ function playLeadIn(timings, totalSeconds, totalBeats) {
 
 function playSong(timings, totalSeconds, totalBeats) {
   let currentIndex = 0;
-  blockBeat = 0;
-  blockMeasure = 1;
+  let blockStartTime = audioContext.currentTime;
   let cumulativeBeats = 0;
 
-  // Schedule all sounds upfront
-  const startTime = audioContext.currentTime;
-  let currentOffset = 0;
+  function playNextBlock() {
+    if (!isPlaying || currentIndex >= timings.length) {
+      resetPlayback();
+      return;
+    }
 
-  timings.forEach(timing => {
-    const beatDuration = 60 / timing.tempo;
-    const totalBlockBeats = timing.totalBeats;
-    const useShortSounds = timing.tempo > TEMPO_THRESHOLD;
+    const currentTiming = timings[currentIndex];
+    const beatDuration = 60 / currentTiming.tempo;
+    const totalBlockBeats = currentTiming.totalBeats;
+
+    const useShortSounds = currentTiming.tempo > TEMPO_THRESHOLD;
     const currentTickBuffer = useShortSounds ? tickShortBuffer : tickBuffer;
     const currentTockBuffer = useShortSounds ? tockShortBuffer : tockBuffer;
 
+    // Schedule audio for this block
     for (let beat = 0; beat < totalBlockBeats; beat++) {
-      const soundTime = startTime + currentOffset + (beat * beatDuration);
-      const isFirstBeatOfMeasure = beat % timing.beatsPerMeasure === 0;
+      const soundTime = blockStartTime + (beat * beatDuration);
+      const isFirstBeatOfMeasure = beat % currentTiming.beatsPerMeasure === 0;
       const source = playSound(isFirstBeatOfMeasure ? currentTockBuffer : currentTickBuffer, soundTime);
       if (source) scheduledSources.push(source);
     }
-    currentOffset += timing.duration;
-  });
 
-  updateCurrentBlock(timings[currentIndex]);
+    updateCurrentBlock(currentTiming);
 
-  activeTimeManager = new TimeManager(
-    timings[0].tempo,
-    timings[0].beatsPerMeasure,
-    totalBeats - 1,
-    ({ elapsedTime, beat, measure, isFirstBeat }) => {
-      currentTime = elapsedTime;
-      currentBeat = beat + 1;
+    activeTimeManager = new TimeManager(
+      currentTiming.tempo,
+      currentTiming.beatsPerMeasure,
+      totalBlockBeats - 1,
+      ({ elapsedTime, beat, measure, isFirstBeat }) => {
+        blockBeat = beat + 1;
+        blockMeasure = measure;
+        currentTime = elapsedTime + (cumulativeBeats * (60 / timings[currentIndex].tempo));
+        currentBeat = cumulativeBeats + beat + 1;
 
-      // Determine current block
-      let newIndex = currentIndex;
-      let newBlockBeat = blockBeat;
-      let newBlockMeasure = blockMeasure;
+        const totalBlocks = timings.length;
+        const blockNum = currentIndex + 1;
+        const rootNote = currentTiming.block.getAttribute('data-root-note');
+        const mode = currentTiming.block.getAttribute('data-mode');
 
-      for (let i = 0; i < timings.length; i++) {
-        if (beat >= timings[i].startBeat && (i === timings.length - 1 || beat < timings[i + 1].startBeat)) {
-          newIndex = i;
-          newBlockBeat = beat - timings[i].startBeat + 1;
-          newBlockMeasure = Math.floor((beat - timings[i].startBeat) / timings[i].beatsPerMeasure) + 1;
-          break;
+        currentBlockDisplay.innerHTML = `
+          <span class="label">${formatPart(currentTiming.block.classList[1])}: ${currentTiming.block.getAttribute('data-time-signature')} ${currentTiming.totalMeasures}m<br>${abbreviateKey(rootNote)} ${mode} ${currentTiming.tempo}b ${currentTiming.block.getAttribute('data-feel')}</span>
+          <span class="info">Beat: ${blockBeat} of ${currentTiming.totalBeats} | Measure: ${blockMeasure} of ${currentTiming.totalMeasures} | Block: ${blockNum} of ${totalBlocks}</span>
+        `;
+
+        timeCalculator.textContent = `Current Time: ${formatDuration(currentTime)} / Total Duration: ${formatDuration(totalSeconds)} | Song Beat: ${currentBeat} of ${totalBeats} | Block: ${blockNum} of ${totalBlocks} (Measure: ${blockMeasure} of ${currentTiming.totalMeasures})`;
+
+        currentBlockDisplay.classList.add('pulse');
+        currentBlockDisplay.style.animation = `pulse ${beatDuration}s infinite`;
+
+        if (isFirstBeat) {
+          currentBlockDisplay.classList.add('one-count');
+        } else {
+          currentBlockDisplay.classList.remove('one-count');
         }
       }
+    );
 
-      if (newIndex !== currentIndex) {
-        currentIndex = newIndex;
-        updateCurrentBlock(timings[currentIndex]);
-      }
+    activeTimeManager.start();
 
-      blockBeat = newBlockBeat;
-      blockMeasure = newBlockMeasure;
+    setTimeout(() => {
+      if (activeTimeManager) activeTimeManager.stop();
+      activeTimeManager = null;
+      cumulativeBeats += totalBlockBeats;
+      blockStartTime += currentTiming.duration;
+      currentIndex++;
+      playNextBlock();
+    }, currentTiming.duration * 1000 + 10); // Small buffer for timing
+  }
 
-      const totalBlocks = timings.length;
-      const blockNum = currentIndex + 1;
-      const currentTiming = timings[currentIndex];
-      const rootNote = currentTiming.block.getAttribute('data-root-note');
-      const mode = currentTiming.block.getAttribute('data-mode');
-
-      currentBlockDisplay.innerHTML = `
-        <span class="label">${formatPart(currentTiming.block.classList[1])}: ${currentTiming.block.getAttribute('data-time-signature')} ${currentTiming.totalMeasures}m<br>${abbreviateKey(rootNote)} ${mode} ${currentTiming.tempo}b ${currentTiming.block.getAttribute('data-feel')}</span>
-        <span class="info">Beat: ${blockBeat} of ${currentTiming.totalBeats} | Measure: ${blockMeasure} of ${currentTiming.totalMeasures} | Block: ${blockNum} of ${totalBlocks}</span>
-      `;
-
-      timeCalculator.textContent = `Current Time: ${formatDuration(currentTime)} / Total Duration: ${formatDuration(totalSeconds)} | Song Beat: ${currentBeat} of ${totalBeats} | Block: ${blockNum} of ${totalBlocks} (Measure: ${blockMeasure} of ${currentTiming.totalMeasures})`;
-
-      const beatDuration = 60 / currentTiming.tempo;
-      currentBlockDisplay.style.animation = `pulse ${beatDuration}s infinite`;
-
-      if (isFirstBeat) {
-        currentBlockDisplay.classList.add('one-count');
-      } else {
-        currentBlockDisplay.classList.remove('one-count');
-      }
-    }
-  );
-
-  activeTimeManager.start();
-
-  setTimeout(() => {
-    if (isPlaying) resetPlayback();
-  }, totalSeconds * 1000 + 50);
+  playNextBlock();
 }
 
 function updateCurrentBlock(timing) {
@@ -604,7 +589,6 @@ function resetPlayback() {
     activeTimeManager = null;
   }
 
-  // Stop all scheduled audio sources
   scheduledSources.forEach(source => {
     try {
       source.stop();
@@ -613,13 +597,12 @@ function resetPlayback() {
     }
   });
   scheduledSources = [];
-  audioContext.suspend(); // Pause AudioContext
+  audioContext.suspend();
 
   currentTime = 0;
   currentBeat = 0;
   blockBeat = 0;
   blockMeasure = 0;
-  lastBeatTime = 0;
 
   isPlaying = false;
   playBtn.textContent = 'Play';
