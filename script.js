@@ -615,7 +615,6 @@ function resetPlayback() {
   }
   currentBlockDisplay.classList.remove('pulse', 'one-count');
   currentBlockDisplay.style.animation = 'none';
-  currentBlockDisplay.style.background = 'var(--form-bg)';
   currentBlockDisplay.innerHTML = '<span class="label">No block playing</span>';
 
   calculateTimings();
