@@ -551,7 +551,6 @@ function playSong(timings, totalSeconds, totalBeats) {
         const rootNote = currentTiming.block.getAttribute('data-root-note');
         const mode = currentTiming.block.getAttribute('data-mode');
 
-        // Update current block display (no pulse here)
         currentBlockDisplay.innerHTML = `
           <span class="label">${formatPart(currentTiming.block.classList[1])}: ${currentTiming.block.getAttribute('data-time-signature')} ${currentTiming.totalMeasures}m<br>${abbreviateKey(rootNote)} ${mode} ${currentTiming.tempo}b ${currentTiming.block.getAttribute('data-feel')}</span>
           <span class="info">Beat: ${blockBeat} of ${currentTiming.totalBeats} | Measure: ${blockMeasure} of ${currentTiming.totalMeasures} | Block: ${blockNum} of ${totalBlocks}</span>
@@ -559,7 +558,7 @@ function playSong(timings, totalSeconds, totalBeats) {
 
         timeCalculator.textContent = `Current Time: ${formatDuration(currentTime)} / Total Duration: ${formatDuration(totalSeconds)} | Song Beat: ${currentBeat} of ${totalBeats} | Block: ${blockNum} of ${totalBlocks} (Measure: ${blockMeasure} of ${currentTiming.totalMeasures})`;
 
-        // Toggle green stroke and ensure pulse on active block
+        // Toggle green outline on the pulsing block for "one" count
         if (isFirstBeat) {
           currentTiming.block.classList.add('one-count');
         } else {
@@ -592,11 +591,11 @@ function updateCurrentBlock(timing) {
   const previousBlock = timeline.querySelector('.playing');
   if (previousBlock) {
     previousBlock.classList.remove('playing', 'pulse', 'one-count');
-    previousBlock.style.animation = 'none'; // Clear animation
+    previousBlock.style.animation = 'none';
   }
   timing.block.classList.add('playing', 'pulse');
-  const beatDuration = 60 / timing.tempo;
-  timing.block.style.animation = `pulse ${beatDuration}s infinite`; // Set pulse to beat duration
+  const beatDuration = 60 / timing.tempo; // Correct beat duration
+  timing.block.style.animation = `pulse ${beatDuration}s infinite`;
 }
 
 function resetPlayback() {
