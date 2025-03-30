@@ -21,6 +21,7 @@ let soundEnabled = true;
 let isDarkMode = true;
 let isFormCollapsed = true;
 let activeTimeManager = null;
+let scheduledSources = []; // Track audio sources for cancellation
 
 const validTimeSignatures = [
   '4/4', '3/4', '6/8', '2/4', '5/4', '7/8', '12/8', '9/8', '11/8', '15/8', '13/8', '10/4', '8/8', '14/8', '16/8', '7/4', '6/4'
@@ -40,11 +41,12 @@ Promise.all([
 ]).catch(error => console.error('Failed to load audio files:', error));
 
 function playSound(buffer, time) {
-  if (!buffer || !soundEnabled) return;
+  if (!buffer || !soundEnabled) return null;
   const source = audioContext.createBufferSource();
   source.buffer = buffer;
   source.connect(audioContext.destination);
   source.start(time);
+  return source; // Return source for tracking
 }
 
 const TEMPO_THRESHOLD = 150;
@@ -140,12 +142,8 @@ function randomizeSong() {
     'Rebellion', 'Triumph', 'Bliss', 'Frustration', 'Atmospheric', 'Trippy', 'Awakening', 'Intense', 'Climactic'
   ];
   const possibleLyrics = [
-    '',
-    'La la la, here we go again...',
-    'Feel the rhythm, let it flow...',
-    'Shadows dancing in the moonlight...',
-    'Break free, let your spirit soar...',
-    'Echoes of a forgotten dream...'
+    '', 'La la la, here we go again...', 'Feel the rhythm, let it flow...',
+    'Shadows dancing in the moonlight...', 'Break free, let your spirit soar...', 'Echoes of a forgotten dream...'
   ];
 
   const numBlocks = Math.floor(Math.random() * (15 - 5 + 1)) + 5;
@@ -422,7 +420,8 @@ function calculateTimings() {
       beatsPerMeasure,
       totalBeats: totalBlockBeats,
       totalMeasures: measures,
-      duration
+      duration,
+      startBeat: totalBeats - totalBlockBeats // Starting beat for this block
     };
   });
 
@@ -451,6 +450,7 @@ function togglePlay() {
     blockBeat = 0;
     blockMeasure = 0;
     lastBeatTime = 0;
+    audioContext.resume(); // Ensure AudioContext is active
     playLeadIn(timings, totalSeconds, totalBeats);
   }
 }
@@ -474,7 +474,8 @@ function playLeadIn(timings, totalSeconds, totalBeats) {
   const startTime = audioContext.currentTime;
   for (let beat = 0; beat < leadInBeats; beat++) {
     const soundTime = startTime + (beat * beatDuration);
-    playSound(beat === 0 ? currentTockBuffer : currentTickBuffer, soundTime);
+    const source = playSound(beat === 0 ? currentTockBuffer : currentTickBuffer, soundTime);
+    if (source) scheduledSources.push(source);
   }
 
   activeTimeManager = new TimeManager(firstBlock.tempo, leadInBeats, leadInBeats - 1, ({ elapsedTime, beat, isFirstBeat }) => {
@@ -506,93 +507,95 @@ function playSong(timings, totalSeconds, totalBeats) {
   let currentIndex = 0;
   blockBeat = 0;
   blockMeasure = 1;
-  let blockStartTime = 0;
   let cumulativeBeats = 0;
 
-  updateCurrentBlock(timings[currentIndex]);
+  // Schedule all sounds upfront
+  const startTime = audioContext.currentTime;
+  let currentOffset = 0;
 
-  const runBlock = () => {
-    if (!isPlaying) return;
-
-    const currentTiming = timings[currentIndex];
-    const beatDuration = 60 / currentTiming.tempo;
-    const blockDuration = currentTiming.duration;
-    const totalBlockBeats = currentTiming.totalBeats;
-
-    const useShortSounds = currentTiming.tempo > TEMPO_THRESHOLD;
+  timings.forEach(timing => {
+    const beatDuration = 60 / timing.tempo;
+    const totalBlockBeats = timing.totalBeats;
+    const useShortSounds = timing.tempo > TEMPO_THRESHOLD;
     const currentTickBuffer = useShortSounds ? tickShortBuffer : tickBuffer;
     const currentTockBuffer = useShortSounds ? tockShortBuffer : tockBuffer;
 
-    currentBlockDisplay.classList.add('pulse');
-    currentBlockDisplay.style.animation = `pulse ${beatDuration}s infinite`;
-
-    const startTime = audioContext.currentTime + blockStartTime;
     for (let beat = 0; beat < totalBlockBeats; beat++) {
-      const soundTime = startTime + (beat * beatDuration);
-      const isFirstBeatOfMeasure = beat % currentTiming.beatsPerMeasure === 0;
-      playSound(isFirstBeatOfMeasure ? currentTockBuffer : currentTickBuffer, soundTime);
+      const soundTime = startTime + currentOffset + (beat * beatDuration);
+      const isFirstBeatOfMeasure = beat % timing.beatsPerMeasure === 0;
+      const source = playSound(isFirstBeatOfMeasure ? currentTockBuffer : currentTickBuffer, soundTime);
+      if (source) scheduledSources.push(source);
     }
+    currentOffset += timing.duration;
+  });
 
-    activeTimeManager = new TimeManager(
-      currentTiming.tempo,
-      currentTiming.beatsPerMeasure,
-      totalBlockBeats - 1,
-      ({ elapsedTime, beat, measure, isFirstBeat }) => {
-        blockBeat = beat + 1;
-        blockMeasure = measure;
-        currentTime = blockStartTime + elapsedTime;
-        currentBeat = cumulativeBeats + beat + 1;
+  updateCurrentBlock(timings[currentIndex]);
 
-        lastBeatTime = blockStartTime + elapsedTime;
+  activeTimeManager = new TimeManager(
+    timings[0].tempo,
+    timings[0].beatsPerMeasure,
+    totalBeats - 1,
+    ({ elapsedTime, beat, measure, isFirstBeat }) => {
+      currentTime = elapsedTime;
+      currentBeat = beat + 1;
 
-        const totalBlocks = timings.length;
-        const blockNum = currentTiming.blockIndex + 1;
-        const rootNote = currentTiming.block.getAttribute('data-root-note');
-        const mode = currentTiming.block.getAttribute('data-mode');
+      // Determine current block
+      let newIndex = currentIndex;
+      let newBlockBeat = blockBeat;
+      let newBlockMeasure = blockMeasure;
 
-        currentBlockDisplay.innerHTML = `
-          <span class="label">${formatPart(currentTiming.block.classList[1])}: ${currentTiming.block.getAttribute('data-time-signature')} ${currentTiming.totalMeasures}m<br>${abbreviateKey(rootNote)} ${mode} ${currentTiming.tempo}b ${currentTiming.block.getAttribute('data-feel')}</span>
-          <span class="info">Beat: ${blockBeat} of ${currentTiming.totalBeats} | Measure: ${blockMeasure} of ${currentTiming.totalMeasures} | Block: ${blockNum} of ${totalBlocks}</span>
-        `;
-
-        timeCalculator.textContent = `Current Time: ${formatDuration(currentTime)} / Total Duration: ${formatDuration(totalSeconds)} | Song Beat: ${currentBeat} of ${totalBeats} | Block: ${blockNum} of ${totalBlocks} (Measure: ${blockMeasure} of ${currentTiming.totalMeasures})`;
-
-        if (isFirstBeat) {
-          currentBlockDisplay.classList.add('one-count');
-        } else {
-          currentBlockDisplay.classList.remove('one-count');
+      for (let i = 0; i < timings.length; i++) {
+        if (beat >= timings[i].startBeat && (i === timings.length - 1 || beat < timings[i + 1].startBeat)) {
+          newIndex = i;
+          newBlockBeat = beat - timings[i].startBeat + 1;
+          newBlockMeasure = Math.floor((beat - timings[i].startBeat) / timings[i].beatsPerMeasure) + 1;
+          break;
         }
       }
-    );
 
-    activeTimeManager.start();
-
-    setTimeout(() => {
-      if (activeTimeManager) activeTimeManager.stop();
-      activeTimeManager = null;
-      cumulativeBeats += totalBlockBeats;
-      currentIndex++;
-      if (currentIndex < timings.length && isPlaying) {
-        blockStartTime += blockDuration;
+      if (newIndex !== currentIndex) {
+        currentIndex = newIndex;
         updateCurrentBlock(timings[currentIndex]);
-        runBlock();
-      } else {
-        resetPlayback();
       }
-    }, blockDuration * 1000 + 50);
-  };
 
-  runBlock();
+      blockBeat = newBlockBeat;
+      blockMeasure = newBlockMeasure;
+
+      const totalBlocks = timings.length;
+      const blockNum = currentIndex + 1;
+      const currentTiming = timings[currentIndex];
+      const rootNote = currentTiming.block.getAttribute('data-root-note');
+      const mode = currentTiming.block.getAttribute('data-mode');
+
+      currentBlockDisplay.innerHTML = `
+        <span class="label">${formatPart(currentTiming.block.classList[1])}: ${currentTiming.block.getAttribute('data-time-signature')} ${currentTiming.totalMeasures}m<br>${abbreviateKey(rootNote)} ${mode} ${currentTiming.tempo}b ${currentTiming.block.getAttribute('data-feel')}</span>
+        <span class="info">Beat: ${blockBeat} of ${currentTiming.totalBeats} | Measure: ${blockMeasure} of ${currentTiming.totalMeasures} | Block: ${blockNum} of ${totalBlocks}</span>
+      `;
+
+      timeCalculator.textContent = `Current Time: ${formatDuration(currentTime)} / Total Duration: ${formatDuration(totalSeconds)} | Song Beat: ${currentBeat} of ${totalBeats} | Block: ${blockNum} of ${totalBlocks} (Measure: ${blockMeasure} of ${currentTiming.totalMeasures})`;
+
+      const beatDuration = 60 / currentTiming.tempo;
+      currentBlockDisplay.style.animation = `pulse ${beatDuration}s infinite`;
+
+      if (isFirstBeat) {
+        currentBlockDisplay.classList.add('one-count');
+      } else {
+        currentBlockDisplay.classList.remove('one-count');
+      }
+    }
+  );
+
+  activeTimeManager.start();
+
+  setTimeout(() => {
+    if (isPlaying) resetPlayback();
+  }, totalSeconds * 1000 + 50);
 }
 
 function updateCurrentBlock(timing) {
   const previousBlock = timeline.querySelector('.playing');
-  if (previousBlock) {
-    previousBlock.classList.remove('playing');
-  }
+  if (previousBlock) previousBlock.classList.remove('playing');
   timing.block.classList.add('playing');
-  const beatDuration = 60 / timing.tempo;
-  currentBlockDisplay.style.animation = `pulse ${beatDuration}s infinite`;
 }
 
 function resetPlayback() {
@@ -600,6 +603,18 @@ function resetPlayback() {
     activeTimeManager.stop();
     activeTimeManager = null;
   }
+
+  // Stop all scheduled audio sources
+  scheduledSources.forEach(source => {
+    try {
+      source.stop();
+    } catch (e) {
+      // Ignore if already stopped
+    }
+  });
+  scheduledSources = [];
+  audioContext.suspend(); // Pause AudioContext
+
   currentTime = 0;
   currentBeat = 0;
   blockBeat = 0;
@@ -610,9 +625,8 @@ function resetPlayback() {
   playBtn.textContent = 'Play';
 
   const previousBlock = timeline.querySelector('.playing');
-  if (previousBlock) {
-    previousBlock.classList.remove('playing');
-  }
+  if (previousBlock) previousBlock.classList.remove('playing');
+  
   currentBlockDisplay.classList.remove('pulse', 'one-count');
   currentBlockDisplay.style.animation = 'none';
   currentBlockDisplay.innerHTML = '<span class="label">No block playing</span>';
@@ -755,15 +769,8 @@ function loadSongFromDropdown(filename) {
 
 function populateSongDropdown() {
   const availableSongs = [
-    'new-song',
-    'Echoes of Joy.json',
-    'pneuma.js',
-    'satisfaction.js',
-    'dirtyLaundry.js',
-    'invincible.js',
-    'astroworld.js',
-    'astrothunder.js',
-    'jambi.js'
+    'new-song', 'Echoes of Joy.json', 'pneuma.js', 'satisfaction.js',
+    'dirtyLaundry.js', 'invincible.js', 'astroworld.js', 'astrothunder.js', 'jambi.js'
   ];
   availableSongs.forEach(song => {
     const option = document.createElement('option');
