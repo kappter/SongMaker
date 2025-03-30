@@ -518,7 +518,7 @@ function playSong(timings, totalSeconds, totalBeats) {
     if (!isPlaying) return;
 
     const currentTiming = timings[currentIndex];
-    const beatDuration = 60 / currentTiming.tempo;
+    const beatDuration = 60 / currentTiming.tempo; // Seconds per beat
     const blockDuration = currentTiming.duration;
     const totalBlockBeats = currentTiming.totalBeats;
 
@@ -551,7 +551,7 @@ function playSong(timings, totalSeconds, totalBeats) {
         const rootNote = currentTiming.block.getAttribute('data-root-note');
         const mode = currentTiming.block.getAttribute('data-mode');
 
-        // Update current block display
+        // Update current block display (no pulse here)
         currentBlockDisplay.innerHTML = `
           <span class="label">${formatPart(currentTiming.block.classList[1])}: ${currentTiming.block.getAttribute('data-time-signature')} ${currentTiming.totalMeasures}m<br>${abbreviateKey(rootNote)} ${mode} ${currentTiming.tempo}b ${currentTiming.block.getAttribute('data-feel')}</span>
           <span class="info">Beat: ${blockBeat} of ${currentTiming.totalBeats} | Measure: ${blockMeasure} of ${currentTiming.totalMeasures} | Block: ${blockNum} of ${totalBlocks}</span>
@@ -559,7 +559,7 @@ function playSong(timings, totalSeconds, totalBeats) {
 
         timeCalculator.textContent = `Current Time: ${formatDuration(currentTime)} / Total Duration: ${formatDuration(totalSeconds)} | Song Beat: ${currentBeat} of ${totalBeats} | Block: ${blockNum} of ${totalBlocks} (Measure: ${blockMeasure} of ${currentTiming.totalMeasures})`;
 
-        // Toggle green stroke on "one" count
+        // Toggle green stroke and ensure pulse on active block
         if (isFirstBeat) {
           currentTiming.block.classList.add('one-count');
         } else {
@@ -591,12 +591,12 @@ function playSong(timings, totalSeconds, totalBeats) {
 function updateCurrentBlock(timing) {
   const previousBlock = timeline.querySelector('.playing');
   if (previousBlock) {
-    previousBlock.classList.remove('playing');
-    previousBlock.classList.remove('one-count'); // Clear one-count from previous block
+    previousBlock.classList.remove('playing', 'pulse', 'one-count');
+    previousBlock.style.animation = 'none'; // Clear animation
   }
-  timing.block.classList.add('playing');
+  timing.block.classList.add('playing', 'pulse');
   const beatDuration = 60 / timing.tempo;
-  currentBlockDisplay.style.animation = `pulse ${beatDuration}s infinite`;
+  timing.block.style.animation = `pulse ${beatDuration}s infinite`; // Set pulse to beat duration
 }
 
 function resetPlayback() {
@@ -615,10 +615,9 @@ function resetPlayback() {
 
   const previousBlock = timeline.querySelector('.playing');
   if (previousBlock) {
-    previousBlock.classList.remove('playing');
-    previousBlock.classList.remove('one-count'); // Ensure cleared on reset
+    previousBlock.classList.remove('playing', 'pulse', 'one-count');
+    previousBlock.style.animation = 'none';
   }
-  currentBlockDisplay.classList.remove('pulse');
   currentBlockDisplay.style.animation = 'none';
   void currentBlockDisplay.offsetHeight;
   currentBlockDisplay.style.background = 'var(--form-bg)';
