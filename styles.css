@@ -156,6 +156,7 @@ main {
   border-radius: 4px;
   margin: 0 auto 20px auto;
   max-width: 600px;
+  animation: none; /* Ensure no pulse here */
 }
 
 #current-block-display .label {
@@ -204,11 +205,15 @@ main {
 }
 
 .song-block.playing {
-  border-color: #00ff00;
+  /* No static border-color here */
 }
 
-.song-block.selected {
-  border-color: #ffaa00;
+.song-block.one-count {
+  border-color: #00ff00; /* Green outline for "one" count */
+}
+
+.song-block.playing.pulse {
+  animation: pulse 1s infinite; /* Default, overridden by JS */
 }
 
 .song-block .label {
@@ -262,28 +267,28 @@ main {
 }
 
 /* Part-Type Specific Colors (Dark Theme) */
-.song-block.intro { background: #4a5e4a; } /* Dark green */
-.song-block.verse { background: #3b4a5e; } /* Dark blue */
-.song-block.refrain { background: #5e3b4a; } /* Dark red */
-.song-block.pre-chorus { background: #4a5e3b; } /* Dark olive */
-.song-block.chorus { background: #5e4a3b; } /* Dark orange */
-.song-block.post-chorus { background: #3b5e4a; } /* Dark teal */
-.song-block.bridge { background: #4a3b5e; } /* Dark purple */
-.song-block.outro { background: #5e5e3b; } /* Dark yellow */
-.song-block.elision { background: #3b4a4a; } /* Dark cyan */
-.song-block.solo { background: #5e3b5e; } /* Dark magenta */
-.song-block.ad-lib { background: #4a5e5e; } /* Dark turquoise */
-.song-block.hook { background: #5e4a4a; } /* Dark coral */
-.song-block.interlude { background: #3b5e3b; } /* Dark lime */
-.song-block.breakdown { background: #4a4a5e; } /* Dark indigo */
-.song-block.drop { background: #5e3b3b; } /* Dark crimson */
-.song-block.coda { background: #3b4a3b; } /* Dark forest */
-.song-block.modulation { background: #5e5e4a; } /* Dark gold */
-.song-block.tag { background: #4a3b4a; } /* Dark maroon */
-.song-block.chorus-reprise { background: #3b5e5e; } /* Dark aqua */
-.song-block.countermelody { background: #5e4a5e; } /* Dark violet */
-.song-block.instrumental-verse-chorus { background: #4a5e4a; } /* Dark emerald */
-.song-block.false-ending { background: #5e3b4a; } /* Dark ruby */
+.song-block.intro { background: #4a5e4a; }
+.song-block.verse { background: #3b4a5e; }
+.song-block.refrain { background: #5e3b4a; }
+.song-block.pre-chorus { background: #4a5e3b; }
+.song-block.chorus { background: #5e4a3b; }
+.song-block.post-chorus { background: #3b5e4a; }
+.song-block.bridge { background: #4a3b5e; }
+.song-block.outro { background: #5e5e3b; }
+.song-block.elision { background: #3b4a4a; }
+.song-block.solo { background: #5e3b5e; }
+.song-block.ad-lib { background: #4a5e5e; }
+.song-block.hook { background: #5e4a4a; }
+.song-block.interlude { background: #3b5e3b; }
+.song-block.breakdown { background: #4a4a5e; }
+.song-block.drop { background: #5e3b3b; }
+.song-block.coda { background: #3b4a3b; }
+.song-block.modulation { background: #5e5e4a; }
+.song-block.tag { background: #4a3b4a; }
+.song-block.chorus-reprise { background: #3b5e5e; }
+.song-block.countermelody { background: #5e4a5e; }
+.song-block.instrumental-verse-chorus { background: #4a5e4a; }
+.song-block.false-ending { background: #5e3b4a; }
 
 /* Adjust colors for Light Theme */
 [data-theme="light"] .song-block.intro { background: #a0c4a0; color: #333; }
@@ -309,7 +314,7 @@ main {
 [data-theme="light"] .song-block.instrumental-verse-chorus { background: #a0c4a0; color: #333; }
 [data-theme="light"] .song-block.false-ending { background: #c490a0; color: #333; }
 
-/* Block Style Variations (Higher specificity to override part-type colors) */
+/* Block Style Variations */
 .song-block.default { background: var(--block-bg); color: var(--text-color); }
 .song-block.vibrant { background: linear-gradient(45deg, #ff6b6b, #feca57); color: #000; }
 .song-block.pastel { background: linear-gradient(45deg, #a0c4ff, #c4f5c7); color: #000; }
@@ -319,10 +324,6 @@ main {
   0% { transform: scale(1); }
   50% { transform: scale(1.05); }
   100% { transform: scale(1); }
-}
-
-.pulse {
-  animation: pulse 1s infinite;
 }
 
 /* Footer Styles (Fixed at Bottom) */
@@ -335,7 +336,7 @@ footer {
   background: var(--footer-bg);
   border-top: 1px solid var(--border-color);
   text-align: center;
-  z-index: 1000; /* Ensure footer stays above other content */
+  z-index: 1000;
 }
 
 #time-calculator {
