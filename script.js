@@ -20,19 +20,18 @@ let lastBeatTime = 0;
 let soundEnabled = true;
 let isDarkMode = true;
 let isFormCollapsed = true;
+let activeTimeManager = null;
 
 const validTimeSignatures = [
   '4/4', '3/4', '6/8', '2/4', '5/4', '7/8', '12/8', '9/8', '11/8', '15/8', '13/8', '10/4', '8/8', '14/8', '16/8', '7/4', '6/4'
 ];
 
-// Initialize AudioContext for precise sound scheduling
 const audioContext = new AudioContext();
 let tickBuffer = null;
 let tockBuffer = null;
 let tickShortBuffer = null;
 let tockShortBuffer = null;
 
-// Preload audio files
 Promise.all([
   fetch('tick.wav').then(response => response.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => tickBuffer = decoded),
   fetch('tock.wav').then(response => response.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => tockBuffer = decoded),
@@ -40,16 +39,15 @@ Promise.all([
   fetch('tock_short.wav').then(response => response.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => tockShortBuffer = decoded)
 ]).catch(error => console.error('Failed to load audio files:', error));
 
-// Function to play a sound buffer at a specific time
 function playSound(buffer, time) {
-  if (!buffer) return; // Ensure buffer is loaded
+  if (!buffer || !soundEnabled) return;
   const source = audioContext.createBufferSource();
   source.buffer = buffer;
   source.connect(audioContext.destination);
   source.start(time);
 }
 
-const TEMPO_THRESHOLD = 150; // Switch to short sounds above 150 BPM
+const TEMPO_THRESHOLD = 150;
 
 class TimeManager {
   constructor(tempo, beatsPerMeasure, totalBeats, callback) {
@@ -59,7 +57,7 @@ class TimeManager {
     this.callback = callback;
     this.startTime = null;
     this.lastBeat = -1;
-    this.beatDuration = 60 / tempo; // Duration of one beat in seconds
+    this.beatDuration = 60 / tempo;
     this.running = false;
   }
 
@@ -193,7 +191,7 @@ function randomizeSong() {
 
 function updateTitle(name) {
   currentSongName = name;
-  document.title = `${name} - TuneTetris`;
+  document.title = `${name} - SongMaker`;
   printSongName.textContent = name;
 }
 
@@ -391,16 +389,13 @@ function clearSelection() {
 
 function getBeatsPerMeasure(timeSignature) {
   const [numerator, denominator] = timeSignature.split('/').map(Number);
-  // Handle compound time signatures (e.g., 6/8, 9/8, 12/8)
   if (denominator === 8 && numerator % 3 === 0) {
-    return numerator / 3; // Each beat is a dotted quarter note (3 eighth notes)
+    return numerator / 3; // Compound time signatures (e.g., 6/8 = 2 beats)
   }
-  // For 6/4, treat as 6 quarter-note beats (not 2 dotted half-note beats, to match Jambi's feel)
   if (timeSignature === '6/4') {
-    return 6;
+    return 6; // Treat as 6 quarter-note beats
   }
-  // For simple time signatures (e.g., 4/4, 3/4) and others (e.g., 5/4), the numerator is the number of beats
-  return numerator;
+  return numerator; // Simple time signatures
 }
 
 function calculateTimings() {
@@ -413,7 +408,7 @@ function calculateTimings() {
     const measures = parseInt(block.getAttribute('data-measures'));
     const timeSignature = block.getAttribute('data-time-signature');
     const beatsPerMeasure = getBeatsPerMeasure(timeSignature);
-    const beatDuration = 60 / tempo; // Duration of one beat in seconds
+    const beatDuration = 60 / tempo;
     const totalBlockBeats = measures * beatsPerMeasure;
     const duration = totalBlockBeats * beatDuration;
 
@@ -475,31 +470,27 @@ function playLeadIn(timings, totalSeconds, totalBeats) {
     <span class="label">Lead-In</span>
     <span class="info">Beat: 0 of ${leadInBeats}</span>
   `;
-  currentBlockDisplay.classList.add('pulse');
-  currentBlockDisplay.style.animation = `pulse ${beatDuration}s infinite`;
 
   const startTime = audioContext.currentTime;
   for (let beat = 0; beat < leadInBeats; beat++) {
     const soundTime = startTime + (beat * beatDuration);
-    if (soundEnabled) {
-      playSound(beat === 0 ? currentTockBuffer : currentTickBuffer, soundTime);
-    }
+    playSound(beat === 0 ? currentTockBuffer : currentTickBuffer, soundTime);
   }
 
-  const timeManager = new TimeManager(firstBlock.tempo, 4, leadInBeats - 1, ({ elapsedTime, beat, isFirstBeat }) => {
+  activeTimeManager = new TimeManager(firstBlock.tempo, 4, leadInBeats - 1, ({ elapsedTime, beat }) => {
     currentBlockDisplay.innerHTML = `
       <span class="label">Lead-In</span>
       <span class="info">Beat: ${beat + 1} of ${leadInBeats}</span>
     `;
     currentTime = elapsedTime;
-    timeCalculator.textContent = `Current Time: ${formatDuration(currentTime)} / Total Duration: ${formatDuration(totalSeconds)} | Song Beat: ${currentBeat} of ${totalBeats} | Block: ${blockBeat} of 0 (Measure: ${blockMeasure} of 0)`;
+    timeCalculator.textContent = `Current Time: ${formatDuration(currentTime)} / Total Duration: ${formatDuration(totalSeconds)} | Song Beat: ${currentBeat} of ${totalBeats} | Block: ${blockBeat} of ${timings.length} (Measure: ${blockMeasure} of 0)`;
   });
 
-  timeManager.start();
+  activeTimeManager.start();
 
   setTimeout(() => {
-    timeManager.stop();
-    currentBlockDisplay.classList.remove('pulse');
+    if (activeTimeManager) activeTimeManager.stop();
+    activeTimeManager = null;
     currentTime = 0;
     playSong(timings, totalSeconds, totalBeats);
   }, leadInBeats * beatDuration * 1000);
@@ -515,6 +506,8 @@ function playSong(timings, totalSeconds, totalBeats) {
   updateCurrentBlock(timings[currentIndex]);
 
   const runBlock = () => {
+    if (!isPlaying) return;
+
     const currentTiming = timings[currentIndex];
     const beatDuration = 60 / currentTiming.tempo;
     const blockDuration = currentTiming.duration;
@@ -524,17 +517,14 @@ function playSong(timings, totalSeconds, totalBeats) {
     const currentTickBuffer = useShortSounds ? tickShortBuffer : tickBuffer;
     const currentTockBuffer = useShortSounds ? tockShortBuffer : tockBuffer;
 
-    // Schedule all beats for this block
     const startTime = audioContext.currentTime + blockStartTime;
     for (let beat = 0; beat < totalBlockBeats; beat++) {
       const soundTime = startTime + (beat * beatDuration);
-      const isFirstBeat = beat % currentTiming.beatsPerMeasure === 0;
-      if (soundEnabled) {
-        playSound(isFirstBeat ? currentTockBuffer : currentTickBuffer, soundTime);
-      }
+      const isFirstBeatOfMeasure = beat % currentTiming.beatsPerMeasure === 0;
+      playSound(isFirstBeatOfMeasure ? currentTockBuffer : currentTickBuffer, soundTime);
     }
 
-    const timeManager = new TimeManager(
+    activeTimeManager = new TimeManager(
       currentTiming.tempo,
       currentTiming.beatsPerMeasure,
       totalBlockBeats - 1,
@@ -557,22 +547,27 @@ function playSong(timings, totalSeconds, totalBeats) {
         `;
 
         timeCalculator.textContent = `Current Time: ${formatDuration(currentTime)} / Total Duration: ${formatDuration(totalSeconds)} | Song Beat: ${currentBeat} of ${totalBeats} | Block: ${blockNum} of ${totalBlocks} (Measure: ${blockMeasure} of ${currentTiming.totalMeasures})`;
+
+        if (isFirstBeat) {
+          currentTiming.block.classList.add('one-count');
+        } else {
+          currentTiming.block.classList.remove('one-count');
+        }
       }
     );
 
-    timeManager.start();
+    activeTimeManager.start();
 
     setTimeout(() => {
-      timeManager.stop();
+      if (activeTimeManager) activeTimeManager.stop();
+      activeTimeManager = null;
       cumulativeBeats += totalBlockBeats;
       currentIndex++;
-      if (currentIndex < timings.length) {
+      if (currentIndex < timings.length && isPlaying) {
         blockStartTime += blockDuration;
         updateCurrentBlock(timings[currentIndex]);
         runBlock();
       } else {
-        playBtn.textContent = 'Play';
-        isPlaying = false;
         resetPlayback();
       }
     }, blockDuration * 1000);
@@ -583,13 +578,20 @@ function playSong(timings, totalSeconds, totalBeats) {
 
 function updateCurrentBlock(timing) {
   const previousBlock = timeline.querySelector('.playing');
-  if (previousBlock) previousBlock.classList.remove('playing');
-  timing.block.classList.add('playing');
+  if (previousBlock) {
+    previousBlock.classList.remove('playing', 'pulse', 'one-count');
+    previousBlock.style.animation = 'none';
+  }
+  timing.block.classList.add('playing', 'pulse');
   const beatDuration = 60 / timing.tempo;
-  currentBlockDisplay.style.animation = `pulse ${beatDuration}s infinite`;
+  timing.block.style.animation = `pulse ${beatDuration}s infinite`;
 }
 
 function resetPlayback() {
+  if (activeTimeManager) {
+    activeTimeManager.stop();
+    activeTimeManager = null;
+  }
   currentTime = 0;
   currentBeat = 0;
   blockBeat = 0;
@@ -600,8 +602,10 @@ function resetPlayback() {
   playBtn.textContent = 'Play';
 
   const previousBlock = timeline.querySelector('.playing');
-  if (previousBlock) previousBlock.classList.remove('playing');
-  currentBlockDisplay.classList.remove('pulse');
+  if (previousBlock) {
+    previousBlock.classList.remove('playing', 'pulse', 'one-count');
+    previousBlock.style.animation = 'none';
+  }
   currentBlockDisplay.style.animation = 'none';
   void currentBlockDisplay.offsetHeight;
   currentBlockDisplay.style.background = 'var(--form-bg)';
@@ -664,11 +668,7 @@ function loadSongData(songData) {
     }
   }
 
-  if (isPlaying) {
-    isPlaying = false;
-    playBtn.textContent = 'Play';
-    resetPlayback();
-  }
+  if (isPlaying) resetPlayback();
 
   timeline.innerHTML = '';
   if (selectedBlock) clearSelection();
@@ -704,11 +704,7 @@ function loadSongFromDropdown(filename) {
   }
 
   if (filename === 'new-song') {
-    if (isPlaying) {
-      isPlaying = false;
-      playBtn.textContent = 'Play';
-      resetPlayback();
-    }
+    if (isPlaying) resetPlayback();
 
     timeline.innerHTML = '';
     if (selectedBlock) clearSelection();
@@ -718,7 +714,6 @@ function loadSongFromDropdown(filename) {
     toggleFormBtn.textContent = 'Hide Parameters';
 
     currentSongName = 'New Song';
-    document.getElementById('song-name').value = currentSongName;
     updateTitle(currentSongName);
 
     calculateTimings();
@@ -732,180 +727,38 @@ function loadSongFromDropdown(filename) {
   console.log(`Attempting to load: ${filename}`);
   try {
     if (filename === 'pneuma.js') {
-      if (typeof loadPneuma === 'function') {
-        console.log("Calling loadPneuma");
-        loadPneuma();
-      } else {
-        fetch(filename)
-          .then(response => {
-            if (!response.ok) throw new Error('Failed to fetch Pneuma file');
-            return response.text();
-          })
-          .then(text => {
-            eval(text);
-            console.log("Fetched and evaluated pneuma.js");
-            loadPneuma();
-          })
-          .catch(error => {
-            console.error(`Failed to load Pneuma: ${error.message}`);
-            alert(`Failed to load song: ${error.message}`);
-          });
-      }
+      if (typeof loadPneuma === 'function') loadPneuma();
+      else fetch(filename).then(response => response.text()).then(text => { eval(text); loadPneuma(); });
     } else if (filename === 'satisfaction.js') {
-      if (typeof loadSatisfaction === 'function') {
-        console.log("Calling loadSatisfaction");
-        loadSatisfaction();
-      } else {
-        fetch(filename)
-          .then(response => {
-            if (!response.ok) throw new Error('Failed to fetch Satisfaction file');
-            return response.text();
-          })
-          .then(text => {
-            eval(text);
-            console.log("Fetched and evaluated satisfaction.js");
-            loadSatisfaction();
-          })
-          .catch(error => {
-            console.error(`Failed to load Satisfaction: ${error.message}`);
-            alert(`Failed to load song: ${error.message}`);
-          });
-      }
+      if (typeof loadSatisfaction === 'function') loadSatisfaction();
+      else fetch(filename).then(response => response.text()).then(text => { eval(text); loadSatisfaction(); });
     } else if (filename === 'dirtyLaundry.js') {
-      if (typeof loadDirtyLaundry === 'function') {
-        console.log("Calling loadDirtyLaundry");
-        loadDirtyLaundry();
-      } else {
-        fetch(filename)
-          .then(response => {
-            if (!response.ok) throw new Error('Failed to fetch Dirty Laundry file');
-            return response.text();
-          })
-          .then(text => {
-            eval(text);
-            console.log("Fetched and evaluated dirtyLaundry.js");
-            loadDirtyLaundry();
-          })
-          .catch(error => {
-            console.error(`Failed to load Dirty Laundry: ${error.message}`);
-            alert(`Failed to load song: ${error.message}`);
-          });
-      }
+      if (typeof loadDirtyLaundry === 'function') loadDirtyLaundry();
+      else fetch(filename).then(response => response.text()).then(text => { eval(text); loadDirtyLaundry(); });
     } else if (filename === 'invincible.js') {
-      if (typeof loadInvincible === 'function') {
-        console.log("Calling loadInvincible");
-        loadInvincible();
-      } else {
-        fetch(filename)
-          .then(response => {
-            if (!response.ok) throw new Error('Failed to fetch Invincible file');
-            return response.text();
-          })
-          .then(text => {
-            eval(text);
-            console.log("Fetched and evaluated invincible.js");
-            loadInvincible();
-          })
-          .catch(error => {
-            console.error(`Failed to load Invincible: ${error.message}`);
-            alert(`Failed to load song: ${error.message}`);
-          });
-      }
+      if (typeof loadInvincible === 'function') loadInvincible();
+      else fetch(filename).then(response => response.text()).then(text => { eval(text); loadInvincible(); });
     } else if (filename === 'astroworld.js') {
-      if (typeof loadAstroworld === 'function') {
-        console.log("Calling loadAstroworld");
-        loadAstroworld();
-      } else {
-        fetch(filename)
-          .then(response => {
-            if (!response.ok) throw new Error('Failed to fetch ASTROWORLD file');
-            return response.text();
-          })
-          .then(text => {
-            eval(text);
-            console.log("Fetched and evaluated astroworld.js");
-            loadAstroworld();
-          })
-          .catch(error => {
-            console.error(`Failed to load ASTROWORLD: ${error.message}`);
-            alert(`Failed to load song: ${error.message}`);
-          });
-      }
+      if (typeof loadAstroworld === 'function') loadAstroworld();
+      else fetch(filename).then(response => response.text()).then(text => { eval(text); loadAstroworld(); });
     } else if (filename === 'astrothunder.js') {
-      if (typeof loadAstrothunder === 'function') {
-        console.log("Calling loadAstrothunder");
-        loadAstrothunder();
-      } else {
-        fetch(filename)
-          .then(response => {
-            if (!response.ok) throw new Error('Failed to fetch ASTROTHUNDER file');
-            return response.text();
-          })
-          .then(text => {
-            eval(text);
-            console.log("Fetched and evaluated astrothunder.js");
-            loadAstrothunder();
-          })
-          .catch(error => {
-            console.error(`Failed to load ASTROTHUNDER: ${error.message}`);
-            alert(`Failed to load song: ${error.message}`);
-          });
-      }
+      if (typeof loadAstrothunder === 'function') loadAstrothunder();
+      else fetch(filename).then(response => response.text()).then(text => { eval(text); loadAstrothunder(); });
     } else if (filename === 'jambi.js') {
-      if (typeof loadJambi === 'function') {
-        console.log("Calling loadJambi");
-        loadJambi();
-      } else {
-        fetch(filename)
-          .then(response => {
-            if (!response.ok) throw new Error('Failed to fetch Jambi file');
-            return response.text();
-          })
-          .then(text => {
-            eval(text);
-            console.log("Fetched and evaluated jambi.js");
-            loadJambi();
-          })
-          .catch(error => {
-            console.error(`Failed to load Jambi: ${error.message}`);
-            alert(`Failed to load song: ${error.message}`);
-          });
-      }
+      if (typeof loadJambi === 'function') loadJambi();
+      else fetch(filename).then(response => response.text()).then(text => { eval(text); loadJambi(); });
     } else if (filename === 'Echoes of Joy.json') {
       fetch(filename)
-        .then(response => {
-          if (!response.ok) throw new Error(`Failed to fetch Echoes of Joy file: ${response.statusText}`);
-          return response.text();
-        })
-        .then(text => {
-          let data;
-          try {
-            data = JSON.parse(text);
-          } catch (e) {
-            throw new Error(`Invalid JSON format in Echoes of Joy.json: ${e.message}`);
-          }
-          loadSongData(data);
-          console.log(`Loaded JSON song: ${filename}`);
-        })
+        .then(response => response.text())
+        .then(text => loadSongData(JSON.parse(text)))
         .catch(error => {
           console.error(`Failed to load Echoes of Joy: ${error.message}`);
           alert(`Failed to load song: ${error.message}`);
-          const fallbackSong = availableSongs.find(song => song !== 'Echoes of Joy.json');
-          if (fallbackSong) {
-            console.log(`Falling back to ${fallbackSong}`);
-            loadSongFromDropdown(fallbackSong);
-          }
         });
     } else {
       fetch(filename)
-        .then(response => {
-          if (!response.ok) throw new Error('Failed to fetch song file');
-          return response.json();
-        })
-        .then(data => {
-          loadSongData(data);
-          console.log(`Loaded JSON song: ${filename}`);
-        })
+        .then(response => response.json())
+        .then(data => loadSongData(data))
         .catch(error => {
           console.error(`Failed to load JSON song: ${error.message}`);
           alert(`Failed to load song: ${error.message}`);
