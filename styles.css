@@ -150,12 +150,7 @@ main {
 
 /* Current Block Display Styles */
 #current-block-display {
-  /* text-align: center;
-  padding: 10px;
-  background: var(--form-bg);
-  border-radius: 4px;
-  margin: 0 auto 20px auto;
-  max-width: 600px; */
+  animation: none;
 }
 
 #current-block-display .label {
