@@ -515,10 +515,8 @@ function playSong(timings, totalSeconds, totalBeats) {
   updateCurrentBlock(timings[currentIndex]);
 
   const runBlock = () => {
-    if (!isPlaying) return;
-
     const currentTiming = timings[currentIndex];
-    const beatDuration = 60 / currentTiming.tempo; // Seconds per beat
+    const beatDuration = 60 / currentTiming.tempo;
     const blockDuration = currentTiming.duration;
     const totalBlockBeats = currentTiming.totalBeats;
 
@@ -526,15 +524,17 @@ function playSong(timings, totalSeconds, totalBeats) {
     const currentTickBuffer = useShortSounds ? tickShortBuffer : tickBuffer;
     const currentTockBuffer = useShortSounds ? tockShortBuffer : tockBuffer;
 
-    // Schedule beats: tock on first beat of each measure, tick on others
+    // Schedule all beats for this block
     const startTime = audioContext.currentTime + blockStartTime;
     for (let beat = 0; beat < totalBlockBeats; beat++) {
       const soundTime = startTime + (beat * beatDuration);
-      const isFirstBeatOfMeasure = beat % currentTiming.beatsPerMeasure === 0;
-      playSound(isFirstBeatOfMeasure ? currentTockBuffer : currentTickBuffer, soundTime);
+      const isFirstBeat = beat % currentTiming.beatsPerMeasure === 0;
+      if (soundEnabled) {
+        playSound(isFirstBeat ? currentTockBuffer : currentTickBuffer, soundTime);
+      }
     }
 
-    activeTimeManager = new TimeManager(
+    const timeManager = new TimeManager(
       currentTiming.tempo,
       currentTiming.beatsPerMeasure,
       totalBlockBeats - 1,
@@ -557,28 +557,22 @@ function playSong(timings, totalSeconds, totalBeats) {
         `;
 
         timeCalculator.textContent = `Current Time: ${formatDuration(currentTime)} / Total Duration: ${formatDuration(totalSeconds)} | Song Beat: ${currentBeat} of ${totalBeats} | Block: ${blockNum} of ${totalBlocks} (Measure: ${blockMeasure} of ${currentTiming.totalMeasures})`;
-
-        // Toggle green outline on the pulsing block for "one" count
-        if (isFirstBeat) {
-          currentTiming.block.classList.add('one-count');
-        } else {
-          currentTiming.block.classList.remove('one-count');
-        }
       }
     );
 
-    activeTimeManager.start();
+    timeManager.start();
 
     setTimeout(() => {
-      if (activeTimeManager) activeTimeManager.stop();
-      activeTimeManager = null;
+      timeManager.stop();
       cumulativeBeats += totalBlockBeats;
       currentIndex++;
-      if (currentIndex < timings.length && isPlaying) {
+      if (currentIndex < timings.length) {
         blockStartTime += blockDuration;
         updateCurrentBlock(timings[currentIndex]);
         runBlock();
       } else {
+        playBtn.textContent = 'Play';
+        isPlaying = false;
         resetPlayback();
       }
     }, blockDuration * 1000);
@@ -589,20 +583,13 @@ function playSong(timings, totalSeconds, totalBeats) {
 
 function updateCurrentBlock(timing) {
   const previousBlock = timeline.querySelector('.playing');
-  if (previousBlock) {
-    previousBlock.classList.remove('playing', 'pulse', 'one-count');
-    previousBlock.style.animation = 'none';
-  }
-  timing.block.classList.add('playing', 'pulse');
-  const beatDuration = 60 / timing.tempo; // Correct beat duration
-  timing.block.style.animation = `pulse ${beatDuration}s infinite`;
+  if (previousBlock) previousBlock.classList.remove('playing');
+  timing.block.classList.add('playing');
+  const beatDuration = 60 / timing.tempo;
+  currentBlockDisplay.style.animation = `pulse ${beatDuration}s infinite`;
 }
 
 function resetPlayback() {
-  if (activeTimeManager) {
-    activeTimeManager.stop();
-    activeTimeManager = null;
-  }
   currentTime = 0;
   currentBeat = 0;
   blockBeat = 0;
@@ -613,10 +600,8 @@ function resetPlayback() {
   playBtn.textContent = 'Play';
 
   const previousBlock = timeline.querySelector('.playing');
-  if (previousBlock) {
-    previousBlock.classList.remove('playing', 'pulse', 'one-count');
-    previousBlock.style.animation = 'none';
-  }
+  if (previousBlock) previousBlock.classList.remove('playing');
+  currentBlockDisplay.classList.remove('pulse');
   currentBlockDisplay.style.animation = 'none';
   void currentBlockDisplay.offsetHeight;
   currentBlockDisplay.style.background = 'var(--form-bg)';

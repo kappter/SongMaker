@@ -150,7 +150,12 @@ main {
 
 /* Current Block Display Styles */
 #current-block-display {
-  animation: none;
+  text-align: center;
+  padding: 10px;
+  background: var(--form-bg);
+  border-radius: 4px;
+  margin: 0 auto 20px auto;
+  max-width: 600px;
 }
 
 #current-block-display .label {
@@ -199,15 +204,7 @@ main {
 }
 
 .song-block.playing {
-  /* border-color: #00ff00; */
-}
-
-.song-block.one-count {
-  border-color: #00ff00; /* Green stroke for "one" count */
-}
-
-.song-block.playing.pulse {
-  animation: pulse 1s infinite; /* Default duration, overridden by JS */
+  border-color: #00ff00;
 }
 
 .song-block.selected {
