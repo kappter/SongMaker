@@ -63,8 +63,7 @@ class TimeManager {
 
   start() {
     this.running = true;
-    this.startTime = performance.now() / 1000;
-    this.lastBeat = -1;
+    this.startTime = performance.now() / 1000 - (this.lastBeat + 1) * this.beatDuration;
     requestAnimationFrame(this.tick.bind(this));
   }
 
@@ -390,12 +389,12 @@ function clearSelection() {
 function getBeatsPerMeasure(timeSignature) {
   const [numerator, denominator] = timeSignature.split('/').map(Number);
   if (denominator === 8 && numerator % 3 === 0) {
-    return numerator / 3; // Compound time signatures (e.g., 6/8 = 2 beats)
+    return numerator / 3; // Compound time (e.g., 6/8 = 2 beats)
   }
   if (timeSignature === '6/4') {
-    return 6; // Treat as 6 quarter-note beats
+    return 6; // 6 quarter-note beats
   }
-  return numerator; // Simple time signatures
+  return numerator; // Simple time
 }
 
 function calculateTimings() {
@@ -459,15 +458,16 @@ function togglePlay() {
 function playLeadIn(timings, totalSeconds, totalBeats) {
   const firstBlock = timings[0];
   const beatDuration = 60 / firstBlock.tempo;
-  const leadInBeats = 4;
+  const leadInBeats = firstBlock.beatsPerMeasure;
 
   const useShortSounds = firstBlock.tempo > TEMPO_THRESHOLD;
   const currentTickBuffer = useShortSounds ? tickShortBuffer : tickBuffer;
   const currentTockBuffer = useShortSounds ? tockShortBuffer : tockBuffer;
 
-  currentBlockDisplay.style.backgroundColor = '#3b4048';
+  currentBlockDisplay.classList.add('pulse');
+  currentBlockDisplay.style.animation = `pulse ${beatDuration}s infinite`;
   currentBlockDisplay.innerHTML = `
-    <span class="label">Lead-In</span>
+    <span class="label">Lead-In (${firstBlock.block.getAttribute('data-time-signature')})</span>
     <span class="info">Beat: 0 of ${leadInBeats}</span>
   `;
 
@@ -477,13 +477,19 @@ function playLeadIn(timings, totalSeconds, totalBeats) {
     playSound(beat === 0 ? currentTockBuffer : currentTickBuffer, soundTime);
   }
 
-  activeTimeManager = new TimeManager(firstBlock.tempo, 4, leadInBeats - 1, ({ elapsedTime, beat }) => {
+  activeTimeManager = new TimeManager(firstBlock.tempo, leadInBeats, leadInBeats - 1, ({ elapsedTime, beat, isFirstBeat }) => {
     currentBlockDisplay.innerHTML = `
-      <span class="label">Lead-In</span>
+      <span class="label">Lead-In (${firstBlock.block.getAttribute('data-time-signature')})</span>
       <span class="info">Beat: ${beat + 1} of ${leadInBeats}</span>
     `;
     currentTime = elapsedTime;
     timeCalculator.textContent = `Current Time: ${formatDuration(currentTime)} / Total Duration: ${formatDuration(totalSeconds)} | Song Beat: ${currentBeat} of ${totalBeats} | Block: ${blockBeat} of ${timings.length} (Measure: ${blockMeasure} of 0)`;
+
+    if (isFirstBeat) {
+      currentBlockDisplay.classList.add('one-count');
+    } else {
+      currentBlockDisplay.classList.remove('one-count');
+    }
   });
 
   activeTimeManager.start();
@@ -517,6 +523,9 @@ function playSong(timings, totalSeconds, totalBeats) {
     const currentTickBuffer = useShortSounds ? tickShortBuffer : tickBuffer;
     const currentTockBuffer = useShortSounds ? tockShortBuffer : tockBuffer;
 
+    currentBlockDisplay.classList.add('pulse');
+    currentBlockDisplay.style.animation = `pulse ${beatDuration}s infinite`;
+
     const startTime = audioContext.currentTime + blockStartTime;
     for (let beat = 0; beat < totalBlockBeats; beat++) {
       const soundTime = startTime + (beat * beatDuration);
@@ -549,9 +558,9 @@ function playSong(timings, totalSeconds, totalBeats) {
         timeCalculator.textContent = `Current Time: ${formatDuration(currentTime)} / Total Duration: ${formatDuration(totalSeconds)} | Song Beat: ${currentBeat} of ${totalBeats} | Block: ${blockNum} of ${totalBlocks} (Measure: ${blockMeasure} of ${currentTiming.totalMeasures})`;
 
         if (isFirstBeat) {
-          currentTiming.block.classList.add('one-count');
+          currentBlockDisplay.classList.add('one-count');
         } else {
-          currentTiming.block.classList.remove('one-count');
+          currentBlockDisplay.classList.remove('one-count');
         }
       }
     );
@@ -570,7 +579,7 @@ function playSong(timings, totalSeconds, totalBeats) {
       } else {
         resetPlayback();
       }
-    }, blockDuration * 1000);
+    }, blockDuration * 1000 + 50);
   };
 
   runBlock();
@@ -579,12 +588,11 @@ function playSong(timings, totalSeconds, totalBeats) {
 function updateCurrentBlock(timing) {
   const previousBlock = timeline.querySelector('.playing');
   if (previousBlock) {
-    previousBlock.classList.remove('playing', 'pulse', 'one-count');
-    previousBlock.style.animation = 'none';
+    previousBlock.classList.remove('playing');
   }
-  timing.block.classList.add('playing', 'pulse');
+  timing.block.classList.add('playing');
   const beatDuration = 60 / timing.tempo;
-  timing.block.style.animation = `pulse ${beatDuration}s infinite`;
+  currentBlockDisplay.style.animation = `pulse ${beatDuration}s infinite`;
 }
 
 function resetPlayback() {
@@ -603,11 +611,10 @@ function resetPlayback() {
 
   const previousBlock = timeline.querySelector('.playing');
   if (previousBlock) {
-    previousBlock.classList.remove('playing', 'pulse', 'one-count');
-    previousBlock.style.animation = 'none';
+    previousBlock.classList.remove('playing');
   }
+  currentBlockDisplay.classList.remove('pulse', 'one-count');
   currentBlockDisplay.style.animation = 'none';
-  void currentBlockDisplay.offsetHeight;
   currentBlockDisplay.style.background = 'var(--form-bg)';
   currentBlockDisplay.innerHTML = '<span class="label">No block playing</span>';
 
@@ -626,11 +633,7 @@ function exportSong() {
     lyrics: block.getAttribute('data-lyrics')
   }));
 
-  const songData = {
-    songName: currentSongName,
-    blocks
-  };
-
+  const songData = { songName: currentSongName, blocks };
   const blob = new Blob([JSON.stringify(songData, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -663,9 +666,7 @@ function loadSongData(songData) {
 
   for (let i = 0; i < songData.blocks.length; i++) {
     const error = validateBlock(songData.blocks[i]);
-    if (error) {
-      throw new Error(`Block ${i + 1}: ${error}`);
-    }
+    if (error) throw new Error(`Block ${i + 1}: ${error}`);
   }
 
   if (isPlaying) resetPlayback();
@@ -705,22 +706,16 @@ function loadSongFromDropdown(filename) {
 
   if (filename === 'new-song') {
     if (isPlaying) resetPlayback();
-
     timeline.innerHTML = '';
     if (selectedBlock) clearSelection();
-
     isFormCollapsed = false;
     formContent.classList.remove('collapsed');
     toggleFormBtn.textContent = 'Hide Parameters';
-
     currentSongName = 'New Song';
     updateTitle(currentSongName);
-
     calculateTimings();
-
     const styleDropdown = document.getElementById('style-dropdown');
     styleDropdown.value = '';
-
     return;
   }
 
@@ -748,21 +743,9 @@ function loadSongFromDropdown(filename) {
       if (typeof loadJambi === 'function') loadJambi();
       else fetch(filename).then(response => response.text()).then(text => { eval(text); loadJambi(); });
     } else if (filename === 'Echoes of Joy.json') {
-      fetch(filename)
-        .then(response => response.text())
-        .then(text => loadSongData(JSON.parse(text)))
-        .catch(error => {
-          console.error(`Failed to load Echoes of Joy: ${error.message}`);
-          alert(`Failed to load song: ${error.message}`);
-        });
+      fetch(filename).then(response => response.text()).then(text => loadSongData(JSON.parse(text)));
     } else {
-      fetch(filename)
-        .then(response => response.json())
-        .then(data => loadSongData(data))
-        .catch(error => {
-          console.error(`Failed to load JSON song: ${error.message}`);
-          alert(`Failed to load song: ${error.message}`);
-        });
+      fetch(filename).then(response => response.json()).then(data => loadSongData(data));
     }
     songDropdown.value = filename;
   } catch (error) {
