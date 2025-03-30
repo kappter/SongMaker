@@ -168,16 +168,16 @@ main {
   text-align: center;
   padding: 12px;
   background: var(--form-bg);
+  border: 2px solid var(--border-color); /* Base border always visible */
   border-radius: 6px;
   margin: 0 auto 20px;
   max-width: 600px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: background-color 0.1s ease-in-out; /* Fast transition for blink */
+  transition: border-color 0.1s ease-in-out; /* Fast transition for stroke */
 }
 
 #current-block-display.one-count {
-  background-color: var(--highlight-green); /* Green blink on "one" count */
-  color: #000; /* Ensure text is readable */
+  border-color: var(--highlight-green); /* Green stroke on "one" count */
 }
 
 #current-block-display.pulse {
