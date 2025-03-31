@@ -774,7 +774,17 @@ function populateSongDropdown() {
 }
 
 function printSong() {
+  // Prepare for print: Add a class to trigger specific styling if needed
+  document.body.classList.add('printing');
+
+  // Ensure all blocks are visible and calculated
+  calculateTimings();
+
+  // Trigger print
   window.print();
+
+  // Clean up after print
+  document.body.classList.remove('printing');
 }
 
 populateSongDropdown();
