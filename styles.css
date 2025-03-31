@@ -358,8 +358,6 @@ footer {
   font-size: 0.9em;
   color: #bbb;
 }
-
-/* Print Styles */
 /* Base styles remain unchanged (app screen rendering is preserved) */
 
 /* Print-specific styles */
@@ -373,20 +371,20 @@ footer {
   }
 
   #print-song-name {
-    font-size: 28pt; /* Slightly larger for prominence */
+    font-size: 28pt;
     font-weight: bold;
     text-align: center;
-    margin: 15px 0; /* Slightly more margin for balance */
+    margin: 15px 0;
     padding-bottom: 5px;
     color: #000 !important;
-    font-family: 'Georgia', 'Times New Roman', serif; /* More elegant font */
-    border-bottom: 2px solid #333; /* Subtle underline for style */
-    letter-spacing: 1px; /* Add a touch of spacing for elegance */
+    font-family: 'Georgia', 'Times New Roman', serif;
+    border-bottom: 2px solid #333;
+    letter-spacing: 1px;
   }
 
   #timeline {
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap; /* Allow multiple blocks per line */
     gap: 10px;
     width: 100%;
     padding: 0;
@@ -394,9 +392,10 @@ footer {
   }
 
   .song-block {
-    break-inside: avoid;
+    break-inside: avoid; /* Prevent block from splitting across pages */
     page-break-inside: avoid;
-    width: 100%;
+    flex: 0 0 auto; /* Allow blocks to size based on content */
+    width: 200px; /* Fixed width for consistency, adjust as needed */
     margin: 0;
     padding: 10px;
     box-sizing: border-box;
@@ -450,9 +449,9 @@ footer {
   @page {
     @bottom-center {
       content: "© 2025 SongMaker by kappter. All rights reserved.";
-      font-size: 9pt; /* Smaller for subtlety */
-      font-style: italic; /* Italicized for elegance */
-      color: #555 !important; /* Light gray for a subtle look */
+      font-size: 9pt;
+      font-style: italic;
+      color: #555 !important;
       font-family: 'Helvetica', 'Arial', sans-serif;
     }
     margin-top: 0;
