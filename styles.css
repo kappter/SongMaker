@@ -374,8 +374,8 @@ footer {
   body {
     margin: 0;
     padding: 1in;
-    font-family: 'Helvetica', 'Arial', sans-serif; /* Professional font stack */
-    color: #000;
+    font-family: 'Helvetica', 'Arial', sans-serif;
+    color: #000; /* Base text color for print */
     background: #fff;
   }
 
@@ -385,12 +385,13 @@ footer {
     text-align: center;
     margin-bottom: 30px;
     padding: 0;
+    color: #000 !important; /* Force black for header */
   }
 
   #timeline {
     display: flex;
     flex-direction: column;
-    gap: 15px; /* Increased spacing between blocks */
+    gap: 15px;
     width: 100%;
     padding: 0;
     margin: 0;
@@ -401,25 +402,24 @@ footer {
     page-break-inside: avoid;
     width: 100%;
     margin: 0;
-    padding: 15px; /* More padding for breathing room */
+    padding: 15px;
     box-sizing: border-box;
-    border: 1px solid #ccc; /* Lighter border for subtlety */
+    border: 1px solid #ccc;
     background: #fff;
     color: #000;
   }
 
   .song-block .label {
     font-size: 12pt;
-    line-height: 1.6; /* Improved readability */
+    line-height: 1.6;
     display: block;
     margin: 0;
     padding: 0;
-    white-space: normal; /* Allow natural text wrapping */
+    white-space: normal;
   }
 
-  /* Format label content cleanly */
   .song-block .label::before {
-    content: attr(data-part-type) ": "; /* Use part type as a header */
+    content: attr(data-part-type) ": ";
     font-weight: bold;
     text-transform: capitalize;
   }
@@ -428,7 +428,7 @@ footer {
     content: attr(data-time-signature) " | " attr(data-measures) " measures | " 
             attr(data-root-note) " " attr(data-mode) " | " attr(data-tempo) " BPM | " 
             attr(data-feel) 
-            attr(data-lyrics, ""); /* Lyrics optional, appended if present */
+            attr(data-lyrics, "");
     font-weight: normal;
   }
 
@@ -448,14 +448,14 @@ footer {
   #export-btn,
   #import-btn,
   #randomize-btn {
-    display: none; /* Ensure all UI elements are hidden */
+    display: none;
   }
 
   @page {
     @bottom-center {
       content: "© 2025 SongMaker by kappter. All rights reserved.";
       font-size: 10pt;
-      color: #666;
+      color: #000 !important; /* Force black for footer */
     }
   }
 
