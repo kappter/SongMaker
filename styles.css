@@ -373,45 +373,63 @@ footer {
 @media print {
   body {
     margin: 0;
-    padding: 1in; /* Standard margin for print */
-    font-family: Arial, sans-serif;
+    padding: 1in;
+    font-family: 'Helvetica', 'Arial', sans-serif; /* Professional font stack */
     color: #000;
-    background: #fff; /* Ensure white background for print */
+    background: #fff;
   }
 
   #print-song-name {
-    font-size: 36pt; /* Larger title */
+    font-size: 36pt;
     font-weight: bold;
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 30px;
     padding: 0;
   }
 
   #timeline {
     display: flex;
-    flex-direction: column; /* Stack blocks vertically for print */
-    gap: 10px;
+    flex-direction: column;
+    gap: 15px; /* Increased spacing between blocks */
     width: 100%;
     padding: 0;
     margin: 0;
   }
 
   .song-block {
-    break-inside: avoid; /* Prevent splitting across pages */
-    page-break-inside: avoid; /* Fallback for older browsers */
-    width: 100%; /* Full width for print */
-    max-width: none;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    width: 100%;
     margin: 0;
-    padding: 10px;
+    padding: 15px; /* More padding for breathing room */
     box-sizing: border-box;
-    border: 1px solid #000; /* Clean border for print */
+    border: 1px solid #ccc; /* Lighter border for subtlety */
     background: #fff;
     color: #000;
   }
 
   .song-block .label {
     font-size: 12pt;
-    line-height: 1.5;
+    line-height: 1.6; /* Improved readability */
+    display: block;
+    margin: 0;
+    padding: 0;
+    white-space: normal; /* Allow natural text wrapping */
+  }
+
+  /* Format label content cleanly */
+  .song-block .label::before {
+    content: attr(data-part-type) ": "; /* Use part type as a header */
+    font-weight: bold;
+    text-transform: capitalize;
+  }
+
+  .song-block .label::after {
+    content: attr(data-time-signature) " | " attr(data-measures) " measures | " 
+            attr(data-root-note) " " attr(data-mode) " | " attr(data-tempo) " BPM | " 
+            attr(data-feel) 
+            attr(data-lyrics, ""); /* Lyrics optional, appended if present */
+    font-weight: normal;
   }
 
   .song-block .tooltip,
@@ -430,10 +448,9 @@ footer {
   #export-btn,
   #import-btn,
   #randomize-btn {
-    display: none; /* Hide interactive/UI elements */
+    display: none; /* Ensure all UI elements are hidden */
   }
 
-  /* Copyright footer */
   @page {
     @bottom-center {
       content: "© 2025 SongMaker by kappter. All rights reserved.";
@@ -442,7 +459,6 @@ footer {
     }
   }
 
-  /* Ensure no extra page breaks before the first block */
   #timeline::before {
     content: none;
   }
