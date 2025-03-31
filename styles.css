@@ -384,7 +384,7 @@ footer {
 
   #timeline {
     display: flex;
-    flex-wrap: wrap; /* Allow multiple blocks per line */
+    flex-wrap: wrap;
     gap: 10px;
     width: 100%;
     padding: 0;
@@ -392,10 +392,10 @@ footer {
   }
 
   .song-block {
-    break-inside: avoid; /* Prevent block from splitting across pages */
+    break-inside: avoid;
     page-break-inside: avoid;
-    flex: 0 0 auto; /* Allow blocks to size based on content */
-    width: 200px; /* Fixed width for consistency, adjust as needed */
+    flex: 0 0 auto;
+    width: 200px;
     margin: 0;
     padding: 10px;
     box-sizing: border-box;
@@ -427,6 +427,8 @@ footer {
     content: " ";
   }
 
+  /* Hide navigation bar and other UI elements */
+  #nav-bar, /* Adjust this selector if the ID/class is different */
   .song-block .tooltip,
   .song-block .delete-btn,
   #play-btn,
