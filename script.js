@@ -282,6 +282,9 @@ function setupBlock(block) {
   });
   block.appendChild(deleteBtn);
 
+  // Set data-part-type for print formatting
+  block.querySelector('.label').setAttribute('data-part-type', formatPart(block.classList[1]));
+
   updateBlockSize(block);
 }
 
@@ -308,10 +311,11 @@ function addBlock() {
   block.setAttribute('data-tempo', tempo);
   block.setAttribute('data-time-signature', timeSignature);
   block.setAttribute('data-feel', feel);
-  block.setAttribute('data-lyrics', lyrics);
+  block.setAttribute('data-lyrics', lyrics ? " | " + truncateLyrics(lyrics) : ""); // Optional lyrics for print
   block.setAttribute('data-root-note', rootNote);
   block.setAttribute('data-mode', mode);
   block.innerHTML = `<span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote)} ${mode} ${tempo}b ${feel}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span><span class="tooltip">${lyrics || 'No lyrics'}</span>`;
+  block.querySelector('.label').setAttribute('data-part-type', formatPart(type));
   updateBlockSize(block);
   setupBlock(block);
   timeline.appendChild(block);
@@ -349,11 +353,11 @@ function updateBlock() {
   selectedBlock.setAttribute('data-tempo', tempo);
   selectedBlock.setAttribute('data-time-signature', timeSignature);
   selectedBlock.setAttribute('data-feel', feel);
-  selectedBlock.setAttribute('data-lyrics', lyrics);
+  selectedBlock.setAttribute('data-lyrics', lyrics ? " | " + truncateLyrics(lyrics) : "");
   selectedBlock.setAttribute('data-root-note', rootNote);
   selectedBlock.setAttribute('data-mode', mode);
   selectedBlock.innerHTML = `<span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote)} ${mode} ${tempo}b ${feel}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span><span class="tooltip">${lyrics || 'No lyrics'}</span>`;
-  updateBlockSize(selectedBlock);
+  selectedBlock.querySelector('.label').setAttribute('data-part-type', formatPart(type));
 
   const deleteBtn = document.createElement('button');
   deleteBtn.classList.add('delete-btn');
@@ -685,10 +689,11 @@ function loadSongData(songData) {
     block.setAttribute('data-tempo', tempo);
     block.setAttribute('data-time-signature', timeSignature);
     block.setAttribute('data-feel', feel || '');
-    block.setAttribute('data-lyrics', lyrics || '');
+    block.setAttribute('data-lyrics', lyrics ? " | " + truncateLyrics(lyrics) : "");
     block.setAttribute('data-root-note', rootNote);
     block.setAttribute('data-mode', mode);
     block.innerHTML = `<span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote)} ${mode} ${tempo}b ${feel || ''}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span><span class="tooltip">${lyrics || 'No lyrics'}</span>`;
+    block.querySelector('.label').setAttribute('data-part-type', formatPart(type));
     updateBlockSize(block);
     setupBlock(block);
     timeline.appendChild(block);
