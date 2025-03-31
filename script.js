@@ -151,6 +151,11 @@ function randomizeSong() {
   const mainSectionTypes = ['verse', 'chorus', 'pre-chorus', 'refrain', 'post-chorus'];
   const breakSectionTypes = ['bridge', 'solo', 'interlude', 'breakdown', 'drop'];
 
+  // Set a primary key and tempo for the song
+  const primaryRootNote = rootNotes[Math.floor(Math.random() * rootNotes.length)];
+  const primaryMode = modes[Math.floor(Math.random() * modes.length)];
+  const primaryTempo = Math.floor(Math.random() * (180 - 60 + 1)) + 60; // Base tempo between 60-180 BPM
+
   // Generate a logical song structure
   const numBlocks = Math.floor(Math.random() * (10 - 5 + 1)) + 5; // 5 to 10 blocks
   const structure = [];
@@ -195,9 +200,25 @@ function randomizeSong() {
 
   // Generate blocks based on the structure
   structure.forEach(({ type, measures }) => {
-    const rootNote = rootNotes[Math.floor(Math.random() * rootNotes.length)];
-    const mode = modes[Math.floor(Math.random() * modes.length)];
-    const tempo = Math.floor(Math.random() * (180 - 60 + 1)) + 60;
+    // Determine if this section should deviate in key or tempo
+    let rootNote = primaryRootNote;
+    let mode = primaryMode;
+    let tempo = primaryTempo;
+
+    // Allow deviations in specific sections (solo, bridge, outro) with a 20% chance
+    const shouldDeviate = (breakSectionTypes.includes(type) || outroTypes.includes(type)) && Math.random() < 0.2;
+    if (shouldDeviate) {
+      // Key deviation: Change either root note or mode (50% chance for each)
+      if (Math.random() < 0.5) {
+        rootNote = rootNotes[Math.floor(Math.random() * rootNotes.length)];
+      } else {
+        mode = modes[Math.floor(Math.random() * modes.length)];
+      }
+      // Tempo deviation: Adjust by ±15 BPM
+      const tempoChange = Math.floor(Math.random() * 31) - 15; // -15 to +15 BPM
+      tempo = Math.max(60, Math.min(180, primaryTempo + tempoChange)); // Keep within 60-180 BPM
+    }
+
     const timeSignature = validTimeSignatures[Math.floor(Math.random() * validTimeSignatures.length)];
     const feel = feels[Math.floor(Math.random() * feels.length)];
     const lyrics = possibleLyrics[Math.floor(Math.random() * possibleLyrics.length)];
