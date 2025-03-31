@@ -208,6 +208,14 @@ function truncateLyrics(lyrics) {
   return lyrics.length > maxLength ? lyrics.substring(0, maxLength - 3) + '...' : lyrics;
 }
 
+function formatPrintLabel(type, timeSignature, measures, rootNote, mode, tempo, feel, lyrics) {
+  let label = `${formatPart(type)}: ${timeSignature} | ${measures} measures | ${abbreviateKey(rootNote)} ${mode} | ${tempo} BPM | ${feel}`;
+  if (lyrics) {
+    label += ` | ${truncateLyrics(lyrics)}`;
+  }
+  return label;
+}
+
 function validateBlock(block) {
   if (!block.type) return 'Type is required';
   if (!block.measures || block.measures < 1) return 'Measures must be at least 1';
@@ -282,9 +290,6 @@ function setupBlock(block) {
   });
   block.appendChild(deleteBtn);
 
-  // Set data-part-type for print formatting
-  block.querySelector('.label').setAttribute('data-part-type', formatPart(block.classList[1]));
-
   updateBlockSize(block);
 }
 
@@ -311,11 +316,14 @@ function addBlock() {
   block.setAttribute('data-tempo', tempo);
   block.setAttribute('data-time-signature', timeSignature);
   block.setAttribute('data-feel', feel);
-  block.setAttribute('data-lyrics', lyrics ? " | " + truncateLyrics(lyrics) : ""); // Optional lyrics for print
+  block.setAttribute('data-lyrics', lyrics);
   block.setAttribute('data-root-note', rootNote);
   block.setAttribute('data-mode', mode);
-  block.innerHTML = `<span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote)} ${mode} ${tempo}b ${feel}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span><span class="tooltip">${lyrics || 'No lyrics'}</span>`;
-  block.querySelector('.label').setAttribute('data-part-type', formatPart(type));
+  block.innerHTML = `
+    <span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote)} ${mode} ${tempo}b ${feel}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span>
+    <span class="print-label">${formatPrintLabel(type, timeSignature, measures, rootNote, mode, tempo, feel, lyrics)}</span>
+    <span class="tooltip">${lyrics || 'No lyrics'}</span>
+  `;
   updateBlockSize(block);
   setupBlock(block);
   timeline.appendChild(block);
@@ -353,11 +361,14 @@ function updateBlock() {
   selectedBlock.setAttribute('data-tempo', tempo);
   selectedBlock.setAttribute('data-time-signature', timeSignature);
   selectedBlock.setAttribute('data-feel', feel);
-  selectedBlock.setAttribute('data-lyrics', lyrics ? " | " + truncateLyrics(lyrics) : "");
+  selectedBlock.setAttribute('data-lyrics', lyrics);
   selectedBlock.setAttribute('data-root-note', rootNote);
   selectedBlock.setAttribute('data-mode', mode);
-  selectedBlock.innerHTML = `<span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote)} ${mode} ${tempo}b ${feel}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span><span class="tooltip">${lyrics || 'No lyrics'}</span>`;
-  selectedBlock.querySelector('.label').setAttribute('data-part-type', formatPart(type));
+  selectedBlock.innerHTML = `
+    <span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote)} ${mode} ${tempo}b ${feel}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span>
+    <span class="print-label">${formatPrintLabel(type, timeSignature, measures, rootNote, mode, tempo, feel, lyrics)}</span>
+    <span class="tooltip">${lyrics || 'No lyrics'}</span>
+  `;
 
   const deleteBtn = document.createElement('button');
   deleteBtn.classList.add('delete-btn');
@@ -372,6 +383,73 @@ function updateBlock() {
 
   const styleDropdown = document.getElementById('style-dropdown');
   if (styleDropdown.value) selectedBlock.classList.add(styleDropdown.value);
+
+  calculateTimings();
+}
+
+function randomizeSong() {
+  timeline.innerHTML = '';
+  if (selectedBlock) clearSelection();
+
+  const partTypes = [
+    'intro', 'verse', 'refrain', 'pre-chorus', 'chorus', 'post-chorus', 'bridge', 'outro',
+    'elision', 'solo', 'ad-lib', 'hook', 'interlude', 'breakdown', 'drop', 'coda',
+    'modulation', 'tag', 'chorus-reprise', 'countermelody', 'instrumental-verse-chorus', 'false-ending'
+  ];
+  const rootNotes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+  const modes = [
+    'Ionian', 'Dorian', 'Phrygian', 'Lydian', 'Mixolydian', 'Aeolian', 'Locrian',
+    'Harmonic Minor', 'Melodic Minor', 'Blues Scale', 'Pentatonic Major', 'Pentatonic Minor', 'Whole Tone'
+  ];
+  const feels = [
+    'Happiness', 'Sadness', 'Tension', 'Euphoria', 'Calmness', 'Anger', 'Mystical',
+    'Rebellion', 'Triumph', 'Bliss', 'Frustration', 'Atmospheric', 'Trippy', 'Awakening', 'Intense', 'Climactic'
+  ];
+  const possibleLyrics = [
+    '', 'La la la, here we go again...', 'Feel the rhythm, let it flow...',
+    'Shadows dancing in the moonlight...', 'Break free, let your spirit soar...', 'Echoes of a forgotten dream...'
+  ];
+
+  const numBlocks = Math.floor(Math.random() * (15 - 5 + 1)) + 5;
+
+  for (let i = 0; i < numBlocks; i++) {
+    const type = partTypes[Math.floor(Math.random() * partTypes.length)];
+    const measures = Math.floor(Math.random() * (16 - 1 + 1)) + 1;
+    const rootNote = rootNotes[Math.floor(Math.random() * rootNotes.length)];
+    const mode = modes[Math.floor(Math.random() * modes.length)];
+    const tempo = Math.floor(Math.random() * (180 - 60 + 1)) + 60;
+    const timeSignature = validTimeSignatures[Math.floor(Math.random() * validTimeSignatures.length)];
+    const feel = feels[Math.floor(Math.random() * feels.length)];
+    const lyrics = possibleLyrics[Math.floor(Math.random() * possibleLyrics.length)];
+
+    const blockData = { type, measures, rootNote, mode, tempo, timeSignature, feel, lyrics };
+    const error = validateBlock(blockData);
+    if (error) {
+      console.error(`Generated block failed validation: ${error}`);
+      continue;
+    }
+
+    const block = document.createElement('div');
+    block.classList.add('song-block', type);
+    block.setAttribute('data-measures', measures);
+    block.setAttribute('data-tempo', tempo);
+    block.setAttribute('data-time-signature', timeSignature);
+    block.setAttribute('data-feel', feel);
+    block.setAttribute('data-lyrics', lyrics);
+    block.setAttribute('data-root-note', rootNote);
+    block.setAttribute('data-mode', mode);
+    block.innerHTML = `
+      <span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote)} ${mode} ${tempo}b ${feel}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span>
+      <span class="print-label">${formatPrintLabel(type, timeSignature, measures, rootNote, mode, tempo, feel, lyrics)}</span>
+      <span class="tooltip">${lyrics || 'No lyrics'}</span>
+    `;
+    updateBlockSize(block);
+    setupBlock(block);
+    timeline.appendChild(block);
+
+    const styleDropdown = document.getElementById('style-dropdown');
+    if (styleDropdown.value) block.classList.add(styleDropdown.value);
+  }
 
   calculateTimings();
 }
@@ -689,11 +767,14 @@ function loadSongData(songData) {
     block.setAttribute('data-tempo', tempo);
     block.setAttribute('data-time-signature', timeSignature);
     block.setAttribute('data-feel', feel || '');
-    block.setAttribute('data-lyrics', lyrics ? " | " + truncateLyrics(lyrics) : "");
+    block.setAttribute('data-lyrics', lyrics || '');
     block.setAttribute('data-root-note', rootNote);
     block.setAttribute('data-mode', mode);
-    block.innerHTML = `<span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote)} ${mode} ${tempo}b ${feel || ''}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span><span class="tooltip">${lyrics || 'No lyrics'}</span>`;
-    block.querySelector('.label').setAttribute('data-part-type', formatPart(type));
+    block.innerHTML = `
+      <span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote)} ${mode} ${tempo}b ${feel || ''}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span>
+      <span class="print-label">${formatPrintLabel(type, timeSignature, measures, rootNote, mode, tempo, feel, lyrics)}</span>
+      <span class="tooltip">${lyrics || 'No lyrics'}</span>
+    `;
     updateBlockSize(block);
     setupBlock(block);
     timeline.appendChild(block);
