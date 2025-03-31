@@ -358,9 +358,7 @@ footer {
   font-size: 0.9em;
   color: #bbb;
 }
-/* Base styles remain unchanged (app screen rendering is preserved) */
 
-/* Print-specific styles */
 @media print {
   body {
     margin: 0;
