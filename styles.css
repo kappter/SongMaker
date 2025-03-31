@@ -425,13 +425,20 @@ footer {
     content: " ";
   }
 
-  /* Hide navigation elements and other UI components */
-  .nav, /* Fallback for a potential parent container (adjust if class is different) */
-  .navbar, /* Another common class for nav bars */
+  /* Hide navigation bar and other UI elements */
+  nav, /* Target <nav> element */
+  .nav, /* Common class for navigation bars */
+  .navbar, /* Another common class */
+  .navigation, /* Another possible class */
+  #nav, /* Possible ID */
+  #navbar, /* Another possible ID */
+  #navigation, /* Another possible ID */
+  [role="navigation"], /* ARIA role for navigation */
+  #timeline ~ div, /* Any div sibling after #timeline (as a fallback) */
   #export-btn,
   #import-btn,
   #randomize-btn,
-  #print-btn, /* Explicitly target the Print button */
+  #print-btn,
   .song-block .tooltip,
   .song-block .delete-btn,
   #play-btn,
