@@ -373,17 +373,17 @@ footer {
 @media print {
   body {
     margin: 0;
-    padding: 0.5in; /* Reduced padding for more content space */
+    padding: 0.5in;
     font-family: 'Helvetica', 'Arial', sans-serif;
     color: #000;
     background: #fff;
   }
 
   #print-song-name {
-    font-size: 24pt; /* Reduced from 36pt for less vertical space */
+    font-size: 24pt;
     font-weight: bold;
     text-align: center;
-    margin: 10px 0; /* Reduced margin */
+    margin: 10px 0;
     padding: 0;
     color: #000 !important;
   }
@@ -391,7 +391,7 @@ footer {
   #timeline {
     display: flex;
     flex-direction: column;
-    gap: 10px; /* Slightly reduced gap for tighter layout */
+    gap: 10px;
     width: 100%;
     padding: 0;
     margin: 0;
@@ -402,39 +402,32 @@ footer {
     page-break-inside: avoid;
     width: 100%;
     margin: 0;
-    padding: 10px; /* Reduced padding for better fit */
+    padding: 10px;
     box-sizing: border-box;
     border: 1px solid #ccc;
     background: #fff;
     color: #000;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Subtle shadow for professionalism */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    position: relative; /* For containing child elements */
   }
 
+  /* Hide the screen-specific label */
   .song-block .label {
-    font-size: 11pt; /* Slightly smaller for better fit */
-    line-height: 1.4; /* Reduced line height */
+    display: none;
+  }
+
+  /* Create a print-specific label */
+  .song-block .print-label {
     display: block;
+    font-size: 11pt;
+    line-height: 1.4;
     margin: 0;
     padding: 0;
-    white-space: normal; /* Allow wrapping */
-    overflow: hidden; /* Prevent overflow */
-    text-overflow: ellipsis; /* Add ellipsis if text overflows */
-    max-width: 100%; /* Constrain to block width */
+    white-space: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
     box-sizing: border-box;
-  }
-
-  .song-block .label::before {
-    content: attr(data-part-type) ": ";
-    font-weight: bold;
-    text-transform: capitalize;
-  }
-
-  .song-block .label::after {
-    content: attr(data-time-signature) " | " attr(data-measures) " measures | " 
-            attr(data-root-note) " " attr(data-mode) " | " attr(data-tempo) " BPM | " 
-            attr(data-feel) 
-            attr(data-lyrics, "");
-    font-weight: normal;
   }
 
   .song-block .tooltip,
@@ -453,7 +446,7 @@ footer {
   #export-btn,
   #import-btn,
   #randomize-btn {
-    display: none; /* Hide UI elements */
+    display: none;
   }
 
   @page {
@@ -462,15 +455,11 @@ footer {
       font-size: 10pt;
       color: #000 !important;
     }
+    margin-top: 0;
+    margin-bottom: 0;
   }
 
   #timeline::before {
     content: none;
-  }
-
-  /* Hide browser-added print headers/footers if possible */
-  @page {
-    margin-top: 0;
-    margin-bottom: 0;
   }
 }
