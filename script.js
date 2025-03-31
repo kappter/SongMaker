@@ -130,11 +130,7 @@ function randomizeSong() {
   timeline.innerHTML = '';
   if (selectedBlock) clearSelection();
 
-  const partTypes = [
-    'intro', 'verse', 'refrain', 'pre-chorus', 'chorus', 'post-chorus', 'bridge', 'outro',
-    'elision', 'solo', 'ad-lib', 'hook', 'interlude', 'breakdown', 'drop', 'coda',
-    'modulation', 'tag', 'chorus-reprise', 'countermelody', 'instrumental-verse-chorus', 'false-ending'
-  ];
+  // Define possible attributes for randomization
   const rootNotes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
   const modes = [
     'Ionian', 'Dorian', 'Phrygian', 'Lydian', 'Mixolydian', 'Aeolian', 'Locrian',
@@ -149,11 +145,56 @@ function randomizeSong() {
     'Shadows dancing in the moonlight...', 'Break free, let your spirit soar...', 'Echoes of a forgotten dream...'
   ];
 
-  const numBlocks = Math.floor(Math.random() * (15 - 5 + 1)) + 5;
+  // Define song structure components
+  const introTypes = ['intro', 'instrumental-verse-chorus'];
+  const outroTypes = ['outro', 'coda', 'false-ending'];
+  const mainSectionTypes = ['verse', 'chorus', 'pre-chorus', 'refrain', 'post-chorus'];
+  const breakSectionTypes = ['bridge', 'solo', 'interlude', 'breakdown', 'drop'];
 
-  for (let i = 0; i < numBlocks; i++) {
-    const type = partTypes[Math.floor(Math.random() * partTypes.length)];
-    const measures = Math.floor(Math.random() * (16 - 1 + 1)) + 1;
+  // Generate a logical song structure
+  const numBlocks = Math.floor(Math.random() * (10 - 5 + 1)) + 5; // 5 to 10 blocks
+  const structure = [];
+
+  // Always start with an intro
+  structure.push({
+    type: introTypes[Math.floor(Math.random() * introTypes.length)],
+    measures: Math.floor(Math.random() * (4 - 1 + 1)) + 1 // Shorter intro (1-4 measures)
+  });
+
+  // Main body: Create a pattern like Verse → Pre-Chorus → Chorus, repeated
+  const numMainSections = numBlocks - 2; // Subtract intro and outro
+  let hasSolo = false;
+  for (let i = 0; i < numMainSections; i++) {
+    const position = i % 3; // Create a repeating pattern
+    if (position === 0) {
+      // Verse
+      structure.push({ type: 'verse', measures: Math.floor(Math.random() * (8 - 4 + 1)) + 4 });
+    } else if (position === 1 && Math.random() > 0.3) {
+      // Pre-Chorus (70% chance before Chorus)
+      structure.push({ type: 'pre-chorus', measures: Math.floor(Math.random() * (4 - 2 + 1)) + 2 });
+    } else {
+      // Chorus
+      structure.push({ type: 'chorus', measures: Math.floor(Math.random() * (8 - 4 + 1)) + 4 });
+      // Add a solo or bridge after the second chorus (if not already added)
+      if (i === 4 && !hasSolo && Math.random() > 0.5) {
+        structure.push({
+          type: breakSectionTypes[Math.floor(Math.random() * breakSectionTypes.length)],
+          measures: Math.floor(Math.random() * (6 - 2 + 1)) + 2
+        });
+        hasSolo = true;
+        i++; // Increment to account for the added section
+      }
+    }
+  }
+
+  // Always end with an outro
+  structure.push({
+    type: outroTypes[Math.floor(Math.random() * outroTypes.length)],
+    measures: Math.floor(Math.random() * (4 - 1 + 1)) + 1 // Shorter outro (1-4 measures)
+  });
+
+  // Generate blocks based on the structure
+  structure.forEach(({ type, measures }) => {
     const rootNote = rootNotes[Math.floor(Math.random() * rootNotes.length)];
     const mode = modes[Math.floor(Math.random() * modes.length)];
     const tempo = Math.floor(Math.random() * (180 - 60 + 1)) + 60;
@@ -165,7 +206,7 @@ function randomizeSong() {
     const error = validateBlock(blockData);
     if (error) {
       console.error(`Generated block failed validation: ${error}`);
-      continue;
+      return;
     }
 
     const block = document.createElement('div');
@@ -177,14 +218,17 @@ function randomizeSong() {
     block.setAttribute('data-lyrics', lyrics);
     block.setAttribute('data-root-note', rootNote);
     block.setAttribute('data-mode', mode);
-    block.innerHTML = `<span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote)} ${mode} ${tempo}b ${feel}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span><span class="tooltip">${lyrics || 'No lyrics'}</span>`;
+    block.innerHTML = `
+      <span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote)} ${mode} ${tempo}b ${feel}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span>
+      <span class="tooltip">${lyrics || 'No lyrics'}</span>
+    `;
     updateBlockSize(block);
     setupBlock(block);
     timeline.appendChild(block);
 
     const styleDropdown = document.getElementById('style-dropdown');
     if (styleDropdown.value) block.classList.add(styleDropdown.value);
-  }
+  });
 
   calculateTimings();
 }
