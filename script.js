@@ -389,13 +389,10 @@ function clearSelection() {
 
 function getBeatsPerMeasure(timeSignature) {
   const [numerator, denominator] = timeSignature.split('/').map(Number);
-  if (denominator === 8 && numerator % 3 === 0) {
-    return numerator / 3; // Compound time (e.g., 6/8 = 2 beats)
-  }
   if (timeSignature === '6/4') {
-    return 6; // 6 quarter-note beats
+    return 6; // Special case for 6/4
   }
-  return numerator; // Simple time
+  return numerator; // Treat all time signatures as simple meters
 }
 
 function calculateTimings() {
@@ -523,6 +520,7 @@ function playSong(timings, totalSeconds, totalBeats) {
     const currentTickBuffer = useShortSounds ? tickShortBuffer : tickBuffer;
     const currentTockBuffer = useShortSounds ? tockShortBuffer : tockBuffer;
 
+    // Schedule audio: tock on first beat of each measure, tick elsewhere
     for (let beat = 0; beat < totalBlockBeats; beat++) {
       const soundTime = blockStartTime + (beat * beatDuration);
       const isFirstBeatOfMeasure = beat % currentTiming.beatsPerMeasure === 0;
