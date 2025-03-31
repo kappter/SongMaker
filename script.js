@@ -21,27 +21,23 @@ let isDarkMode = true;
 let isFormCollapsed = true;
 let activeTimeManager = null;
 let scheduledSources = [];
-let audioContext = new AudioContext(); // Moved to allow reinitialization
 
 const validTimeSignatures = [
   '4/4', '3/4', '6/8', '2/4', '5/4', '7/8', '12/8', '9/8', '11/8', '15/8', '13/8', '10/4', '8/8', '14/8', '16/8', '7/4', '6/4'
 ];
 
+const audioContext = new AudioContext();
 let tickBuffer = null;
 let tockBuffer = null;
 let tickShortBuffer = null;
 let tockShortBuffer = null;
 
-function loadAudioBuffers() {
-  return Promise.all([
-    fetch('tick.wav').then(response => response.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => tickBuffer = decoded),
-    fetch('tock.wav').then(response => response.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => tockBuffer = decoded),
-    fetch('tick_short.wav').then(response => response.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => tickShortBuffer = decoded),
-    fetch('tock_short.wav').then(response => response.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => tockShortBuffer = decoded)
-  ]).catch(error => console.error('Failed to load audio files:', error));
-}
-
-loadAudioBuffers();
+Promise.all([
+  fetch('tick.wav').then(response => response.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => tickBuffer = decoded),
+  fetch('tock.wav').then(response => response.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => tockBuffer = decoded),
+  fetch('tick_short.wav').then(response => response.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => tickShortBuffer = decoded),
+  fetch('tock_short.wav').then(response => response.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => tockShortBuffer = decoded)
+]).catch(error => console.error('Failed to load audio files:', error));
 
 function playSound(buffer, time) {
   if (!buffer || !soundEnabled) return null;
@@ -523,6 +519,7 @@ function playSong(timings, totalSeconds, totalBeats) {
     const currentTickBuffer = useShortSounds ? tickShortBuffer : tickBuffer;
     const currentTockBuffer = useShortSounds ? tockShortBuffer : tockBuffer;
 
+    // Schedule audio for this block
     for (let beat = 0; beat < totalBlockBeats; beat++) {
       const soundTime = blockStartTime + (beat * beatDuration);
       const isFirstBeatOfMeasure = beat % currentTiming.beatsPerMeasure === 0;
@@ -574,7 +571,7 @@ function playSong(timings, totalSeconds, totalBeats) {
       blockStartTime += currentTiming.duration;
       currentIndex++;
       playNextBlock();
-    }, currentTiming.duration * 1000 + 10);
+    }, currentTiming.duration * 1000 + 10); // Small buffer for timing
   }
 
   playNextBlock();
@@ -600,12 +597,7 @@ function resetPlayback() {
     }
   });
   scheduledSources = [];
-
-  // Fully reset AudioContext
-  audioContext.close().then(() => {
-    audioContext = new AudioContext();
-    loadAudioBuffers();
-  });
+  audioContext.suspend();
 
   currentTime = 0;
   currentBeat = 0;
@@ -617,7 +609,7 @@ function resetPlayback() {
 
   const previousBlock = timeline.querySelector('.playing');
   if (previousBlock) previousBlock.classList.remove('playing');
-
+  
   currentBlockDisplay.classList.remove('pulse', 'one-count');
   currentBlockDisplay.style.animation = 'none';
   currentBlockDisplay.innerHTML = '<span class="label">No block playing</span>';
@@ -708,10 +700,8 @@ function loadSongFromDropdown(filename) {
     return;
   }
 
-  // Ensure full reset before loading new song
-  if (isPlaying) resetPlayback();
-
   if (filename === 'new-song') {
+    if (isPlaying) resetPlayback();
     timeline.innerHTML = '';
     if (selectedBlock) clearSelection();
     isFormCollapsed = false;
