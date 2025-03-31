@@ -359,7 +359,7 @@ footer {
   color: #bbb;
 }
 
-/* Print Styles */
+/* Print Styles 
 @media print {
   body { background: #fff; color: #000; }
   header, nav, .form-container, #current-block-display, footer { display: none; }
@@ -368,4 +368,82 @@ footer {
   .song-block { overflow: visible; break-inside: avoid; flex: 0 0 auto; height: 100px; background: #fff; border: 1px solid #000; color: #000; }
   .song-block .delete-btn, .song-block .tooltip { display: none; }
   h2#print-song-name { display: block; text-align: center; color: #000; }
+} */
+
+@media print {
+  body {
+    margin: 0;
+    padding: 1in; /* Standard margin for print */
+    font-family: Arial, sans-serif;
+    color: #000;
+    background: #fff; /* Ensure white background for print */
+  }
+
+  #print-song-name {
+    font-size: 36pt; /* Larger title */
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 0;
+  }
+
+  #timeline {
+    display: flex;
+    flex-direction: column; /* Stack blocks vertically for print */
+    gap: 10px;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+  }
+
+  .song-block {
+    break-inside: avoid; /* Prevent splitting across pages */
+    page-break-inside: avoid; /* Fallback for older browsers */
+    width: 100%; /* Full width for print */
+    max-width: none;
+    margin: 0;
+    padding: 10px;
+    box-sizing: border-box;
+    border: 1px solid #000; /* Clean border for print */
+    background: #fff;
+    color: #000;
+  }
+
+  .song-block .label {
+    font-size: 12pt;
+    line-height: 1.5;
+  }
+
+  .song-block .tooltip,
+  .song-block .delete-btn,
+  #play-btn,
+  #sound-btn,
+  #theme-btn,
+  #toggle-form-btn,
+  #form-content,
+  #song-dropdown,
+  #style-dropdown,
+  #time-calculator,
+  #current-block-display,
+  #add-block-btn,
+  #update-block-btn,
+  #export-btn,
+  #import-btn,
+  #randomize-btn {
+    display: none; /* Hide interactive/UI elements */
+  }
+
+  /* Copyright footer */
+  @page {
+    @bottom-center {
+      content: "© 2025 SongMaker by kappter. All rights reserved.";
+      font-size: 10pt;
+      color: #666;
+    }
+  }
+
+  /* Ensure no extra page breaks before the first block */
+  #timeline::before {
+    content: none;
+  }
 }
