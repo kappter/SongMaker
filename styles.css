@@ -427,8 +427,13 @@ footer {
     content: " ";
   }
 
-  /* Hide navigation bar and other UI elements */
-  #nav-bar, /* Adjust this selector if the ID/class is different */
+  /* Hide navigation elements and other UI components */
+  .nav, /* Fallback for a potential parent container (adjust if class is different) */
+  .navbar, /* Another common class for nav bars */
+  #export-btn,
+  #import-btn,
+  #randomize-btn,
+  #print-btn, /* Explicitly target the Print button */
   .song-block .tooltip,
   .song-block .delete-btn,
   #play-btn,
@@ -441,10 +446,7 @@ footer {
   #time-calculator,
   #current-block-display,
   #add-block-btn,
-  #update-block-btn,
-  #export-btn,
-  #import-btn,
-  #randomize-btn {
+  #update-block-btn {
     display: none;
   }
 
