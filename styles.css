@@ -373,25 +373,25 @@ footer {
 @media print {
   body {
     margin: 0;
-    padding: 1in;
+    padding: 0.5in; /* Reduced padding for more content space */
     font-family: 'Helvetica', 'Arial', sans-serif;
-    color: #000; /* Base text color for print */
+    color: #000;
     background: #fff;
   }
 
   #print-song-name {
-    font-size: 36pt;
+    font-size: 24pt; /* Reduced from 36pt for less vertical space */
     font-weight: bold;
     text-align: center;
-    margin-bottom: 30px;
+    margin: 10px 0; /* Reduced margin */
     padding: 0;
-    color: #000 !important; /* Force black for header */
+    color: #000 !important;
   }
 
   #timeline {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 10px; /* Slightly reduced gap for tighter layout */
     width: 100%;
     padding: 0;
     margin: 0;
@@ -402,20 +402,25 @@ footer {
     page-break-inside: avoid;
     width: 100%;
     margin: 0;
-    padding: 15px;
+    padding: 10px; /* Reduced padding for better fit */
     box-sizing: border-box;
     border: 1px solid #ccc;
     background: #fff;
     color: #000;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Subtle shadow for professionalism */
   }
 
   .song-block .label {
-    font-size: 12pt;
-    line-height: 1.6;
+    font-size: 11pt; /* Slightly smaller for better fit */
+    line-height: 1.4; /* Reduced line height */
     display: block;
     margin: 0;
     padding: 0;
-    white-space: normal;
+    white-space: normal; /* Allow wrapping */
+    overflow: hidden; /* Prevent overflow */
+    text-overflow: ellipsis; /* Add ellipsis if text overflows */
+    max-width: 100%; /* Constrain to block width */
+    box-sizing: border-box;
   }
 
   .song-block .label::before {
@@ -448,18 +453,24 @@ footer {
   #export-btn,
   #import-btn,
   #randomize-btn {
-    display: none;
+    display: none; /* Hide UI elements */
   }
 
   @page {
     @bottom-center {
       content: "© 2025 SongMaker by kappter. All rights reserved.";
       font-size: 10pt;
-      color: #000 !important; /* Force black for footer */
+      color: #000 !important;
     }
   }
 
   #timeline::before {
     content: none;
+  }
+
+  /* Hide browser-added print headers/footers if possible */
+  @page {
+    margin-top: 0;
+    margin-bottom: 0;
   }
 }
