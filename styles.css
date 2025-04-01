@@ -8,8 +8,8 @@
 /* Base styles */
 body {
   font-family: Arial, sans-serif;
-  background: #fff;
-  color: #333;
+  background: #1e2525;
+  color: #d3d3d3;
   padding: 20px;
   line-height: 1.6;
 }
@@ -21,11 +21,12 @@ header {
 
 h1 {
   font-size: 24px;
-  color: #333;
+  color: #d3d3d3;
 }
 
 h2 {
   font-size: 18px;
+  color: #d3d3d3;
   margin-bottom: 10px;
 }
 
@@ -41,9 +42,9 @@ nav {
 /* Buttons */
 button {
   padding: 8px 16px;
-  background: #555;
-  color: #fff;
-  border: none;
+  background: #333;
+  color: #d3d3d3;
+  border: 1px solid #555;
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
@@ -51,10 +52,10 @@ button {
 }
 
 button:hover {
-  background: #777;
+  background: #444;
 }
 
-/* Controls (dropdowns) */
+/* Controls (SHOW PARAMETERS button and current block display) */
 .controls {
   display: flex;
   justify-content: center;
@@ -63,20 +64,41 @@ button:hover {
   flex-wrap: wrap;
 }
 
+.controls button {
+  background: #2a2a2a;
+  border: 1px solid #555;
+}
+
+.controls #current-block-display {
+  padding: 8px 16px;
+  background: #2a2a2a;
+  border: 1px solid #555;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+/* Dropdowns */
 select {
   padding: 8px;
   font-size: 14px;
-  border: 1px solid #ccc;
+  background: #333;
+  color: #d3d3d3;
+  border: 1px solid #555;
   border-radius: 4px;
-  min-width: 200px;
+  min-width: 150px;
+}
+
+select option {
+  background: #333;
+  color: #d3d3d3;
 }
 
 /* Form for adding/editing blocks */
 .form-content {
   display: none;
-  background: #f9f9f9;
+  background: #2a2a2a;
   padding: 20px;
-  border: 1px solid #ddd;
+  border: 1px solid #555;
   border-radius: 4px;
   margin-bottom: 20px;
   max-width: 500px;
@@ -88,6 +110,7 @@ select {
   display: block;
   margin-bottom: 5px;
   font-weight: bold;
+  color: #d3d3d3;
 }
 
 .form-content input,
@@ -95,7 +118,9 @@ select {
   width: 100%;
   padding: 8px;
   margin-bottom: 10px;
-  border: 1px solid #ccc;
+  background: #333;
+  color: #d3d3d3;
+  border: 1px solid #555;
   border-radius: 4px;
   font-size: 14px;
 }
@@ -105,15 +130,17 @@ select {
   resize: vertical;
 }
 
+.form-content button {
+  margin-right: 10px;
+}
+
 /* Timeline */
 .timeline {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   padding: 10px;
-  background: #f0f0f0;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  background: transparent;
   min-height: 200px;
 }
 
@@ -123,10 +150,31 @@ select {
   width: 200px;
   margin: 5px;
   padding: 10px;
-  border: 1px solid #ccc;
-  background: #fff;
+  border: 1px solid #555;
+  color: #d3d3d3;
   position: relative;
   overflow: hidden; /* Prevent content from spilling out */
+}
+
+/* Block colors based on type */
+.song-block.intro {
+  background: #2e4d4d;
+}
+
+.song-block.verse {
+  background: #2e3e4d;
+}
+
+.song-block.chorus {
+  background: #4d3e2e;
+}
+
+.song-block.interlude {
+  background: #2e4d3e;
+}
+
+.song-block.outro {
+  background: #3e4d2e;
 }
 
 /* Block label */
@@ -150,7 +198,7 @@ select {
   left: 0;
   width: 100%;
   background: rgba(0, 0, 0, 0.8);
-  color: #fff;
+  color: #d3d3d3;
   padding: 5px;
   font-size: 12px;
   z-index: 1;
@@ -166,7 +214,7 @@ select {
   position: absolute;
   top: 5px;
   right: 5px;
-  background: #ff4444;
+  background: #ff6666;
   color: #fff;
   border: none;
   border-radius: 50%;
@@ -184,18 +232,19 @@ select {
 }
 
 .song-block .delete-btn:hover {
-  background: #cc0000;
+  background: #ff3333;
 }
 
-/* Info boxes (time calculator, current block display) */
+/* Info box (time calculator) */
 .info-box {
-  margin: 10px 0;
+  margin: 20px 0 0;
   padding: 10px;
-  background: #f9f9f9;
-  border: 1px solid #ddd;
+  background: #2a2a2a;
+  border: 1px solid #555;
   border-radius: 4px;
   font-size: 14px;
   text-align: center;
+  color: #d3d3d3;
 }
 
 /* Print-specific styles */
@@ -209,7 +258,11 @@ select {
   }
 
   header {
-    display: none; /* Hide the header in print view */
+    margin-bottom: 20px;
+  }
+
+  h1 {
+    display: none; /* Hide the "SongMaker" title in print view */
   }
 
   #print-song-name {
