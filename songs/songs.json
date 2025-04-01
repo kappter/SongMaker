@@ -1,34 +1,52 @@
 {
   "songs": [
     {
-      "title": "Song 1",
-      "artist": "Artist 1",
-      "lyrics": "La la la, here we go again..."
+      "title": "Echoes of Joy",
+      "artist": "Unknown Artist",
+      "lyrics": "Echoes of joy, ringing through the sky...",
+      "file": "Echoes of Joy.json"
     },
     {
-      "title": "Song 2",
-      "artist": "Artist 2",
-      "lyrics": "Feel the rhythm, let it flow..."
+      "title": "Astrothunder",
+      "artist": "Travis Scott",
+      "lyrics": "Astro, yeah, thunder in the sky...",
+      "file": "astrothunder.js"
     },
     {
-      "title": "Song 3",
-      "artist": "Artist 3",
-      "lyrics": "Shadows dancing in the moonlight..."
+      "title": "Astroworld",
+      "artist": "Travis Scott",
+      "lyrics": "Welcome to Astroworld, let’s ride...",
+      "file": "astroworld.js"
     },
     {
-      "title": "Song 4",
-      "artist": "Artist 4",
-      "lyrics": "Break free, let your spirit soar..."
+      "title": "Dirty Laundry",
+      "artist": "Unknown Artist",
+      "lyrics": "Got some dirty laundry to air out...",
+      "file": "dirtyLaundry.js"
     },
     {
-      "title": "Song 5",
-      "artist": "Artist 5",
-      "lyrics": "Echoes of a forgotten dream..."
+      "title": "Invincible",
+      "artist": "Unknown Artist",
+      "lyrics": "Feeling invincible, nothing can stop me...",
+      "file": "invincible.js"
     },
     {
-      "title": "No Lyrics",
-      "artist": "Unknown",
-      "lyrics": ""
+      "title": "Jambi",
+      "artist": "Tool",
+      "lyrics": "Here from the king's mountain view...",
+      "file": "jambi.js"
+    },
+    {
+      "title": "Pneuma",
+      "artist": "Tool",
+      "lyrics": "We are spirit bound to this flesh...",
+      "file": "pneuma.js"
+    },
+    {
+      "title": "(I Can’t Get No) Satisfaction",
+      "artist": "The Rolling Stones",
+      "lyrics": "I can’t get no satisfaction...",
+      "file": "satisfaction.js"
     }
   ]
 }
