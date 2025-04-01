@@ -126,15 +126,6 @@ function changeBlockStyle(style) {
   });
 }
 
-javascript
-
-Collapse
-
-Wrap
-
-Copy
-// ... (Previous code unchanged until randomizeSong) ...
-
 async function randomizeSong() {
   timeline.innerHTML = '';
   if (selectedBlock) clearSelection();
@@ -154,7 +145,7 @@ async function randomizeSong() {
   let songs = [];
   try {
     const response = await fetch('songs/songs.json');
-    if (!response.ok) throw new Error('Failed to load songs.json');
+    if (!response.ok) throw new Error(`Failed to load songs.json: ${response.status} ${response.statusText}`);
     const data = await response.json();
     songs = data.songs;
   } catch (error) {
@@ -823,38 +814,73 @@ function loadSongFromDropdown(filename) {
 }
 
 async function populateSongDropdown() {
+  const dropdown = document.getElementById('song-dropdown');
+  if (!dropdown) {
+    console.error('Song dropdown element not found in the DOM');
+    return;
+  }
+
   let songs = [];
   try {
     const response = await fetch('songs/songs.json');
-    if (!response.ok) throw new Error('Failed to load songs.json');
+    if (!response.ok) throw new Error(`Failed to load songs.json: ${response.status} ${response.statusText}`);
     const data = await response.json();
-    songs = data.songs;
+    songs = data.songs || [];
+    if (songs.length === 0) {
+      console.warn('No songs found in songs.json');
+    }
   } catch (error) {
     console.error('Error loading songs for dropdown:', error);
-    songs = [{ title: 'Default Song', artist: 'Unknown', lyrics: '', blocks: [] }];
+    songs = [];
   }
 
-  const dropdown = document.getElementById('song-dropdown');
+  // Clear existing options and add a default placeholder
   dropdown.innerHTML = '';
+  const placeholderOption = document.createElement('option');
+  placeholderOption.value = '';
+  placeholderOption.textContent = 'Select a song...';
+  placeholderOption.disabled = true;
+  placeholderOption.selected = true;
+  dropdown.appendChild(placeholderOption);
+
+  // Populate dropdown with songs
   songs.forEach(song => {
     const option = document.createElement('option');
     option.value = song.title;
     option.textContent = `${song.title} by ${song.artist}`;
     dropdown.appendChild(option);
   });
+
+  // Set the default song in the dropdown
+  const defaultSongTitle = "(I Can’t Get No) Satisfaction";
+  const defaultOption = Array.from(dropdown.options).find(option => option.value === defaultSongTitle);
+  if (defaultOption) {
+    defaultOption.selected = true;
+  } else {
+    console.warn(`Default song "${defaultSongTitle}" not found in dropdown options`);
+  }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  populateSongDropdown();
+document.addEventListener('DOMContentLoaded', async () => {
+  // Populate the dropdown
+  await populateSongDropdown();
+
+  // Load the default song "(I Can’t Get No) Satisfaction"
+  const defaultSongTitle = "(I Can’t Get No) Satisfaction";
+  await loadSong(defaultSongTitle);
 
   // Add event listener to load the selected song
   const songDropdown = document.getElementById('song-dropdown');
-  songDropdown.addEventListener('change', (event) => {
-    const selectedSongTitle = event.target.value;
-    if (selectedSongTitle) {
-      loadSong(selectedSongTitle);
-    }
-  });
+  if (songDropdown) {
+    songDropdown.addEventListener('change', (event) => {
+      const selectedSongTitle = event.target.value;
+      if (selectedSongTitle) {
+        loadSong(selectedSongTitle);
+      }
+    });
+  } else {
+    console.error('Song dropdown element not found for event listener');
+  }
 });
 
 async function loadSong(songTitle) {
@@ -862,9 +888,9 @@ async function loadSong(songTitle) {
   let songs = [];
   try {
     const response = await fetch('songs/songs.json');
-    if (!response.ok) throw new Error('Failed to load songs.json');
+    if (!response.ok) throw new Error(`Failed to load songs.json: ${response.status} ${response.statusText}`);
     const data = await response.json();
-    songs = data.songs;
+    songs = data.songs || [];
   } catch (error) {
     console.error('Error loading songs:', error);
     songs = [{ title: 'Default Song', artist: 'Unknown', lyrics: '', blocks: [] }];
