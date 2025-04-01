@@ -839,15 +839,5 @@ document.addEventListener('DOMContentLoaded', () => {
   populateSongDropdown();
 });
 
-// Call populateSongDropdown on page load
-document.addEventListener('DOMContentLoaded', () => {
-  populateSongDropdown();
-});
-
-// Call this on page load
-document.addEventListener('DOMContentLoaded', () => {
-  populateSongDropdown();
-});
-
 populateSongDropdown();
 loadSongFromDropdown('satisfaction.js');
