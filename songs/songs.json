@@ -1,10 +1,22 @@
 {
   "songs": [
-    "",
-    "La la la, here we go again...",
-    "Feel the rhythm, let it flow...",
-    "Shadows dancing in the moonlight...",
-    "Break free, let your spirit soar...",
-    "Echoes of a forgotten dream..."
+    {
+      "title": "Song 1",
+      "file": "song1.mp3",
+      "artist": "Artist 1",
+      "lyrics": "La la la, here we go again..."
+    },
+    {
+      "title": "Song 2",
+      "file": "song2.mp3",
+      "artist": "Artist 2",
+      "lyrics": "Feel the rhythm, let it flow..."
+    },
+    {
+      "title": "Song 3",
+      "file": "song3.mp3",
+      "artist": "Artist 3",
+      "lyrics": "Shadows dancing in the moonlight..."
+    }
   ]
 }
