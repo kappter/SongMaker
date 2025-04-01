@@ -1,67 +1,183 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SongMaker</title>
-  <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SongMaker: Create and visualize song structures with precise timing and playback.">
+    <meta name="author" content="kappter">
+    <title>SongMaker</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
 </head>
-<body>
-  <header>
-    <h1>SongMaker</h1>
-    <h2 id="print-song-name">(I Can’t Get No) Satisfaction</h2>
-  </header>
+<body data-theme="dark">
+    <header>
+        <h1>SongMaker</h1>
+        <h2 id="print-song-name">(I Can’t Get No) Satisfaction</h2>
+    </header>
 
-  <nav>
-    <button id="play-btn">Play</button>
-    <button id="sound-btn">Sound On</button>
-    <button id="theme-btn">Light Mode</button>
-    <button id="randomize-btn">Randomize</button>
-    <button id="export-btn">Export</button>
-    <button id="import-btn">Import</button>
-    <button id="print-btn">Print</button>
-    <select id="style-dropdown">
-      <option value="">Select Style</option>
-      <option value="rock">Rock</option>
-      <option value="pop">Pop</option>
-      <option value="jazz">Jazz</option>
-      <option value="classical">Classical</option>
-    </select>
-    <select id="song-dropdown"></select>
-  </nav>
+    <nav>
+        <div class="controls">
+            <button id="play-btn" onclick="togglePlay()">Play</button>
+            <button id="sound-btn" onclick="toggleSound()">Sound On</button>
+            <button id="theme-btn" onclick="toggleTheme()">Light Mode</button>
+            <button onclick="exportSong()">Export</button>
+            <label class="file-input-label">
+                Import
+                <input type="file" accept=".json" onchange="importSong(event)">
+            </label>
+            <select id="song-dropdown" onchange="loadSongFromDropdown(this.value)">
+                <!-- Options populated by JS -->
+            </select>
+            <select id="style-dropdown" onchange="changeBlockStyle(this.value)">
+                <option value="">Default Style</option>
+                <option value="vibrant">Vibrant</option>
+                <option value="pastel">Pastel</option>
+                <option value="monochrome">Monochrome</option>
+            </select>
+            <button onclick="randomizeSong()">Randomize</button>
+            <button onclick="printSong()">Print</button>
+        </div>
+    </nav>
 
-  <div class="controls">
-    <button id="toggle-form-btn">SHOW PARAMETERS</button>
-    <div id="current-block-display">No block playing</div>
-  </div>
+    <main>
+        <div class="form-container">
+            <button id="toggle-form-btn" onclick="toggleForm()">Show Parameters</button>
+            <div id="form-content" class="collapsed">
+                <label>
+                    Part Type:
+                    <select id="part-type">
+                        <option value="intro">Intro</option>
+                        <option value="verse">Verse</option>
+                        <option value="refrain">Refrain</option>
+                        <option value="pre-chorus">Pre-Chorus</option>
+                        <option value="chorus">Chorus</option>
+                        <option value="post-chorus">Post-Chorus</option>
+                        <option value="bridge">Bridge</option>
+                        <option value="outro">Outro</option>
+                        <option value="elision">Elision</option>
+                        <option value="solo">Solo</option>
+                        <option value="ad-lib">Ad-Lib</option>
+                        <option value="hook">Hook</option>
+                        <option value="interlude">Interlude</option>
+                        <option value="breakdown">Breakdown</option>
+                        <option value="drop">Drop</option>
+                        <option value="coda">Coda</option>
+                        <option value="modulation">Modulation</option>
+                        <option value="tag">Tag</option>
+                        <option value="chorus-reprise">Chorus Reprise</option>
+                        <option value="countermelody">Countermelody</option>
+                        <option value="instrumental-verse-chorus">Instrumental Verse-Chorus</option>
+                        <option value="false-ending">False Ending</option>
+                    </select>
+                </label>
+                <label>
+                    Measures:
+                    <input type="number" id="measures" min="1" value="4">
+                </label>
+                <label>
+                    Root Note:
+                    <select id="root-note">
+                        <option value="C">C</option>
+                        <option value="C#">C#</option>
+                        <option value="D">D</option>
+                        <option value="D#">D#</option>
+                        <option value="E">E</option>
+                        <option value="F">F</option>
+                        <option value="F#">F#</option>
+                        <option value="G">G</option>
+                        <option value="G#">G#</option>
+                        <option value="A">A</option>
+                        <option value="A#">A#</option>
+                        <option value="B">B</option>
+                    </select>
+                </label>
+                <label>
+                    Mode:
+                    <select id="mode">
+                        <option value="Ionian">Ionian</option>
+                        <option value="Dorian">Dorian</option>
+                        <option value="Phrygian">Phrygian</option>
+                        <option value="Lydian">Lydian</option>
+                        <option value="Mixolydian">Mixolydian</option>
+                        <option value="Aeolian">Aeolian</option>
+                        <option value="Locrian">Locrian</option>
+                        <option value="Harmonic Minor">Harmonic Minor</option>
+                        <option value="Melodic Minor">Melodic Minor</option>
+                        <option value="Blues Scale">Blues Scale</option>
+                        <option value="Pentatonic Major">Pentatonic Major</option>
+                        <option value="Pentatonic Minor">Pentatonic Minor</option>
+                        <option value="Whole Tone">Whole Tone</option>
+                    </select>
+                </label>
+                <label>
+                    Tempo (BPM):
+                    <input type="number" id="tempo" min="1" value="120">
+                </label>
+                <label>
+                    Time Signature:
+                    <select id="time-signature">
+                        <option value="4/4">4/4</option>
+                        <option value="3/4">3/4</option>
+                        <option value="6/8">6/8</option>
+                        <option value="2/4">2/4</option>
+                        <option value="5/4">5/4</option>
+                        <option value="7/8">7/8</option>
+                        <option value="12/8">12/8</option>
+                        <option value="9/8">9/8</option>
+                        <option value="11/8">11/8</option>
+                        <option value="15/8">15/8</option>
+                        <option value="13/8">13/8</option>
+                        <option value="10/4">10/4</option>
+                        <option value="8/8">8/8</option>
+                        <option value="14/8">14/8</option>
+                        <option value="16/8">16/8</option>
+                        <option value="7/4">7/4</option>
+                        <option value="6/4">6/4</option>
+                    </select>
+                </label>
+                <label>
+                    Feel:
+                    <select id="feel">
+                        <option value="Happiness">Happiness</option>
+                        <option value="Sadness">Sadness</option>
+                        <option value="Tension">Tension</option>
+                        <option value="Euphoria">Euphoria</option>
+                        <option value="Calmness">Calmness</option>
+                        <option value="Anger">Anger</option>
+                        <option value="Mystical">Mystical</option>
+                        <option value="Rebellion">Rebellion</option>
+                        <option value="Triumph">Triumph</option>
+                        <option value="Bliss">Bliss</option>
+                        <option value="Frustration">Frustration</option>
+                        <option value="Atmospheric">Atmospheric</option>
+                        <option value="Trippy">Trippy</option>
+                        <option value="Awakening">Awakening</option>
+                        <option value="Intense">Intense</option>
+                        <option value="Climactic">Climactic</option>
+                    </select>
+                </label>
+                <label>
+                    Lyrics:
+                    <textarea id="lyrics" rows="3" placeholder="Enter lyrics here..."></textarea>
+                </label>
+                <button onclick="addBlock()">Add Block</button>
+                <button onclick="updateBlock()">Update Block</button>
+            </div>
+        </div>
 
-  <div id="form-content" class="form-content">
-    <label for="block-type">Block Type:</label>
-    <input type="text" id="block-type" placeholder="e.g., verse">
-    <label for="block-measures">Measures:</label>
-    <input type="number" id="block-measures" placeholder="e.g., 4">
-    <label for="block-time-signature">Time Signature:</label>
-    <input type="text" id="block-time-signature" placeholder="e.g., 4/4">
-    <label for="block-root-note">Root Note:</label>
-    <input type="text" id="block-root-note" placeholder="e.g., C">
-    <label for="block-mode">Mode:</label>
-    <input type="text" id="block-mode" placeholder="e.g., Ionian">
-    <label for="block-tempo">Tempo (BPM):</label>
-    <input type="number" id="block-tempo" placeholder="e.g., 120">
-    <label for="block-feel">Feel:</label>
-    <input type="text" id="block-feel" placeholder="e.g., Happiness">
-    <label for="block-lyrics">Lyrics:</label>
-    <textarea id="block-lyrics" placeholder="Enter lyrics..."></textarea>
-    <button id="add-block-btn">Add Block</button>
-    <button id="update-block-btn">Update Block</button>
-  </div>
+        <div id="current-block-display">
+            <span class="label">No block playing</span>
+        </div>
 
-  <div id="timeline" class="timeline"></div>
+        <div id="timeline">
+            <!-- Song blocks will be dynamically added here -->
+        </div>
+    </main>
 
-  <div id="time-calculator" class="info-box">
-    Current Time: 0:00 / Total Duration: 3:31 | Song Beat: 0 of 480 | Block: 0 of 9 (Measure: 0 of 120)
-  </div>
+    <footer>
+        <span id="time-calculator">Current Time: 0:00 / Total Duration: 0:00 | Song Beat: 0 of 0 | Block: 0 of 0 (Measure: 0 of 0)</span>
+    </footer>
 
-  <script src="script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
