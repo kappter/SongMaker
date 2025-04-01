@@ -1,293 +1,158 @@
-/* Reset default styles */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-/* Base styles (dark theme by default) */
+/* Base styles for the app screen */
 body {
-  font-family: Arial, sans-serif;
-  background: #1e2525;
-  color: #d3d3d3;
+  font-family: 'Arial', sans-serif;
+  margin: 0;
   padding: 20px;
-  line-height: 1.6;
-  transition: background 0.3s, color 0.3s;
+  background: #1a1a1a;
+  color: #ccc;
 }
 
-/* Light theme */
-body.light-mode {
+[data-theme='light'] {
   background: #f0f0f0;
   color: #333;
 }
 
-body.light-mode header h1,
-body.light-mode header h2,
-body.light-mode button,
-body.light-mode select,
-body.light-mode .form-content label,
-body.light-mode .form-content input,
-body.light-mode .form-content textarea,
-body.light-mode .info-box,
-body.light-mode .controls #current-block-display {
-  color: #333;
-}
-
-body.light-mode button,
-body.light-mode select,
-body.light-mode .form-content,
-body.light-mode .form-content input,
-body.light-mode .form-content textarea,
-body.light-mode .info-box,
-body.light-mode .controls #current-block-display {
-  background: #ddd;
-  border-color: #999;
-}
-
-body.light-mode select option {
-  background: #ddd;
-  color: #333;
-}
-
-body.light-mode .song-block {
-  color: #333;
-}
-
-body.light-mode .timeline {
-  background: transparent;
-}
-
-header {
+h1 {
   text-align: center;
   margin-bottom: 20px;
 }
 
-h1 {
-  font-size: 24px;
-  color: #d3d3d3;
-}
-
-h2 {
-  font-size: 18px;
-  color: #d3d3d3;
-  margin-bottom: 10px;
-}
-
-/* Navigation bar */
-nav {
+#timeline {
   display: flex;
-  justify-content: center;
+  flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 20px;
-  flex-wrap: wrap;
 }
 
-/* Buttons */
-button {
-  padding: 8px 16px;
+.song-block {
+  position: relative;
+  padding: 10px;
+  border-radius: 5px;
   background: #333;
-  color: #d3d3d3;
-  border: 1px solid #555;
-  border-radius: 4px;
+  color: #ccc;
+  cursor: move;
+  transition: transform 0.2s;
+}
+
+[data-theme='light'] .song-block {
+  background: #fff;
+  color: #333;
+  border: 1px solid #ccc;
+}
+
+.song-block:hover {
+  transform: scale(1.02);
+}
+
+.song-block .label {
+  display: block; /* Ensure label is visible on app screen */
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.song-block .print-label {
+  display: none; /* Hide print-label on app screen */
+}
+
+.song-block .tooltip {
+  display: none;
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #000;
+  color: #fff;
+  padding: 5px;
+  border-radius: 3px;
+  font-size: 10px;
+  white-space: nowrap;
+  z-index: 10;
+}
+
+.song-block:hover .tooltip {
+  display: block;
+}
+
+.song-block .delete-btn {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: #ff4444;
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  padding: 2px 5px;
   cursor: pointer;
-  font-size: 14px;
-  transition: background 0.3s;
+  font-size: 10px;
+}
+
+.song-block.playing {
+  border: 2px solid #00ff00;
+}
+
+#current-block-display {
+  margin-bottom: 20px;
+  padding: 10px;
+  background: #222;
+  color: #ccc;
+  border-radius: 5px;
+  text-align: center;
+}
+
+[data-theme='light'] #current-block-display {
+  background: #ddd;
+  color: #333;
+}
+
+#current-block-display.pulse {
+  animation: pulse 1s infinite;
+}
+
+#current-block-display.one-count {
+  border: 2px solid #00ff00;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+button, select, input {
+  padding: 5px;
+  margin: 5px;
+  border-radius: 3px;
+  border: 1px solid #ccc;
+  background: #333;
+  color: #ccc;
+}
+
+[data-theme='light'] button,
+[data-theme='light'] select,
+[data-theme='light'] input {
+  background: #fff;
+  color: #333;
 }
 
 button:hover {
   background: #444;
 }
 
-/* Controls (SHOW PARAMETERS button and current block display) */
-.controls {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
+[data-theme='light'] button:hover {
+  background: #eee;
+}
+
+#form-content {
   margin-bottom: 20px;
-  flex-wrap: wrap;
 }
 
-.controls button {
-  background: #2a2a2a;
-  border: 1px solid #555;
-}
-
-.controls #current-block-display {
-  padding: 8px 16px;
-  background: #2a2a2a;
-  border: 1px solid #555;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-/* Dropdowns */
-select {
-  padding: 8px;
-  font-size: 14px;
-  background: #333;
-  color: #d3d3d3;
-  border: 1px solid #555;
-  border-radius: 4px;
-  min-width: 150px;
-}
-
-select option {
-  background: #333;
-  color: #d3d3d3;
-}
-
-/* Form for adding/editing blocks */
-.form-content {
+#form-content.collapsed {
   display: none;
-  background: #2a2a2a;
-  padding: 20px;
-  border: 1px solid #555;
-  border-radius: 4px;
-  margin-bottom: 20px;
-  max-width: 500px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.form-content label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
-  color: #d3d3d3;
-}
-
-.form-content input,
-.form-content textarea {
-  width: 100%;
-  padding: 8px;
-  margin-bottom: 10px;
-  background: #333;
-  color: #d3d3d3;
-  border: 1px solid #555;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-.form-content textarea {
-  height: 100px;
-  resize: vertical;
-}
-
-.form-content button {
-  margin-right: 10px;
-}
-
-/* Timeline */
-.timeline {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  padding: 10px;
-  background: transparent;
-  min-height: 200px;
-}
-
-/* Song blocks */
-.song-block {
-  flex: 0 0 auto;
-  width: 200px;
-  margin: 5px;
-  padding: 10px;
-  border: 1px solid #555;
-  color: #d3d3d3;
-  position: relative;
-  overflow: hidden; /* Prevent content from spilling out */
-}
-
-/* Block colors based on type */
-.song-block.intro {
-  background: #2e4d4d;
-}
-
-.song-block.verse {
-  background: #2e3e4d;
-}
-
-.song-block.chorus {
-  background: #4d3e2e;
-}
-
-.song-block.interlude {
-  background: #2e4d3e;
-}
-
-.song-block.outro {
-  background: #3e4d2e;
-}
-
-/* Block label */
-.song-block .label {
-  font-size: 12px; /* Reduced font size to fit content */
-  line-height: 1.2; /* Tighter line height to save space */
-  margin: 0;
-  padding: 0;
-  white-space: normal;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-  display: block;
-}
-
-/* Tooltip for full lyrics */
-.song-block .tooltip {
-  visibility: hidden;
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  background: rgba(0, 0, 0, 0.8);
-  color: #d3d3d3;
-  padding: 5px;
-  font-size: 12px;
-  z-index: 1;
-  white-space: normal;
-}
-
-.song-block:hover .tooltip {
-  visibility: visible;
-}
-
-/* Delete button on blocks */
-.song-block .delete-btn {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  background: #ff6666;
-  color: #fff;
-  border: none;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  font-size: 12px;
-  line-height: 20px;
-  text-align: center;
-  cursor: pointer;
-  display: none;
-}
-
-.song-block:hover .delete-btn {
-  display: block;
-}
-
-.song-block .delete-btn:hover {
-  background: #ff3333;
-}
-
-/* Info box (time calculator) */
-.info-box {
-  margin: 20px 0 0;
-  padding: 10px;
-  background: #2a2a2a;
-  border: 1px solid #555;
-  border-radius: 4px;
-  font-size: 14px;
-  text-align: center;
-  color: #d3d3d3;
 }
 
 /* Print-specific styles */
@@ -300,29 +165,18 @@ select option {
     background: #fff;
   }
 
-  header {
-    margin-bottom: 20px;
-  }
-
-  h1 {
-    display: none; /* Hide the "SongMaker" title in print view */
-  }
-
   #print-song-name {
-    font-size: 28pt;
+    font-size: 24pt;
     font-weight: bold;
     text-align: center;
-    margin: 15px 0;
-    padding-bottom: 5px;
+    margin: 10px 0;
+    padding: 0;
     color: #000 !important;
-    font-family: 'Georgia', 'Times New Roman', serif;
-    border-bottom: 2px solid #333;
-    letter-spacing: 1px;
   }
 
-  .timeline {
+  #timeline {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 10px;
     width: 100%;
     padding: 0;
@@ -332,8 +186,7 @@ select option {
   .song-block {
     break-inside: avoid;
     page-break-inside: avoid;
-    flex: 0 0 auto;
-    width: 200px;
+    width: 100%;
     margin: 0;
     padding: 10px;
     box-sizing: border-box;
@@ -342,11 +195,15 @@ select option {
     color: #000;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     position: relative;
-    overflow: hidden; /* Prevent content from spilling out in print */
   }
 
   .song-block .label {
-    font-size: 11pt; /* Slightly larger for print readability */
+    display: none; /* Hide screen label in print */
+  }
+
+  .song-block .print-label {
+    display: block; /* Show print-specific label */
+    font-size: 11pt;
     line-height: 1.4;
     margin: 0;
     padding: 0;
@@ -355,40 +212,38 @@ select option {
     text-overflow: ellipsis;
     max-width: 100%;
     box-sizing: border-box;
-    display: block;
   }
 
-  .song-block .label br {
-    display: none;
-  }
-
-  .song-block .label::after {
-    content: " ";
-  }
-
-  /* Hide navigation bar and other UI elements */
-  nav,
-  .controls,
-  .form-content,
-  .info-box,
   .song-block .tooltip,
-  .song-block .delete-btn {
+  .song-block .delete-btn,
+  #play-btn,
+  #sound-btn,
+  #theme-btn,
+  #toggle-form-btn,
+  #form-content,
+  #song-dropdown,
+  #style-dropdown,
+  #time-calculator,
+  #current-block-display,
+  #add-block-btn,
+  #update-block-btn,
+  #export-btn,
+  #import-btn,
+  #randomize-btn {
     display: none;
   }
 
   @page {
     @bottom-center {
       content: "© 2025 SongMaker by kappter. All rights reserved.";
-      font-size: 9pt;
-      font-style: italic;
-      color: #555 !important;
-      font-family: 'Helvetica', 'Arial', sans-serif;
+      font-size: 10pt;
+      color: #000 !important;
     }
     margin-top: 0;
     margin-bottom: 0;
   }
 
-  .timeline::before {
+  #timeline::before {
     content: none;
   }
 }
