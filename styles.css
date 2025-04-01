@@ -5,13 +5,56 @@
   box-sizing: border-box;
 }
 
-/* Base styles */
+/* Base styles (dark theme by default) */
 body {
   font-family: Arial, sans-serif;
   background: #1e2525;
   color: #d3d3d3;
   padding: 20px;
   line-height: 1.6;
+  transition: background 0.3s, color 0.3s;
+}
+
+/* Light theme */
+body.light-mode {
+  background: #f0f0f0;
+  color: #333;
+}
+
+body.light-mode header h1,
+body.light-mode header h2,
+body.light-mode button,
+body.light-mode select,
+body.light-mode .form-content label,
+body.light-mode .form-content input,
+body.light-mode .form-content textarea,
+body.light-mode .info-box,
+body.light-mode .controls #current-block-display {
+  color: #333;
+}
+
+body.light-mode button,
+body.light-mode select,
+body.light-mode .form-content,
+body.light-mode .form-content input,
+body.light-mode .form-content textarea,
+body.light-mode .info-box,
+body.light-mode .controls #current-block-display {
+  background: #ddd;
+  border-color: #999;
+}
+
+body.light-mode select option {
+  background: #ddd;
+  color: #333;
+}
+
+body.light-mode .song-block {
+  color: #333;
+}
+
+body.light-mode .timeline {
+  background: transparent;
 }
 
 header {
