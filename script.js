@@ -150,7 +150,6 @@ async function randomizeSong() {
     songs = data.songs;
   } catch (error) {
     console.error('Error loading songs:', error);
-    // Fallback to a default song if fetch fails
     songs = [{ title: 'Default Song', artist: 'Unknown', lyrics: '' }];
   }
 
@@ -163,40 +162,36 @@ async function randomizeSong() {
   // Set a single key and tempo for the entire song
   const rootNote = rootNotes[Math.floor(Math.random() * rootNotes.length)];
   const mode = modes[Math.floor(Math.random() * modes.length)];
-  const tempo = Math.floor(Math.random() * (180 - 60 + 1)) + 60; // Tempo between 60-180 BPM
+  const tempo = Math.floor(Math.random() * (180 - 60 + 1)) + 60;
 
   // Generate a logical song structure
-  const numBlocks = Math.floor(Math.random() * (10 - 5 + 1)) + 5; // 5 to 10 blocks
+  const numBlocks = Math.floor(Math.random() * (10 - 5 + 1)) + 5;
   const structure = [];
 
   // Always start with an intro
   structure.push({
     type: introTypes[Math.floor(Math.random() * introTypes.length)],
-    measures: Math.floor(Math.random() * (4 - 1 + 1)) + 1 // Shorter intro (1-4 measures)
+    measures: Math.floor(Math.random() * (4 - 1 + 1)) + 1
   });
 
   // Main body: Create a pattern like Verse → Pre-Chorus → Chorus, repeated
-  const numMainSections = numBlocks - 2; // Subtract intro and outro
+  const numMainSections = numBlocks - 2;
   let hasSolo = false;
   for (let i = 0; i < numMainSections; i++) {
-    const position = i % 3; // Create a repeating pattern
+    const position = i % 3;
     if (position === 0) {
-      // Verse
       structure.push({ type: 'verse', measures: Math.floor(Math.random() * (8 - 4 + 1)) + 4 });
     } else if (position === 1 && Math.random() > 0.3) {
-      // Pre-Chorus (70% chance before Chorus)
       structure.push({ type: 'pre-chorus', measures: Math.floor(Math.random() * (4 - 2 + 1)) + 2 });
     } else {
-      // Chorus
       structure.push({ type: 'chorus', measures: Math.floor(Math.random() * (8 - 4 + 1)) + 4 });
-      // Add a solo or bridge after the second chorus (if not already added)
       if (i === 4 && !hasSolo && Math.random() > 0.5) {
         structure.push({
           type: breakSectionTypes[Math.floor(Math.random() * breakSectionTypes.length)],
           measures: Math.floor(Math.random() * (6 - 2 + 1)) + 2
         });
         hasSolo = true;
-        i++; // Increment to account for the added section
+        i++;
       }
     }
   }
@@ -204,14 +199,14 @@ async function randomizeSong() {
   // Always end with an outro
   structure.push({
     type: outroTypes[Math.floor(Math.random() * outroTypes.length)],
-    measures: Math.floor(Math.random() * (4 - 1 + 1)) + 1 // Shorter outro (1-4 measures)
+    measures: Math.floor(Math.random() * (4 - 1 + 1)) + 1
   });
 
   // Generate blocks based on the structure
   structure.forEach(({ type, measures }) => {
     const timeSignature = validTimeSignatures[Math.floor(Math.random() * validTimeSignatures.length)];
     const feel = feels[Math.floor(Math.random() * feels.length)];
-    const song = songs[Math.floor(Math.random() * songs.length)]; // Select a random song
+    const song = songs[Math.floor(Math.random() * songs.length)];
     const lyrics = song.lyrics;
 
     const blockData = { type, measures, rootNote, mode, tempo, timeSignature, feel, lyrics };
@@ -230,8 +225,8 @@ async function randomizeSong() {
     block.setAttribute('data-lyrics', lyrics);
     block.setAttribute('data-root-note', rootNote);
     block.setAttribute('data-mode', mode);
-    block.setAttribute('data-song-title', song.title); // Store the song title
-    block.setAttribute('data-song-artist', song.artist); // Store the artist
+    block.setAttribute('data-song-title', song.title);
+    block.setAttribute('data-song-artist', song.artist);
     block.innerHTML = `
       <span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote)} ${mode} ${tempo}b ${feel}<br>${song.title} by ${song.artist}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span>
       <span class="tooltip">${lyrics || 'No lyrics'}</span>
@@ -831,7 +826,7 @@ async function populateSongDropdown() {
   }
 
   const dropdown = document.getElementById('song-dropdown');
-  dropdown.innerHTML = ''; // Clear existing options
+  dropdown.innerHTML = '';
   songs.forEach(song => {
     const option = document.createElement('option');
     option.value = song.title;
@@ -839,6 +834,10 @@ async function populateSongDropdown() {
     dropdown.appendChild(option);
   });
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+  populateSongDropdown();
+});
 
 // Call populateSongDropdown on page load
 document.addEventListener('DOMContentLoaded', () => {
