@@ -126,9 +126,7 @@ function changeBlockStyle(style) {
   });
 }
 
-// ... (Previous code unchanged until randomizeSong) ...
-
-function randomizeSong() {
+async function randomizeSong() {
   timeline.innerHTML = '';
   if (selectedBlock) clearSelection();
 
@@ -142,10 +140,19 @@ function randomizeSong() {
     'Happiness', 'Sadness', 'Tension', 'Euphoria', 'Calmness', 'Anger', 'Mystical',
     'Rebellion', 'Triumph', 'Bliss', 'Frustration', 'Atmospheric', 'Trippy', 'Awakening', 'Intense', 'Climactic'
   ];
-  const possibleLyrics = [
-    '', 'La la la, here we go again...', 'Feel the rhythm, let it flow...',
-    'Shadows dancing in the moonlight...', 'Break free, let your spirit soar...', 'Echoes of a forgotten dream...'
-  ];
+
+  // Fetch song data from songs.json
+  let possibleLyrics = [];
+  try {
+    const response = await fetch('songs/songs.json');
+    if (!response.ok) throw new Error('Failed to load songs.json');
+    const data = await response.json();
+    possibleLyrics = data.songs;
+  } catch (error) {
+    console.error('Error loading songs:', error);
+    // Fallback to empty array if fetch fails
+    possibleLyrics = [''];
+  }
 
   // Define song structure components
   const introTypes = ['intro', 'instrumental-verse-chorus'];
@@ -236,8 +243,6 @@ function randomizeSong() {
 
   calculateTimings();
 }
-
-// ... (Rest of the code unchanged) ...
 
 function updateTitle(name) {
   currentSongName = name;
@@ -810,16 +815,25 @@ function loadSongFromDropdown(filename) {
   }
 }
 
-function populateSongDropdown() {
-  const availableSongs = [
-    'new-song', 'Echoes of Joy.json', 'pneuma.js', 'satisfaction.js',
-    'dirtyLaundry.js', 'invincible.js', 'astroworld.js', 'astrothunder.js', 'jambi.js'
-  ];
-  availableSongs.forEach(song => {
+async function populateSongDropdown() {
+  let songs = [];
+  try {
+    const response = await fetch('songs/songs.json');
+    if (!response.ok) throw new Error('Failed to load songs.json');
+    const data = await response.json();
+    songs = data.songs;
+  } catch (error) {
+    console.error('Error loading songs for dropdown:', error);
+    songs = [''];
+  }
+
+  const dropdown = document.getElementById('song-dropdown');
+  dropdown.innerHTML = ''; // Clear existing options
+  songs.forEach(song => {
     const option = document.createElement('option');
     option.value = song;
-    option.textContent = song === 'new-song' ? 'New Song' : song.replace('.json', '').replace('.js', '');
-    songDropdown.appendChild(option);
+    option.textContent = song || 'No lyrics';
+    dropdown.appendChild(option);
   });
 }
 
