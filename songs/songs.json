@@ -1,5 +1,6 @@
 {
   "songs": [
+    
     {
       "title": "Echoes of Joy",
       "artist": "Unknown Artist",
@@ -95,6 +96,13 @@
         { "type": "chorus", "measures": 4, "timeSignature": "4/4", "rootNote": "E", "mode": "Mixolydian", "tempo": 136, "feel": "Intense" },
         { "type": "outro", "measures": 2, "timeSignature": "4/4", "rootNote": "E", "mode": "Mixolydian", "tempo": 136, "feel": "Triumph" }
       ]
+    },
+    {
+      "title": "Bohemian Rhapsody",
+      "artist": "Queen",
+      "lyrics": "Is this the real life? Is this just fantasy? ... (full lyrics as above)",
+      "file": "bohemian_rhapsody.js",
+      "blocks": [] // Blocks will be loaded from the JS file
     }
   ]
 }
