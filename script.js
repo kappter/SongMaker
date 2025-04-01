@@ -862,12 +862,16 @@ async function populateSongDropdown() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // Populate the dropdown
-  await populateSongDropdown();
+  // Populate the dropdown and load the default song
+  const songsLoaded = await populateSongDropdown();
 
   // Load the default song "(I Can’t Get No) Satisfaction"
   const defaultSongTitle = "(I Can’t Get No) Satisfaction";
-  await loadSong(defaultSongTitle);
+  if (songsLoaded) {
+    await loadSong(defaultSongTitle);
+  } else {
+    console.error('Failed to load songs; cannot load default song');
+  }
 
   // Add event listener to load the selected song
   const songDropdown = document.getElementById('song-dropdown');
@@ -880,6 +884,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   } else {
     console.error('Song dropdown element not found for event listener');
+  }
+
+  // Add event listener for randomize button
+  const randomizeBtn = document.getElementById('randomize-btn');
+  if (randomizeBtn) {
+    randomizeBtn.addEventListener('click', randomizeSong);
+  } else {
+    console.error('Randomize button not found in the DOM');
+  }
+
+  // Add event listener for print button
+  const printBtn = document.getElementById('print-btn');
+  if (printBtn) {
+    printBtn.addEventListener('click', () => window.print());
+  } else {
+    console.error('Print button not found in the DOM');
+  }
+
+  // Add event listener for toggle form button
+  const toggleFormBtn = document.getElementById('toggle-form-btn');
+  const formContent = document.getElementById('form-content');
+  if (toggleFormBtn && formContent) {
+    toggleFormBtn.addEventListener('click', () => {
+      const isHidden = formContent.style.display === 'none' || formContent.style.display === '';
+      formContent.style.display = isHidden ? 'block' : 'none';
+      toggleFormBtn.textContent = isHidden ? 'HIDE PARAMETERS' : 'SHOW PARAMETERS';
+    });
+  } else {
+    console.error('Toggle form button or form content not found in the DOM');
   }
 });
 
@@ -903,7 +936,17 @@ async function loadSong(songTitle) {
     return;
   }
 
+  // Update the song title in the header
+  const songTitleElement = document.getElementById('print-song-name');
+  if (songTitleElement) {
+    songTitleElement.textContent = selectedSong.title;
+  }
+
   // Clear the timeline
+  if (!timeline) {
+    console.error('Timeline element not found in the DOM');
+    return;
+  }
   timeline.innerHTML = '';
   if (selectedBlock) clearSelection();
 
@@ -939,7 +982,7 @@ async function loadSong(songTitle) {
     timeline.appendChild(newBlock);
 
     const styleDropdown = document.getElementById('style-dropdown');
-    if (styleDropdown.value) newBlock.classList.add(styleDropdown.value);
+    if (styleDropdown && styleDropdown.value) newBlock.classList.add(styleDropdown.value);
   });
 
   calculateTimings();
