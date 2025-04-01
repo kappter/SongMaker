@@ -837,7 +837,139 @@ async function populateSongDropdown() {
 
 document.addEventListener('DOMContentLoaded', () => {
   populateSongDropdown();
+
+  // Add event listener to load the selected song
+  const songDropdown = document.getElementById('song-dropdown');
+  songDropdown.addEventListener('change', (event) => {
+    const selectedSongTitle = event.target.value;
+    if (selectedSongTitle) {
+      loadSong(selectedSongTitle);
+    }
+  });
 });
+
+async function loadSong(songTitle) {
+  // Fetch song data from songs.json
+  let songs = [];
+  try {
+    const response = await fetch('songs/songs.json');
+    if (!response.ok) throw new Error('Failed to load songs.json');
+    const data = await response.json();
+    songs = data.songs;
+  } catch (error) {
+    console.error('Error loading songs:', error);
+    songs = [{ title: 'Default Song', artist: 'Unknown', lyrics: '' }];
+  }
+
+  // Find the selected song
+  const selectedSong = songs.find(song => song.title === songTitle);
+  if (!selectedSong) {
+    console.error(`Song not found: ${songTitle}`);
+    return;
+  }
+
+  // Clear the timeline
+  timeline.innerHTML = '';
+  if (selectedBlock) clearSelection();
+
+  // Define possible attributes for randomization
+  const rootNotes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+  const modes = [
+    'Ionian', 'Dorian', 'Phrygian', 'Lydian', 'Mixolydian', 'Aeolian', 'Locrian',
+    'Harmonic Minor', 'Melodic Minor', 'Blues Scale', 'Pentatonic Major', 'Pentatonic Minor', 'Whole Tone'
+  ];
+  const feels = [
+    'Happiness', 'Sadness', 'Tension', 'Euphoria', 'Calmness', 'Anger', 'Mystical',
+    'Rebellion', 'Triumph', 'Bliss', 'Frustration', 'Atmospheric', 'Trippy', 'Awakening', 'Intense', 'Climactic'
+  ];
+
+  // Define song structure components
+  const introTypes = ['intro', 'instrumental-verse-chorus'];
+  const outroTypes = ['outro', 'coda', 'false-ending'];
+  const mainSectionTypes = ['verse', 'chorus', 'pre-chorus', 'refrain', 'post-chorus'];
+  const breakSectionTypes = ['bridge', 'solo', 'interlude', 'breakdown', 'drop'];
+
+  // Set a single key and tempo for the entire song
+  const rootNote = rootNotes[Math.floor(Math.random() * rootNotes.length)];
+  const mode = modes[Math.floor(Math.random() * modes.length)];
+  const tempo = Math.floor(Math.random() * (180 - 60 + 1)) + 60;
+
+  // Generate a logical song structure
+  const numBlocks = Math.floor(Math.random() * (10 - 5 + 1)) + 5;
+  const structure = [];
+
+  // Always start with an intro
+  structure.push({
+    type: introTypes[Math.floor(Math.random() * introTypes.length)],
+    measures: Math.floor(Math.random() * (4 - 1 + 1)) + 1
+  });
+
+  // Main body: Create a pattern like Verse → Pre-Chorus → Chorus, repeated
+  const numMainSections = numBlocks - 2;
+  let hasSolo = false;
+  for (let i = 0; i < numMainSections; i++) {
+    const position = i % 3;
+    if (position === 0) {
+      structure.push({ type: 'verse', measures: Math.floor(Math.random() * (8 - 4 + 1)) + 4 });
+    } else if (position === 1 && Math.random() > 0.3) {
+      structure.push({ type: 'pre-chorus', measures: Math.floor(Math.random() * (4 - 2 + 1)) + 2 });
+    } else {
+      structure.push({ type: 'chorus', measures: Math.floor(Math.random() * (8 - 4 + 1)) + 4 });
+      if (i === 4 && !hasSolo && Math.random() > 0.5) {
+        structure.push({
+          type: breakSectionTypes[Math.floor(Math.random() * breakSectionTypes.length)],
+          measures: Math.floor(Math.random() * (6 - 2 + 1)) + 2
+        });
+        hasSolo = true;
+        i++;
+      }
+    }
+  }
+
+  // Always end with an outro
+  structure.push({
+    type: outroTypes[Math.floor(Math.random() * outroTypes.length)],
+    measures: Math.floor(Math.random() * (4 - 1 + 1)) + 1
+  });
+
+  // Generate blocks based on the structure, using the selected song's metadata
+  structure.forEach(({ type, measures }) => {
+    const timeSignature = validTimeSignatures[Math.floor(Math.random() * validTimeSignatures.length)];
+    const feel = feels[Math.floor(Math.random() * feels.length)];
+    const lyrics = selectedSong.lyrics;
+
+    const blockData = { type, measures, rootNote, mode, tempo, timeSignature, feel, lyrics };
+    const error = validateBlock(blockData);
+    if (error) {
+      console.error(`Generated block failed validation: ${error}`);
+      return;
+    }
+
+    const block = document.createElement('div');
+    block.classList.add('song-block', type);
+    block.setAttribute('data-measures', measures);
+    block.setAttribute('data-tempo', tempo);
+    block.setAttribute('data-time-signature', timeSignature);
+    block.setAttribute('data-feel', feel);
+    block.setAttribute('data-lyrics', lyrics);
+    block.setAttribute('data-root-note', rootNote);
+    block.setAttribute('data-mode', mode);
+    block.setAttribute('data-song-title', selectedSong.title);
+    block.setAttribute('data-song-artist', selectedSong.artist);
+    block.innerHTML = `
+      <span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote)} ${mode} ${tempo}b ${feel}<br>${selectedSong.title} by ${selectedSong.artist}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span>
+      <span class="tooltip">${lyrics || 'No lyrics'}</span>
+    `;
+    updateBlockSize(block);
+    setupBlock(block);
+    timeline.appendChild(block);
+
+    const styleDropdown = document.getElementById('style-dropdown');
+    if (styleDropdown.value) block.classList.add(styleDropdown.value);
+  });
+
+  calculateTimings();
+}
 
 populateSongDropdown();
 loadSongFromDropdown('satisfaction.js');
