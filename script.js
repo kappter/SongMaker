@@ -21,7 +21,7 @@ let isDarkMode = true;
 let isFormCollapsed = true;
 let activeTimeManager = null;
 let scheduledSources = [];
-let audioContext = new AudioContext(); // Moved to allow reinitialization
+let audioContext = new AudioContext();
 
 const validTimeSignatures = [
   '4/4', '3/4', '6/8', '2/4', '5/4', '7/8', '12/8', '9/8', '11/8', '15/8', '13/8', '10/4', '8/8', '14/8', '16/8', '7/4', '6/4'
@@ -126,11 +126,15 @@ function changeBlockStyle(style) {
   });
 }
 
-async function randomizeSong() {
+function randomizeSong() {
   timeline.innerHTML = '';
   if (selectedBlock) clearSelection();
 
-  // Define possible attributes for randomization
+  const partTypes = [
+    'intro', 'verse', 'refrain', 'pre-chorus', 'chorus', 'post-chorus', 'bridge', 'outro',
+    'elision', 'solo', 'ad-lib', 'hook', 'interlude', 'breakdown', 'drop', 'coda',
+    'modulation', 'tag', 'chorus-reprise', 'countermelody', 'instrumental-verse-chorus', 'false-ending'
+  ];
   const rootNotes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
   const modes = [
     'Ionian', 'Dorian', 'Phrygian', 'Lydian', 'Mixolydian', 'Aeolian', 'Locrian',
@@ -140,80 +144,28 @@ async function randomizeSong() {
     'Happiness', 'Sadness', 'Tension', 'Euphoria', 'Calmness', 'Anger', 'Mystical',
     'Rebellion', 'Triumph', 'Bliss', 'Frustration', 'Atmospheric', 'Trippy', 'Awakening', 'Intense', 'Climactic'
   ];
+  const possibleLyrics = [
+    '', 'La la la, here we go again...', 'Feel the rhythm, let it flow...',
+    'Shadows dancing in the moonlight...', 'Break free, let your spirit soar...', 'Echoes of a forgotten dream...'
+  ];
 
-  // Fetch song data from songs.json
-  let songs = [];
-  try {
-    const response = await fetch('songs/songs.json');
-    if (!response.ok) throw new Error(`Failed to load songs.json: ${response.status} ${response.statusText}`);
-    const data = await response.json();
-    songs = data.songs;
-  } catch (error) {
-    console.error('Error loading songs:', error);
-    songs = [{ title: 'Default Song', artist: 'Unknown', lyrics: '', blocks: [] }];
-  }
+  const numBlocks = Math.floor(Math.random() * (15 - 5 + 1)) + 5;
 
-  // Define song structure components
-  const introTypes = ['intro', 'instrumental-verse-chorus'];
-  const outroTypes = ['outro', 'coda', 'false-ending'];
-  const mainSectionTypes = ['verse', 'chorus', 'pre-chorus', 'refrain', 'post-chorus'];
-  const breakSectionTypes = ['bridge', 'solo', 'interlude', 'breakdown', 'drop'];
-
-  // Set a single key and tempo for the entire song
-  const rootNote = rootNotes[Math.floor(Math.random() * rootNotes.length)];
-  const mode = modes[Math.floor(Math.random() * modes.length)];
-  const tempo = Math.floor(Math.random() * (180 - 60 + 1)) + 60;
-
-  // Generate a logical song structure
-  const numBlocks = Math.floor(Math.random() * (10 - 5 + 1)) + 5;
-  const structure = [];
-
-  // Always start with an intro
-  structure.push({
-    type: introTypes[Math.floor(Math.random() * introTypes.length)],
-    measures: Math.floor(Math.random() * (4 - 1 + 1)) + 1
-  });
-
-  // Main body: Create a pattern like Verse → Pre-Chorus → Chorus, repeated
-  const numMainSections = numBlocks - 2;
-  let hasSolo = false;
-  for (let i = 0; i < numMainSections; i++) {
-    const position = i % 3;
-    if (position === 0) {
-      structure.push({ type: 'verse', measures: Math.floor(Math.random() * (8 - 4 + 1)) + 4 });
-    } else if (position === 1 && Math.random() > 0.3) {
-      structure.push({ type: 'pre-chorus', measures: Math.floor(Math.random() * (4 - 2 + 1)) + 2 });
-    } else {
-      structure.push({ type: 'chorus', measures: Math.floor(Math.random() * (8 - 4 + 1)) + 4 });
-      if (i === 4 && !hasSolo && Math.random() > 0.5) {
-        structure.push({
-          type: breakSectionTypes[Math.floor(Math.random() * breakSectionTypes.length)],
-          measures: Math.floor(Math.random() * (6 - 2 + 1)) + 2
-        });
-        hasSolo = true;
-        i++;
-      }
-    }
-  }
-
-  // Always end with an outro
-  structure.push({
-    type: outroTypes[Math.floor(Math.random() * outroTypes.length)],
-    measures: Math.floor(Math.random() * (4 - 1 + 1)) + 1
-  });
-
-  // Generate blocks based on the structure
-  structure.forEach(({ type, measures }) => {
+  for (let i = 0; i < numBlocks; i++) {
+    const type = partTypes[Math.floor(Math.random() * partTypes.length)];
+    const measures = Math.floor(Math.random() * (16 - 1 + 1)) + 1;
+    const rootNote = rootNotes[Math.floor(Math.random() * rootNotes.length)];
+    const mode = modes[Math.floor(Math.random() * modes.length)];
+    const tempo = Math.floor(Math.random() * (180 - 60 + 1)) + 60;
     const timeSignature = validTimeSignatures[Math.floor(Math.random() * validTimeSignatures.length)];
     const feel = feels[Math.floor(Math.random() * feels.length)];
-    const song = songs[Math.floor(Math.random() * songs.length)];
-    const lyrics = song.lyrics;
+    const lyrics = possibleLyrics[Math.floor(Math.random() * possibleLyrics.length)];
 
     const blockData = { type, measures, rootNote, mode, tempo, timeSignature, feel, lyrics };
     const error = validateBlock(blockData);
     if (error) {
       console.error(`Generated block failed validation: ${error}`);
-      return;
+      continue;
     }
 
     const block = document.createElement('div');
@@ -225,10 +177,9 @@ async function randomizeSong() {
     block.setAttribute('data-lyrics', lyrics);
     block.setAttribute('data-root-note', rootNote);
     block.setAttribute('data-mode', mode);
-    block.setAttribute('data-song-title', song.title);
-    block.setAttribute('data-song-artist', song.artist);
     block.innerHTML = `
       <span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote)} ${mode} ${tempo}b ${feel}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span>
+      <span class="print-label">${formatPrintLabel(type, timeSignature, measures, rootNote, mode, tempo, feel, lyrics)}</span>
       <span class="tooltip">${lyrics || 'No lyrics'}</span>
     `;
     updateBlockSize(block);
@@ -237,7 +188,7 @@ async function randomizeSong() {
 
     const styleDropdown = document.getElementById('style-dropdown');
     if (styleDropdown.value) block.classList.add(styleDropdown.value);
-  });
+  }
 
   calculateTimings();
 }
@@ -259,6 +210,14 @@ function abbreviateKey(rootNote) {
 function truncateLyrics(lyrics) {
   const maxLength = 50;
   return lyrics.length > maxLength ? lyrics.substring(0, maxLength - 3) + '...' : lyrics;
+}
+
+function formatPrintLabel(type, timeSignature, measures, rootNote, mode, tempo, feel, lyrics) {
+  let label = `${formatPart(type)}: ${timeSignature} | ${measures} measures | ${abbreviateKey(rootNote)} ${mode} | ${tempo} BPM | ${feel}`;
+  if (lyrics) {
+    label += ` | ${truncateLyrics(lyrics)}`;
+  }
+  return label;
 }
 
 function validateBlock(block) {
@@ -364,7 +323,11 @@ function addBlock() {
   block.setAttribute('data-lyrics', lyrics);
   block.setAttribute('data-root-note', rootNote);
   block.setAttribute('data-mode', mode);
-  block.innerHTML = `<span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote)} ${mode} ${tempo}b ${feel}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span><span class="tooltip">${lyrics || 'No lyrics'}</span>`;
+  block.innerHTML = `
+    <span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote)} ${mode} ${tempo}b ${feel}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span>
+    <span class="print-label">${formatPrintLabel(type, timeSignature, measures, rootNote, mode, tempo, feel, lyrics)}</span>
+    <span class="tooltip">${lyrics || 'No lyrics'}</span>
+  `;
   updateBlockSize(block);
   setupBlock(block);
   timeline.appendChild(block);
@@ -405,8 +368,11 @@ function updateBlock() {
   selectedBlock.setAttribute('data-lyrics', lyrics);
   selectedBlock.setAttribute('data-root-note', rootNote);
   selectedBlock.setAttribute('data-mode', mode);
-  selectedBlock.innerHTML = `<span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote)} ${mode} ${tempo}b ${feel}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span><span class="tooltip">${lyrics || 'No lyrics'}</span>`;
-  updateBlockSize(selectedBlock);
+  selectedBlock.innerHTML = `
+    <span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote)} ${mode} ${tempo}b ${feel}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span>
+    <span class="print-label">${formatPrintLabel(type, timeSignature, measures, rootNote, mode, tempo, feel, lyrics)}</span>
+    <span class="tooltip">${lyrics || 'No lyrics'}</span>
+  `;
 
   const deleteBtn = document.createElement('button');
   deleteBtn.classList.add('delete-btn');
@@ -442,13 +408,10 @@ function clearSelection() {
 
 function getBeatsPerMeasure(timeSignature) {
   const [numerator, denominator] = timeSignature.split('/').map(Number);
-  if (denominator === 8 && numerator % 3 === 0) {
-    return numerator / 3; // Compound time (e.g., 6/8 = 2 beats)
-  }
   if (timeSignature === '6/4') {
-    return 6; // 6 quarter-note beats
+    return 6;
   }
-  return numerator; // Simple time
+  return numerator;
 }
 
 function calculateTimings() {
@@ -519,506 +482,4 @@ function playLeadIn(timings, totalSeconds, totalBeats) {
   const currentTockBuffer = useShortSounds ? tockShortBuffer : tockBuffer;
 
   currentBlockDisplay.classList.add('pulse');
-  currentBlockDisplay.style.animation = `pulse ${beatDuration}s infinite`;
-  currentBlockDisplay.innerHTML = `
-    <span class="label">Lead-In (${firstBlock.block.getAttribute('data-time-signature')})</span>
-    <span class="info">Beat: 0 of ${leadInBeats}</span>
-  `;
-
-  const startTime = audioContext.currentTime;
-  for (let beat = 0; beat < leadInBeats; beat++) {
-    const soundTime = startTime + (beat * beatDuration);
-    const source = playSound(beat === 0 ? currentTockBuffer : currentTickBuffer, soundTime);
-    if (source) scheduledSources.push(source);
-  }
-
-  activeTimeManager = new TimeManager(firstBlock.tempo, leadInBeats, leadInBeats - 1, ({ elapsedTime, beat, isFirstBeat }) => {
-    currentBlockDisplay.innerHTML = `
-      <span class="label">Lead-In (${firstBlock.block.getAttribute('data-time-signature')})</span>
-      <span class="info">Beat: ${beat + 1} of ${leadInBeats}</span>
-    `;
-    currentTime = elapsedTime;
-    timeCalculator.textContent = `Current Time: ${formatDuration(currentTime)} / Total Duration: ${formatDuration(totalSeconds)} | Song Beat: ${currentBeat} of ${totalBeats} | Block: ${blockBeat} of ${timings.length} (Measure: ${blockMeasure} of 0)`;
-
-    if (isFirstBeat) {
-      currentBlockDisplay.classList.add('one-count');
-    } else {
-      currentBlockDisplay.classList.remove('one-count');
-    }
-  });
-
-  activeTimeManager.start();
-
-  setTimeout(() => {
-    if (activeTimeManager) activeTimeManager.stop();
-    activeTimeManager = null;
-    currentTime = 0;
-    playSong(timings, totalSeconds, totalBeats);
-  }, leadInBeats * beatDuration * 1000);
-}
-
-function playSong(timings, totalSeconds, totalBeats) {
-  let currentIndex = 0;
-  let blockStartTime = audioContext.currentTime;
-  let cumulativeBeats = 0;
-
-  function playNextBlock() {
-    if (!isPlaying || currentIndex >= timings.length) {
-      resetPlayback();
-      return;
-    }
-
-    const currentTiming = timings[currentIndex];
-    const beatDuration = 60 / currentTiming.tempo;
-    const totalBlockBeats = currentTiming.totalBeats;
-
-    const useShortSounds = currentTiming.tempo > TEMPO_THRESHOLD;
-    const currentTickBuffer = useShortSounds ? tickShortBuffer : tickBuffer;
-    const currentTockBuffer = useShortSounds ? tockShortBuffer : tockBuffer;
-
-    for (let beat = 0; beat < totalBlockBeats; beat++) {
-      const soundTime = blockStartTime + (beat * beatDuration);
-      const isFirstBeatOfMeasure = beat % currentTiming.beatsPerMeasure === 0;
-      const source = playSound(isFirstBeatOfMeasure ? currentTockBuffer : currentTickBuffer, soundTime);
-      if (source) scheduledSources.push(source);
-    }
-
-    updateCurrentBlock(currentTiming);
-
-    activeTimeManager = new TimeManager(
-      currentTiming.tempo,
-      currentTiming.beatsPerMeasure,
-      totalBlockBeats - 1,
-      ({ elapsedTime, beat, measure, isFirstBeat }) => {
-        blockBeat = beat + 1;
-        blockMeasure = measure;
-        currentTime = elapsedTime + (cumulativeBeats * (60 / timings[currentIndex].tempo));
-        currentBeat = cumulativeBeats + beat + 1;
-
-        const totalBlocks = timings.length;
-        const blockNum = currentIndex + 1;
-        const rootNote = currentTiming.block.getAttribute('data-root-note');
-        const mode = currentTiming.block.getAttribute('data-mode');
-
-        currentBlockDisplay.innerHTML = `
-          <span class="label">${formatPart(currentTiming.block.classList[1])}: ${currentTiming.block.getAttribute('data-time-signature')} ${currentTiming.totalMeasures}m<br>${abbreviateKey(rootNote)} ${mode} ${currentTiming.tempo}b ${currentTiming.block.getAttribute('data-feel')}</span>
-          <span class="info">Beat: ${blockBeat} of ${currentTiming.totalBeats} | Measure: ${blockMeasure} of ${currentTiming.totalMeasures} | Block: ${blockNum} of ${totalBlocks}</span>
-        `;
-
-        timeCalculator.textContent = `Current Time: ${formatDuration(currentTime)} / Total Duration: ${formatDuration(totalSeconds)} | Song Beat: ${currentBeat} of ${totalBeats} | Block: ${blockNum} of ${totalBlocks} (Measure: ${blockMeasure} of ${currentTiming.totalMeasures})`;
-
-        currentBlockDisplay.classList.add('pulse');
-        currentBlockDisplay.style.animation = `pulse ${beatDuration}s infinite`;
-
-        if (isFirstBeat) {
-          currentBlockDisplay.classList.add('one-count');
-        } else {
-          currentBlockDisplay.classList.remove('one-count');
-        }
-      }
-    );
-
-    activeTimeManager.start();
-
-    setTimeout(() => {
-      if (activeTimeManager) activeTimeManager.stop();
-      activeTimeManager = null;
-      cumulativeBeats += totalBlockBeats;
-      blockStartTime += currentTiming.duration;
-      currentIndex++;
-      playNextBlock();
-    }, currentTiming.duration * 1000 + 10);
-  }
-
-  playNextBlock();
-}
-
-function updateCurrentBlock(timing) {
-  const previousBlock = timeline.querySelector('.playing');
-  if (previousBlock) previousBlock.classList.remove('playing');
-  timing.block.classList.add('playing');
-}
-
-function resetPlayback() {
-  if (activeTimeManager) {
-    activeTimeManager.stop();
-    activeTimeManager = null;
-  }
-
-  scheduledSources.forEach(source => {
-    try {
-      source.stop();
-    } catch (e) {
-      // Ignore if already stopped
-    }
-  });
-  scheduledSources = [];
-
-  // Fully reset AudioContext
-  audioContext.close().then(() => {
-    audioContext = new AudioContext();
-    loadAudioBuffers();
-  });
-
-  currentTime = 0;
-  currentBeat = 0;
-  blockBeat = 0;
-  blockMeasure = 0;
-
-  isPlaying = false;
-  playBtn.textContent = 'Play';
-
-  const previousBlock = timeline.querySelector('.playing');
-  if (previousBlock) previousBlock.classList.remove('playing');
-
-  currentBlockDisplay.classList.remove('pulse', 'one-count');
-  currentBlockDisplay.style.animation = 'none';
-  currentBlockDisplay.innerHTML = '<span class="label">No block playing</span>';
-
-  calculateTimings();
-}
-
-function exportSong() {
-  const blocks = Array.from(timeline.children).map(block => ({
-    type: block.classList[1],
-    measures: parseInt(block.getAttribute('data-measures')),
-    rootNote: block.getAttribute('data-root-note'),
-    mode: block.getAttribute('data-mode'),
-    tempo: parseInt(block.getAttribute('data-tempo')),
-    timeSignature: block.getAttribute('data-time-signature'),
-    feel: block.getAttribute('data-feel'),
-    lyrics: block.getAttribute('data-lyrics')
-  }));
-
-  const songData = { songName: currentSongName, blocks };
-  const blob = new Blob([JSON.stringify(songData, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${currentSongName}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function importSong(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      const songData = JSON.parse(e.target.result);
-      loadSongData(songData);
-    } catch (error) {
-      alert(`Failed to import song: ${error.message}`);
-    }
-  };
-  reader.readAsText(file);
-}
-
-function loadSongData(songData) {
-  if (!songData.songName || !Array.isArray(songData.blocks)) {
-    throw new Error('Invalid song file format: missing songName or blocks array.');
-  }
-
-  for (let i = 0; i < songData.blocks.length; i++) {
-    const error = validateBlock(songData.blocks[i]);
-    if (error) throw new Error(`Block ${i + 1}: ${error}`);
-  }
-
-  if (isPlaying) resetPlayback();
-
-  timeline.innerHTML = '';
-  if (selectedBlock) clearSelection();
-
-  updateTitle(songData.songName);
-
-  songData.blocks.forEach(({ type, measures, rootNote, mode, tempo, timeSignature, feel, lyrics }) => {
-    const block = document.createElement('div');
-    block.classList.add('song-block', type);
-    block.setAttribute('data-measures', measures);
-    block.setAttribute('data-tempo', tempo);
-    block.setAttribute('data-time-signature', timeSignature);
-    block.setAttribute('data-feel', feel || '');
-    block.setAttribute('data-lyrics', lyrics || '');
-    block.setAttribute('data-root-note', rootNote);
-    block.setAttribute('data-mode', mode);
-    block.innerHTML = `<span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote)} ${mode} ${tempo}b ${feel || ''}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span><span class="tooltip">${lyrics || 'No lyrics'}</span>`;
-    updateBlockSize(block);
-    setupBlock(block);
-    timeline.appendChild(block);
-  });
-
-  const styleDropdown = document.getElementById('style-dropdown');
-  if (styleDropdown.value) changeBlockStyle(styleDropdown.value);
-
-  calculateTimings();
-}
-
-function loadSongFromDropdown(filename) {
-  if (!filename) {
-    console.log("No filename selected");
-    return;
-  }
-
-  // Ensure full reset before loading new song
-  if (isPlaying) resetPlayback();
-
-  if (filename === 'new-song') {
-    timeline.innerHTML = '';
-    if (selectedBlock) clearSelection();
-    isFormCollapsed = false;
-    formContent.classList.remove('collapsed');
-    toggleFormBtn.textContent = 'Hide Parameters';
-    currentSongName = 'New Song';
-    updateTitle(currentSongName);
-    calculateTimings();
-    const styleDropdown = document.getElementById('style-dropdown');
-    styleDropdown.value = '';
-    return;
-  }
-
-  console.log(`Attempting to load: ${filename}`);
-  try {
-    if (filename === 'pneuma.js') {
-      if (typeof loadPneuma === 'function') loadPneuma();
-      else fetch(filename).then(response => response.text()).then(text => { eval(text); loadPneuma(); });
-    } else if (filename === 'satisfaction.js') {
-      if (typeof loadSatisfaction === 'function') loadSatisfaction();
-      else fetch(filename).then(response => response.text()).then(text => { eval(text); loadSatisfaction(); });
-    } else if (filename === 'dirtyLaundry.js') {
-      if (typeof loadDirtyLaundry === 'function') loadDirtyLaundry();
-      else fetch(filename).then(response => response.text()).then(text => { eval(text); loadDirtyLaundry(); });
-    } else if (filename === 'invincible.js') {
-      if (typeof loadInvincible === 'function') loadInvincible();
-      else fetch(filename).then(response => response.text()).then(text => { eval(text); loadInvincible(); });
-    } else if (filename === 'astroworld.js') {
-      if (typeof loadAstroworld === 'function') loadAstroworld();
-      else fetch(filename).then(response => response.text()).then(text => { eval(text); loadAstroworld(); });
-    } else if (filename === 'astrothunder.js') {
-      if (typeof loadAstrothunder === 'function') loadAstrothunder();
-      else fetch(filename).then(response => response.text()).then(text => { eval(text); loadAstrothunder(); });
-    } else if (filename === 'jambi.js') {
-      if (typeof loadJambi === 'function') loadJambi();
-      else fetch(filename).then(response => response.text()).then(text => { eval(text); loadJambi(); });
-    } else if (filename === 'Echoes of Joy.json') {
-      fetch(filename).then(response => response.text()).then(text => loadSongData(JSON.parse(text)));
-    } else {
-      fetch(filename).then(response => response.json()).then(data => loadSongData(data));
-    }
-    songDropdown.value = filename;
-  } catch (error) {
-    console.error(`Error in loadSongFromDropdown: ${error.message}`);
-    alert(`Error loading song: ${error.message}`);
-  }
-}
-
-async function populateSongDropdown() {
-  const dropdown = document.getElementById('song-dropdown');
-  if (!dropdown) {
-    console.error('Song dropdown element not found in the DOM');
-    return false;
-  }
-
-  let songs = [];
-  try {
-    const response = await fetch('songs/songs.json');
-    if (!response.ok) throw new Error(`Failed to load songs.json: ${response.status} ${response.statusText}`);
-    const data = await response.json();
-    songs = data.songs || [];
-    if (songs.length === 0) {
-      console.warn('No songs found in songs.json');
-    }
-    console.log('Songs loaded:', songs); // Debug: Log the loaded songs
-  } catch (error) {
-    console.error('Error loading songs for dropdown:', error);
-    songs = [];
-  }
-
-  // Clear existing options and add a default placeholder
-  dropdown.innerHTML = '';
-  const placeholderOption = document.createElement('option');
-  placeholderOption.value = '';
-  placeholderOption.textContent = 'Select a song...';
-  placeholderOption.disabled = true;
-  placeholderOption.selected = true;
-  dropdown.appendChild(placeholderOption);
-
-  // Populate dropdown with songs
-  songs.forEach(song => {
-    const option = document.createElement('option');
-    option.value = song.title;
-    option.textContent = `${song.title}`;
-    dropdown.appendChild(option);
-  });
-
-  // Set the default song in the dropdown
-  const defaultSongTitle = "(I Can’t Get No) Satisfaction";
-  const defaultOption = Array.from(dropdown.options).find(option => option.value === defaultSongTitle);
-  if (defaultOption) {
-    defaultOption.selected = true;
-  } else {
-    console.warn(`Default song "${defaultSongTitle}" not found in dropdown options`);
-  }
-
-  return songs.length > 0;
-}
-
-document.addEventListener('DOMContentLoaded', async () => {
-  // Populate the dropdown and load the default song
-  const songsLoaded = await populateSongDropdown();
-
-  // Load the default song "(I Can’t Get No) Satisfaction"
-  const defaultSongTitle = "(I Can’t Get No) Satisfaction";
-  if (songsLoaded) {
-    await loadSong(defaultSongTitle);
-  } else {
-    console.error('Failed to load songs; cannot load default song');
-  }
-
-  // Add event listener to load the selected song
-  const songDropdown = document.getElementById('song-dropdown');
-  if (songDropdown) {
-    songDropdown.addEventListener('change', (event) => {
-      const selectedSongTitle = event.target.value;
-      if (selectedSongTitle) {
-        loadSong(selectedSongTitle);
-      }
-    });
-  } else {
-    console.error('Song dropdown element not found for event listener');
-  }
-
-  // Add event listener for randomize button
-  const randomizeBtn = document.getElementById('randomize-btn');
-  if (randomizeBtn) {
-    randomizeBtn.addEventListener('click', randomizeSong);
-  } else {
-    console.error('Randomize button not found in the DOM');
-  }
-
-  // Add event listener for print button
-  const printBtn = document.getElementById('print-btn');
-  if (printBtn) {
-    printBtn.addEventListener('click', () => window.print());
-  } else {
-    console.error('Print button not found in the DOM');
-  }
-
-  // Add event listener for toggle form button
-  const toggleFormBtn = document.getElementById('toggle-form-btn');
-  const formContent = document.getElementById('form-content');
-  if (toggleFormBtn && formContent) {
-    toggleFormBtn.addEventListener('click', () => {
-      const isHidden = formContent.style.display === 'none' || formContent.style.display === '';
-      formContent.style.display = isHidden ? 'block' : 'none';
-      toggleFormBtn.textContent = isHidden ? 'HIDE PARAMETERS' : 'SHOW PARAMETERS';
-    });
-  } else {
-    console.error('Toggle form button or form content not found in the DOM');
-  }
-
-  // Add event listener for play button (placeholder)
-  const playBtn = document.getElementById('play-btn');
-  if (playBtn) {
-    playBtn.addEventListener('click', () => {
-      console.log('Play button clicked - playback not implemented yet');
-      // TODO: Implement playback logic (e.g., using Web Audio API)
-    });
-  } else {
-    console.error('Play button not found in the DOM');
-  }
-
-  // Add event listener for theme toggle
-  const themeBtn = document.getElementById('theme-btn');
-  if (themeBtn) {
-    themeBtn.addEventListener('click', () => {
-      document.body.classList.toggle('light-mode');
-      themeBtn.textContent = document.body.classList.contains('light-mode') ? 'Dark Mode' : 'Light Mode';
-    });
-  } else {
-    console.error('Theme button not found in the DOM');
-  }
-});
-
-async function loadSong(songTitle) {
-  // Fetch song data from songs.json
-  let songs = [];
-  try {
-    const response = await fetch('songs/songs.json');
-    if (!response.ok) throw new Error(`Failed to load songs.json: ${response.status} ${response.statusText}`);
-    const data = await response.json();
-    songs = data.songs || [];
-    console.log('Songs loaded for loadSong:', songs); // Debug: Log the loaded songs
-  } catch (error) {
-    console.error('Error loading songs:', error);
-    songs = [{ title: 'Default Song', artist: 'Unknown', lyrics: '', blocks: [] }];
-  }
-
-  // Find the selected song
-  const selectedSong = songs.find(song => song.title === songTitle);
-  if (!selectedSong || !selectedSong.blocks || selectedSong.blocks.length === 0) {
-    console.error(`Song not found or has no blocks: ${songTitle}`);
-    return;
-  }
-
-  // Debug: Log the selected song and its blocks
-  console.log('Selected song:', selectedSong);
-  console.log('Blocks to render:', selectedSong.blocks);
-
-  // Update the song title in the header
-  const songTitleElement = document.getElementById('print-song-name');
-  if (songTitleElement) {
-    songTitleElement.textContent = selectedSong.title;
-  }
-
-  // Clear the timeline
-  if (!timeline) {
-    console.error('Timeline element not found in the DOM');
-    return;
-  }
-  timeline.innerHTML = '';
-  if (selectedBlock) clearSelection();
-
-  // Generate blocks based on the predefined structure in songs.json
-  selectedSong.blocks.forEach((block, index) => {
-    const { type, measures, timeSignature, rootNote, mode, tempo, feel } = block;
-    const lyrics = selectedSong.lyrics;
-
-    const blockData = { type, measures, rootNote, mode, tempo, timeSignature, feel, lyrics };
-    const error = validateBlock(blockData);
-    if (error) {
-      console.error(`Block ${index} failed validation: ${error}`, blockData);
-      return;
-    }
-
-    const newBlock = document.createElement('div');
-    newBlock.classList.add('song-block', type);
-    newBlock.setAttribute('data-measures', measures);
-    newBlock.setAttribute('data-tempo', tempo);
-    newBlock.setAttribute('data-time-signature', timeSignature);
-    newBlock.setAttribute('data-feel', feel);
-    newBlock.setAttribute('data-lyrics', lyrics);
-    newBlock.setAttribute('data-root-note', rootNote);
-    newBlock.setAttribute('data-mode', mode);
-    newBlock.setAttribute('data-song-title', selectedSong.title);
-    newBlock.setAttribute('data-song-artist', selectedSong.artist);
-    newBlock.innerHTML = `
-      <span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote)} ${mode} ${tempo}b ${feel}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span>
-      <span class="tooltip">${lyrics || 'No lyrics'}</span>
-    `;
-    updateBlockSize(newBlock);
-    setupBlock(newBlock);
-    timeline.appendChild(newBlock);
-
-    const styleDropdown = document.getElementById('style-dropdown');
-    if (styleDropdown && styleDropdown.value) newBlock.classList.add(styleDropdown.value);
-
-    console.log(`Rendered block ${index}:`, blockData); // Debug: Log each rendered block
-  });
-
-  calculateTimings();
-}
-
-populateSongDropdown();
-loadSongFromDropdown('satisfaction.js');
+  currentBlockDisplay.style.animation = `
