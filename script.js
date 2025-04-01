@@ -142,16 +142,16 @@ async function randomizeSong() {
   ];
 
   // Fetch song data from songs.json
-  let possibleLyrics = [];
+  let songs = [];
   try {
     const response = await fetch('songs/songs.json');
     if (!response.ok) throw new Error('Failed to load songs.json');
     const data = await response.json();
-    possibleLyrics = data.songs;
+    songs = data.songs;
   } catch (error) {
     console.error('Error loading songs:', error);
-    // Fallback to empty array if fetch fails
-    possibleLyrics = [''];
+    // Fallback to a default song if fetch fails
+    songs = [{ title: 'Default Song', file: '', artist: 'Unknown', lyrics: '' }];
   }
 
   // Define song structure components
@@ -211,7 +211,8 @@ async function randomizeSong() {
   structure.forEach(({ type, measures }) => {
     const timeSignature = validTimeSignatures[Math.floor(Math.random() * validTimeSignatures.length)];
     const feel = feels[Math.floor(Math.random() * feels.length)];
-    const lyrics = possibleLyrics[Math.floor(Math.random() * possibleLyrics.length)];
+    const song = songs[Math.floor(Math.random() * songs.length)]; // Select a random song
+    const lyrics = song.lyrics;
 
     const blockData = { type, measures, rootNote, mode, tempo, timeSignature, feel, lyrics };
     const error = validateBlock(blockData);
@@ -229,8 +230,11 @@ async function randomizeSong() {
     block.setAttribute('data-lyrics', lyrics);
     block.setAttribute('data-root-note', rootNote);
     block.setAttribute('data-mode', mode);
+    block.setAttribute('data-song-file', song.file); // Store the audio file path
+    block.setAttribute('data-song-title', song.title); // Store the song title
+    block.setAttribute('data-song-artist', song.artist); // Store the artist
     block.innerHTML = `
-      <span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote)} ${mode} ${tempo}b ${feel}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span>
+      <span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote)} ${mode} ${tempo}b ${feel}<br>${song.title} by ${song.artist}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span>
       <span class="tooltip">${lyrics || 'No lyrics'}</span>
     `;
     updateBlockSize(block);
@@ -824,22 +828,23 @@ async function populateSongDropdown() {
     songs = data.songs;
   } catch (error) {
     console.error('Error loading songs for dropdown:', error);
-    songs = [''];
+    songs = [{ title: 'Default Song', file: '', artist: 'Unknown', lyrics: '' }];
   }
 
   const dropdown = document.getElementById('song-dropdown');
   dropdown.innerHTML = ''; // Clear existing options
   songs.forEach(song => {
     const option = document.createElement('option');
-    option.value = song;
-    option.textContent = song || 'No lyrics';
+    option.value = song.file;
+    option.textContent = `${song.title} by ${song.artist}`;
     dropdown.appendChild(option);
   });
 }
 
-function printSong() {
-  window.print();
-}
+// Call this on page load
+document.addEventListener('DOMContentLoaded', () => {
+  populateSongDropdown();
+});
 
 populateSongDropdown();
 loadSongFromDropdown('satisfaction.js');
