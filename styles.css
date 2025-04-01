@@ -358,6 +358,7 @@ footer {
   font-size: 0.9em;
   color: #bbb;
 }
+/* Print-specific styles */
 @media print {
   body {
     margin: 0;
@@ -365,6 +366,14 @@ footer {
     font-family: 'Helvetica', 'Arial', sans-serif;
     color: #000;
     background: #fff;
+  }
+
+  header {
+    margin-bottom: 20px;
+  }
+
+  h1 {
+    display: none; /* Hide the "SongMaker" title in print view */
   }
 
   #print-song-name {
@@ -379,13 +388,14 @@ footer {
     letter-spacing: 1px;
   }
 
-  #timeline {
+  .timeline {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
     width: 100%;
     padding: 0;
     margin: 0;
+    margin-bottom: 40px; /* Add space for the info box */
   }
 
   .song-block {
@@ -401,6 +411,7 @@ footer {
     color: #000;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     position: relative;
+    overflow: hidden;
   }
 
   .song-block .label {
@@ -424,33 +435,29 @@ footer {
     content: " ";
   }
 
-  /* Hide navigation bar and other UI elements */
-  nav, /* Target <nav> element */
-  .nav, /* Common class for navigation bars */
-  .navbar, /* Another common class */
-  .navigation, /* Another possible class */
-  #nav, /* Possible ID */
-  #navbar, /* Another possible ID */
-  #navigation, /* Another possible ID */
-  [role="navigation"], /* ARIA role for navigation */
-  #timeline ~ div, /* Any div sibling after #timeline (as a fallback) */
-  #export-btn,
-  #import-btn,
-  #randomize-btn,
-  #print-btn,
+  /* Show the info box in print view, styled and positioned below the timeline */
+  .info-box {
+    display: block; /* Show in print view */
+    position: static; /* Remove fixed positioning for print */
+    margin: 20px auto 0; /* Center and add spacing */
+    padding: 10px;
+    background: #fff; /* White background for print */
+    border: 1px solid #ccc; /* Subtle border */
+    border-radius: 0; /* Remove rounded corners for print */
+    font-size: 11pt; /* Slightly larger for readability */
+    text-align: center;
+    color: #000; /* Black text for print */
+    width: 100%;
+    max-width: 1200px; /* Match nav max-width */
+    box-sizing: border-box;
+  }
+
+  /* Hide other UI elements */
+  nav,
+  .controls,
+  .form-content,
   .song-block .tooltip,
-  .song-block .delete-btn,
-  #play-btn,
-  #sound-btn,
-  #theme-btn,
-  #toggle-form-btn,
-  #form-content,
-  #song-dropdown,
-  #style-dropdown,
-  #time-calculator,
-  #current-block-display,
-  #add-block-btn,
-  #update-block-btn {
+  .song-block .delete-btn {
     display: none;
   }
 
@@ -466,7 +473,7 @@ footer {
     margin-bottom: 0;
   }
 
-  #timeline::before {
+  .timeline::before {
     content: none;
   }
 }
