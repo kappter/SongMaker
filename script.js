@@ -817,7 +817,7 @@ async function populateSongDropdown() {
   const dropdown = document.getElementById('song-dropdown');
   if (!dropdown) {
     console.error('Song dropdown element not found in the DOM');
-    return;
+    return false;
   }
 
   let songs = [];
@@ -829,6 +829,7 @@ async function populateSongDropdown() {
     if (songs.length === 0) {
       console.warn('No songs found in songs.json');
     }
+    console.log('Songs loaded:', songs); // Debug: Log the loaded songs
   } catch (error) {
     console.error('Error loading songs for dropdown:', error);
     songs = [];
@@ -847,7 +848,7 @@ async function populateSongDropdown() {
   songs.forEach(song => {
     const option = document.createElement('option');
     option.value = song.title;
-    option.textContent = `${song.title} by ${song.artist}`;
+    option.textContent = `${song.title}`;
     dropdown.appendChild(option);
   });
 
@@ -859,6 +860,8 @@ async function populateSongDropdown() {
   } else {
     console.warn(`Default song "${defaultSongTitle}" not found in dropdown options`);
   }
+
+  return songs.length > 0;
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -914,6 +917,28 @@ document.addEventListener('DOMContentLoaded', async () => {
   } else {
     console.error('Toggle form button or form content not found in the DOM');
   }
+
+  // Add event listener for play button (placeholder)
+  const playBtn = document.getElementById('play-btn');
+  if (playBtn) {
+    playBtn.addEventListener('click', () => {
+      console.log('Play button clicked - playback not implemented yet');
+      // TODO: Implement playback logic (e.g., using Web Audio API)
+    });
+  } else {
+    console.error('Play button not found in the DOM');
+  }
+
+  // Add event listener for theme toggle
+  const themeBtn = document.getElementById('theme-btn');
+  if (themeBtn) {
+    themeBtn.addEventListener('click', () => {
+      document.body.classList.toggle('light-mode');
+      themeBtn.textContent = document.body.classList.contains('light-mode') ? 'Dark Mode' : 'Light Mode';
+    });
+  } else {
+    console.error('Theme button not found in the DOM');
+  }
 });
 
 async function loadSong(songTitle) {
@@ -924,6 +949,7 @@ async function loadSong(songTitle) {
     if (!response.ok) throw new Error(`Failed to load songs.json: ${response.status} ${response.statusText}`);
     const data = await response.json();
     songs = data.songs || [];
+    console.log('Songs loaded for loadSong:', songs); // Debug: Log the loaded songs
   } catch (error) {
     console.error('Error loading songs:', error);
     songs = [{ title: 'Default Song', artist: 'Unknown', lyrics: '', blocks: [] }];
@@ -935,6 +961,10 @@ async function loadSong(songTitle) {
     console.error(`Song not found or has no blocks: ${songTitle}`);
     return;
   }
+
+  // Debug: Log the selected song and its blocks
+  console.log('Selected song:', selectedSong);
+  console.log('Blocks to render:', selectedSong.blocks);
 
   // Update the song title in the header
   const songTitleElement = document.getElementById('print-song-name');
@@ -951,14 +981,14 @@ async function loadSong(songTitle) {
   if (selectedBlock) clearSelection();
 
   // Generate blocks based on the predefined structure in songs.json
-  selectedSong.blocks.forEach(block => {
+  selectedSong.blocks.forEach((block, index) => {
     const { type, measures, timeSignature, rootNote, mode, tempo, feel } = block;
     const lyrics = selectedSong.lyrics;
 
     const blockData = { type, measures, rootNote, mode, tempo, timeSignature, feel, lyrics };
     const error = validateBlock(blockData);
     if (error) {
-      console.error(`Block failed validation: ${error}`);
+      console.error(`Block ${index} failed validation: ${error}`, blockData);
       return;
     }
 
@@ -983,6 +1013,8 @@ async function loadSong(songTitle) {
 
     const styleDropdown = document.getElementById('style-dropdown');
     if (styleDropdown && styleDropdown.value) newBlock.classList.add(styleDropdown.value);
+
+    console.log(`Rendered block ${index}:`, blockData); // Debug: Log each rendered block
   });
 
   calculateTimings();
