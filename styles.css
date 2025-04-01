@@ -155,6 +155,8 @@ button:hover {
   display: none;
 }
 
+/* Base styles remain unchanged (app screen rendering is preserved) */
+
 /* Print-specific styles */
 @media print {
   body {
@@ -166,17 +168,20 @@ button:hover {
   }
 
   #print-song-name {
-    font-size: 24pt;
+    font-size: 28pt;
     font-weight: bold;
     text-align: center;
-    margin: 10px 0;
-    padding: 0;
+    margin: 15px 0;
+    padding-bottom: 5px;
     color: #000 !important;
+    font-family: 'Georgia', 'Times New Roman', serif;
+    border-bottom: 2px solid #333;
+    letter-spacing: 1px;
   }
 
   #timeline {
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap; /* Allow multiple blocks per line */
     gap: 10px;
     width: 100%;
     padding: 0;
@@ -184,9 +189,10 @@ button:hover {
   }
 
   .song-block {
-    break-inside: avoid;
+    break-inside: avoid; /* Prevent block from splitting across pages */
     page-break-inside: avoid;
-    width: 100%;
+    flex: 0 0 auto; /* Allow blocks to size based on content */
+    width: 200px; /* Fixed width for consistency, adjust as needed */
     margin: 0;
     padding: 10px;
     box-sizing: border-box;
@@ -198,11 +204,6 @@ button:hover {
   }
 
   .song-block .label {
-    display: none; /* Hide screen label in print */
-  }
-
-  .song-block .print-label {
-    display: block; /* Show print-specific label */
     font-size: 11pt;
     line-height: 1.4;
     margin: 0;
@@ -212,6 +213,15 @@ button:hover {
     text-overflow: ellipsis;
     max-width: 100%;
     box-sizing: border-box;
+    display: block;
+  }
+
+  .song-block .label br {
+    display: none;
+  }
+
+  .song-block .label::after {
+    content: " ";
   }
 
   .song-block .tooltip,
@@ -236,8 +246,10 @@ button:hover {
   @page {
     @bottom-center {
       content: "© 2025 SongMaker by kappter. All rights reserved.";
-      font-size: 10pt;
-      color: #000 !important;
+      font-size: 9pt;
+      font-style: italic;
+      color: #555 !important;
+      font-family: 'Helvetica', 'Arial', sans-serif;
     }
     margin-top: 0;
     margin-bottom: 0;
