@@ -54,4 +54,6 @@ A versatile music creation tool and a portable metronome for musicians and compo
 * Labels and tooltips provide clear information for each block, improving usability.
 * Clean, high-contrast design in print view (black text on white background) ensures readability.
 
+[![EditScreen](https://github.com/kappter/SongMaker/blob/main/hidePara.jpeg?raw=true)](https://kappter.github.io/SongMaker/)
+
  2025 SongMaker by kappter. All rights reserved.
