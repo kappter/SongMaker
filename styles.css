@@ -155,9 +155,6 @@ button:hover {
   display: none;
 }
 
-/* Base styles remain unchanged (app screen rendering is preserved) */
-
-/* Print-specific styles */
 @media print {
   body {
     margin: 0;
@@ -181,7 +178,7 @@ button:hover {
 
   #timeline {
     display: flex;
-    flex-wrap: wrap; /* Allow multiple blocks per line */
+    flex-wrap: wrap;
     gap: 10px;
     width: 100%;
     padding: 0;
@@ -189,10 +186,10 @@ button:hover {
   }
 
   .song-block {
-    break-inside: avoid; /* Prevent block from splitting across pages */
+    break-inside: avoid;
     page-break-inside: avoid;
-    flex: 0 0 auto; /* Allow blocks to size based on content */
-    width: 200px; /* Fixed width for consistency, adjust as needed */
+    flex: 0 0 auto;
+    width: 200px;
     margin: 0;
     padding: 10px;
     box-sizing: border-box;
@@ -224,6 +221,13 @@ button:hover {
     content: " ";
   }
 
+  /* Hide navigation elements and other UI components */
+  .nav, /* Fallback for a potential parent container (adjust if class is different) */
+  .navbar, /* Another common class for nav bars */
+  #export-btn,
+  #import-btn,
+  #randomize-btn,
+  #print-btn, /* Explicitly target the Print button */
   .song-block .tooltip,
   .song-block .delete-btn,
   #play-btn,
@@ -236,10 +240,7 @@ button:hover {
   #time-calculator,
   #current-block-display,
   #add-block-btn,
-  #update-block-btn,
-  #export-btn,
-  #import-btn,
-  #randomize-btn {
+  #update-block-btn {
     display: none;
   }
 
