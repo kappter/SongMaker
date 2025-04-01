@@ -4,49 +4,97 @@
       "title": "Echoes of Joy",
       "artist": "Unknown Artist",
       "lyrics": "Echoes of joy, ringing through the sky...",
-      "file": "Echoes of Joy.json"
+      "file": "Echoes of Joy.json",
+      "blocks": [
+        { "type": "intro", "measures": 2, "timeSignature": "4/4", "rootNote": "C", "mode": "Ionian", "tempo": 120, "feel": "Happiness" },
+        { "type": "verse", "measures": 4, "timeSignature": "4/4", "rootNote": "C", "mode": "Ionian", "tempo": 120, "feel": "Happiness" },
+        { "type": "chorus", "measures": 4, "timeSignature": "4/4", "rootNote": "C", "mode": "Ionian", "tempo": 120, "feel": "Euphoria" },
+        { "type": "outro", "measures": 2, "timeSignature": "4/4", "rootNote": "C", "mode": "Ionian", "tempo": 120, "feel": "Calmness" }
+      ]
     },
     {
       "title": "Astrothunder",
       "artist": "Travis Scott",
       "lyrics": "Astro, yeah, thunder in the sky...",
-      "file": "astrothunder.js"
+      "file": "astrothunder.js",
+      "blocks": [
+        { "type": "intro", "measures": 2, "timeSignature": "4/4", "rootNote": "D#", "mode": "Aeolian", "tempo": 90, "feel": "Mystical" },
+        { "type": "verse", "measures": 4, "timeSignature": "4/4", "rootNote": "D#", "mode": "Aeolian", "tempo": 90, "feel": "Tension" },
+        { "type": "chorus", "measures": 4, "timeSignature": "4/4", "rootNote": "D#", "mode": "Aeolian", "tempo": 90, "feel": "Intense" },
+        { "type": "outro", "measures": 2, "timeSignature": "4/4", "rootNote": "D#", "mode": "Aeolian", "tempo": 90, "feel": "Atmospheric" }
+      ]
     },
     {
       "title": "Astroworld",
       "artist": "Travis Scott",
       "lyrics": "Welcome to Astroworld, let’s ride...",
-      "file": "astroworld.js"
+      "file": "astroworld.js",
+      "blocks": [
+        { "type": "intro", "measures": 2, "timeSignature": "4/4", "rootNote": "F", "mode": "Mixolydian", "tempo": 100, "feel": "Trippy" },
+        { "type": "verse", "measures": 4, "timeSignature": "4/4", "rootNote": "F", "mode": "Mixolydian", "tempo": 100, "feel": "Awakening" },
+        { "type": "chorus", "measures": 4, "timeSignature": "4/4", "rootNote": "F", "mode": "Mixolydian", "tempo": 100, "feel": "Euphoria" },
+        { "type": "outro", "measures": 2, "timeSignature": "4/4", "rootNote": "F", "mode": "Mixolydian", "tempo": 100, "feel": "Bliss" }
+      ]
     },
     {
       "title": "Dirty Laundry",
       "artist": "Unknown Artist",
       "lyrics": "Got some dirty laundry to air out...",
-      "file": "dirtyLaundry.js"
+      "file": "dirtyLaundry.js",
+      "blocks": [
+        { "type": "intro", "measures": 2, "timeSignature": "4/4", "rootNote": "A", "mode": "Aeolian", "tempo": 110, "feel": "Frustration" },
+        { "type": "verse", "measures": 4, "timeSignature": "4/4", "rootNote": "A", "mode": "Aeolian", "tempo": 110, "feel": "Anger" },
+        { "type": "chorus", "measures": 4, "timeSignature": "4/4", "rootNote": "A", "mode": "Aeolian", "tempo": 110, "feel": "Rebellion" },
+        { "type": "outro", "measures": 2, "timeSignature": "4/4", "rootNote": "A", "mode": "Aeolian", "tempo": 110, "feel": "Tension" }
+      ]
     },
     {
       "title": "Invincible",
       "artist": "Unknown Artist",
       "lyrics": "Feeling invincible, nothing can stop me...",
-      "file": "invincible.js"
+      "file": "invincible.js",
+      "blocks": [
+        { "type": "intro", "measures": 2, "timeSignature": "4/4", "rootNote": "E", "mode": "Ionian", "tempo": 130, "feel": "Triumph" },
+        { "type": "verse", "measures": 4, "timeSignature": "4/4", "rootNote": "E", "mode": "Ionian", "tempo": 130, "feel": "Happiness" },
+        { "type": "chorus", "measures": 4, "timeSignature": "4/4", "rootNote": "E", "mode": "Ionian", "tempo": 130, "feel": "Climactic" },
+        { "type": "outro", "measures": 2, "timeSignature": "4/4", "rootNote": "E", "mode": "Ionian", "tempo": 130, "feel": "Euphoria" }
+      ]
     },
     {
       "title": "Jambi",
       "artist": "Tool",
       "lyrics": "Here from the king's mountain view...",
-      "file": "jambi.js"
+      "file": "jambi.js",
+      "blocks": [
+        { "type": "intro", "measures": 2, "timeSignature": "7/8", "rootNote": "B", "mode": "Phrygian", "tempo": 110, "feel": "Mystical" },
+        { "type": "verse", "measures": 4, "timeSignature": "7/8", "rootNote": "B", "mode": "Phrygian", "tempo": 110, "feel": "Tension" },
+        { "type": "chorus", "measures": 4, "timeSignature": "7/8", "rootNote": "B", "mode": "Phrygian", "tempo": 110, "feel": "Intense" },
+        { "type": "outro", "measures": 2, "timeSignature": "7/8", "rootNote": "B", "mode": "Phrygian", "tempo": 110, "feel": "Atmospheric" }
+      ]
     },
     {
       "title": "Pneuma",
       "artist": "Tool",
       "lyrics": "We are spirit bound to this flesh...",
-      "file": "pneuma.js"
+      "file": "pneuma.js",
+      "blocks": [
+        { "type": "intro", "measures": 2, "timeSignature": "6/8", "rootNote": "D", "mode": "Dorian", "tempo": 100, "feel": "Mystical" },
+        { "type": "verse", "measures": 4, "timeSignature": "6/8", "rootNote": "D", "mode": "Dorian", "tempo": 100, "feel": "Awakening" },
+        { "type": "chorus", "measures": 4, "timeSignature": "6/8", "rootNote": "D", "mode": "Dorian", "tempo": 100, "feel": "Triumph" },
+        { "type": "outro", "measures": 2, "timeSignature": "6/8", "rootNote": "D", "mode": "Dorian", "tempo": 100, "feel": "Bliss" }
+      ]
     },
     {
       "title": "(I Can’t Get No) Satisfaction",
       "artist": "The Rolling Stones",
       "lyrics": "I can’t get no satisfaction...",
-      "file": "satisfaction.js"
+      "file": "satisfaction.js",
+      "blocks": [
+        { "type": "intro", "measures": 2, "timeSignature": "4/4", "rootNote": "E", "mode": "Mixolydian", "tempo": 136, "feel": "Rebellion" },
+        { "type": "verse", "measures": 4, "timeSignature": "4/4", "rootNote": "E", "mode": "Mixolydian", "tempo": 136, "feel": "Frustration" },
+        { "type": "chorus", "measures": 4, "timeSignature": "4/4", "rootNote": "E", "mode": "Mixolydian", "tempo": 136, "feel": "Intense" },
+        { "type": "outro", "measures": 2, "timeSignature": "4/4", "rootNote": "E", "mode": "Mixolydian", "tempo": 136, "feel": "Triumph" }
+      ]
     }
   ]
 }
