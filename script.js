@@ -151,7 +151,7 @@ async function randomizeSong() {
   } catch (error) {
     console.error('Error loading songs:', error);
     // Fallback to a default song if fetch fails
-    songs = [{ title: 'Default Song', file: '', artist: 'Unknown', lyrics: '' }];
+    songs = [{ title: 'Default Song', artist: 'Unknown', lyrics: '' }];
   }
 
   // Define song structure components
@@ -230,7 +230,6 @@ async function randomizeSong() {
     block.setAttribute('data-lyrics', lyrics);
     block.setAttribute('data-root-note', rootNote);
     block.setAttribute('data-mode', mode);
-    block.setAttribute('data-song-file', song.file); // Store the audio file path
     block.setAttribute('data-song-title', song.title); // Store the song title
     block.setAttribute('data-song-artist', song.artist); // Store the artist
     block.innerHTML = `
@@ -828,18 +827,23 @@ async function populateSongDropdown() {
     songs = data.songs;
   } catch (error) {
     console.error('Error loading songs for dropdown:', error);
-    songs = [{ title: 'Default Song', file: '', artist: 'Unknown', lyrics: '' }];
+    songs = [{ title: 'Default Song', artist: 'Unknown', lyrics: '' }];
   }
 
   const dropdown = document.getElementById('song-dropdown');
   dropdown.innerHTML = ''; // Clear existing options
   songs.forEach(song => {
     const option = document.createElement('option');
-    option.value = song.file;
+    option.value = song.title;
     option.textContent = `${song.title} by ${song.artist}`;
     dropdown.appendChild(option);
   });
 }
+
+// Call populateSongDropdown on page load
+document.addEventListener('DOMContentLoaded', () => {
+  populateSongDropdown();
+});
 
 // Call this on page load
 document.addEventListener('DOMContentLoaded', () => {
