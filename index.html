@@ -9,23 +9,17 @@
 <body>
   <header>
     <h1>SongMaker</h1>
+    <h2 id="print-song-name">(I Can’t Get No) Satisfaction</h2>
   </header>
 
   <nav>
+    <button id="play-btn">Play</button>
+    <button id="sound-btn">Sound On</button>
+    <button id="theme-btn">Light Mode</button>
     <button id="randomize-btn">Randomize</button>
     <button id="export-btn">Export</button>
     <button id="import-btn">Import</button>
     <button id="print-btn">Print</button>
-    <button id="play-btn">Play</button>
-    <button id="sound-btn">Sound</button>
-    <button id="theme-btn">Theme</button>
-    <button id="toggle-form-btn">Toggle Form</button>
-    <button id="add-block-btn">Add Block</button>
-    <button id="update-block-btn">Update Block</button>
-  </nav>
-
-  <div class="controls">
-    <select id="song-dropdown"></select>
     <select id="style-dropdown">
       <option value="">Select Style</option>
       <option value="rock">Rock</option>
@@ -33,10 +27,15 @@
       <option value="jazz">Jazz</option>
       <option value="classical">Classical</option>
     </select>
+    <select id="song-dropdown"></select>
+  </nav>
+
+  <div class="controls">
+    <button id="toggle-form-btn">SHOW PARAMETERS</button>
+    <div id="current-block-display">No block playing</div>
   </div>
 
   <div id="form-content" class="form-content">
-    <h2>Add/Edit Block</h2>
     <label for="block-type">Block Type:</label>
     <input type="text" id="block-type" placeholder="e.g., verse">
     <label for="block-measures">Measures:</label>
@@ -53,12 +52,15 @@
     <input type="text" id="block-feel" placeholder="e.g., Happiness">
     <label for="block-lyrics">Lyrics:</label>
     <textarea id="block-lyrics" placeholder="Enter lyrics..."></textarea>
+    <button id="add-block-btn">Add Block</button>
+    <button id="update-block-btn">Update Block</button>
   </div>
 
   <div id="timeline" class="timeline"></div>
 
-  <div id="time-calculator" class="info-box"></div>
-  <div id="current-block-display" class="info-box"></div>
+  <div id="time-calculator" class="info-box">
+    Current Time: 0:00 / Total Duration: 3:31 | Song Beat: 0 of 480 | Block: 0 of 9 (Measure: 0 of 120)
+  </div>
 
   <script src="script.js"></script>
 </body>
