@@ -5,53 +5,115 @@
   box-sizing: border-box;
 }
 
-/* Base styles for the app */
+/* Base styles */
 body {
-  font-family: 'Helvetica', 'Arial', sans-serif;
-  background: #f4f4f4;
+  font-family: Arial, sans-serif;
+  background: #fff;
   color: #333;
   padding: 20px;
   line-height: 1.6;
 }
 
-/* Navigation bar (assumed to contain buttons like Export, Import, Randomize, Print) */
-nav, .nav, .navbar {
+header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+h1 {
+  font-size: 24px;
+  color: #333;
+}
+
+h2 {
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+/* Navigation bar */
+nav {
   display: flex;
   justify-content: center;
   gap: 10px;
   margin-bottom: 20px;
+  flex-wrap: wrap;
 }
 
-/* Buttons (Export, Import, Randomize, Print, etc.) */
-button, #export-btn, #import-btn, #randomize-btn, #print-btn,
-#play-btn, #sound-btn, #theme-btn, #toggle-form-btn,
-#add-block-btn, #update-block-btn {
-  padding: 10px 20px;
-  background: #007bff;
+/* Buttons */
+button {
+  padding: 8px 16px;
+  background: #555;
   color: #fff;
   border: none;
-  border-radius: 5px;
+  border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
   transition: background 0.3s;
 }
 
-button:hover, #export-btn:hover, #import-btn:hover, #randomize-btn:hover, #print-btn:hover,
-#play-btn:hover, #sound-btn:hover, #theme-btn:hover, #toggle-form-btn:hover,
-#add-block-btn:hover, #update-block-btn:hover {
-  background: #0056b3;
+button:hover {
+  background: #777;
 }
 
-/* Timeline container */
-#timeline {
+/* Controls (dropdowns) */
+.controls {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+select {
+  padding: 8px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  min-width: 200px;
+}
+
+/* Form for adding/editing blocks */
+.form-content {
+  display: none;
+  background: #f9f9f9;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.form-content label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.form-content input,
+.form-content textarea {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.form-content textarea {
+  height: 100px;
+  resize: vertical;
+}
+
+/* Timeline */
+.timeline {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  width: 100%;
   padding: 10px;
-  background: #fff;
+  background: #f0f0f0;
   border: 1px solid #ddd;
-  border-radius: 5px;
+  border-radius: 4px;
   min-height: 200px;
 }
 
@@ -61,11 +123,8 @@ button:hover, #export-btn:hover, #import-btn:hover, #randomize-btn:hover, #print
   width: 200px;
   margin: 5px;
   padding: 10px;
-  box-sizing: border-box;
   border: 1px solid #ccc;
   background: #fff;
-  color: #333;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   position: relative;
   overflow: hidden; /* Prevent content from spilling out */
 }
@@ -80,7 +139,6 @@ button:hover, #export-btn:hover, #import-btn:hover, #randomize-btn:hover, #print
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
-  box-sizing: border-box;
   display: block;
 }
 
@@ -129,46 +187,15 @@ button:hover, #export-btn:hover, #import-btn:hover, #randomize-btn:hover, #print
   background: #cc0000;
 }
 
-/* Dropdowns (song-dropdown, style-dropdown) */
-#song-dropdown, #style-dropdown {
-  padding: 8px;
-  font-size: 14px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  margin: 5px;
-}
-
-/* Form content (for adding/editing blocks) */
-#form-content {
-  background: #fff;
-  padding: 20px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  margin: 10px 0;
-}
-
-#form-content label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
-}
-
-#form-content input, #form-content select {
-  width: 100%;
-  padding: 8px;
-  margin-bottom: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-}
-
-/* Time calculator and current block display */
-#time-calculator, #current-block-display {
+/* Info boxes (time calculator, current block display) */
+.info-box {
   margin: 10px 0;
   padding: 10px;
-  background: #fff;
+  background: #f9f9f9;
   border: 1px solid #ddd;
-  border-radius: 5px;
+  border-radius: 4px;
   font-size: 14px;
+  text-align: center;
 }
 
 /* Print-specific styles */
@@ -179,6 +206,10 @@ button:hover, #export-btn:hover, #import-btn:hover, #randomize-btn:hover, #print
     font-family: 'Helvetica', 'Arial', sans-serif;
     color: #000;
     background: #fff;
+  }
+
+  header {
+    display: none; /* Hide the header in print view */
   }
 
   #print-song-name {
@@ -193,7 +224,7 @@ button:hover, #export-btn:hover, #import-btn:hover, #randomize-btn:hover, #print
     letter-spacing: 1px;
   }
 
-  #timeline {
+  .timeline {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
@@ -241,31 +272,11 @@ button:hover, #export-btn:hover, #import-btn:hover, #randomize-btn:hover, #print
 
   /* Hide navigation bar and other UI elements */
   nav,
-  .nav,
-  .navbar,
-  .navigation,
-  #nav,
-  #navbar,
-  #navigation,
-  [role="navigation"],
-  #timeline ~ div,
-  #export-btn,
-  #import-btn,
-  #randomize-btn,
-  #print-btn,
+  .controls,
+  .form-content,
+  .info-box,
   .song-block .tooltip,
-  .song-block .delete-btn,
-  #play-btn,
-  #sound-btn,
-  #theme-btn,
-  #toggle-form-btn,
-  #form-content,
-  #song-dropdown,
-  #style-dropdown,
-  #time-calculator,
-  #current-block-display,
-  #add-block-btn,
-  #update-block-btn {
+  .song-block .delete-btn {
     display: none;
   }
 
@@ -281,7 +292,7 @@ button:hover, #export-btn:hover, #import-btn:hover, #randomize-btn:hover, #print
     margin-bottom: 0;
   }
 
-  #timeline::before {
+  .timeline::before {
     content: none;
   }
 }
