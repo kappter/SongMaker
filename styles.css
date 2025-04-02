@@ -88,7 +88,7 @@ button, select, .file-input-label {
 
 body.light-mode {
   background: #f0f0f0;
-  color: #1a1a1a; /* Default text color for light mode */
+  color: #1a1a1a;
 }
 
 body.light-mode h1,
@@ -97,7 +97,7 @@ body.light-mode .form-content label,
 body.light-mode .info-box,
 body.light-mode .song-block,
 body.light-mode .controls #current-block-display {
-  color: #1a1a1a; /* Darker text color for header, footer, and other elements */
+  color: #1a1a1a;
 }
 
 body.light-mode button,
@@ -113,7 +113,7 @@ body.light-mode .form-content input,
 body.light-mode .form-content textarea,
 body.light-mode select {
   background: #fff;
-  color: #1a1a1a; /* Ensure form inputs are also dark */
+  color: #1a1a1a;
   border-color: #aaa;
 }
 
@@ -121,25 +121,11 @@ body.light-mode .song-block {
   border-color: #aaa;
 }
 
-body.light-mode .song-block.intro {
-  background: #4e6d6d;
-}
-
-body.light-mode .song-block.verse {
-  background: #4e5e6d;
-}
-
-body.light-mode .song-block.chorus {
-  background: #6d5e4e;
-}
-
-body.light-mode .song-block.interlude {
-  background: #4e6d5e;
-}
-
-body.light-mode .song-block.outro {
-  background: #5e6d4e;
-}
+body.light-mode .song-block.intro { background: #4e6d6d; }
+body.light-mode .song-block.verse { background: #4e5e6d; }
+body.light-mode .song-block.chorus { background: #6d5e4e; }
+body.light-mode .song-block.interlude { background: #4e6d5e; }
+body.light-mode .song-block.outro { background: #5e6d4e; }
 
 button:hover, select:hover, .file-input-label:hover {
   background: #4a5555;
@@ -223,20 +209,20 @@ main {
   text-align: center;
   padding: 12px;
   background: var(--form-bg);
-  border: 2px solid var(--border-color); /* Base border always visible */
+  border: 2px solid var(--border-color);
   border-radius: 6px;
   margin: 0 auto 20px;
   max-width: 600px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: border-color 0.1s ease-in-out; /* Fast transition for stroke */
+  transition: border-color 0.1s ease-in-out;
 }
 
 #current-block-display.one-count {
-  border-color: var(--highlight-green); /* Green stroke on "one" count */
+  border-color: var(--highlight-green);
 }
 
 #current-block-display.pulse {
-  animation: pulse 1s infinite; /* Beat-based duration set by JS */
+  animation: pulse 1s infinite;
 }
 
 #current-block-display .label {
@@ -246,7 +232,7 @@ main {
 }
 
 #current-block-display .info {
-  display: block;
+  display|"block;
   font-size: 0.85em;
   color: #bbb;
 }
@@ -286,7 +272,7 @@ main {
 }
 
 .song-block.playing {
-  border-color: var(--highlight-green); /* Solid green outline for duration */
+  border-color: var(--highlight-green);
 }
 
 .song-block .label {
@@ -337,6 +323,29 @@ main {
 
 .song-block .delete-btn:hover {
   background: #ff7777;
+}
+
+.song-block .resize-handle {
+  position: absolute;
+  right: -5px;
+  top: 0;
+  width: 10px;
+  height: 100%;
+  background: #888;
+  cursor: ew-resize;
+  z-index: 5;
+}
+
+.song-block .resize-handle:hover {
+  background: #aaa;
+}
+
+[data-theme="light"] .song-block .resize-handle {
+  background: #666;
+}
+
+[data-theme="light"] .song-block .resize-handle:hover {
+  background: #444;
 }
 
 /* Part-Type Colors (Dark Theme) */
@@ -413,6 +422,7 @@ footer {
   font-size: 0.9em;
   color: #bbb;
 }
+
 /* Print-specific styles */
 @media print {
   body {
@@ -428,7 +438,7 @@ footer {
   }
 
   h1 {
-    display: none; /* Hide the "SongMaker" title in print view */
+    display: none;
   }
 
   #print-song-name {
@@ -450,7 +460,7 @@ footer {
     width: 100%;
     padding: 0;
     margin: 0;
-    margin-bottom: 40px; /* Add space for the info box */
+    margin-bottom: 40px;
   }
 
   .song-block {
@@ -490,20 +500,24 @@ footer {
     content: " ";
   }
 
+  .song-block .resize-handle {
+    display: none; /* Hide resize handle in print view */
+  }
+
   /* Show the info box in print view, styled and positioned below the timeline */
   .info-box {
-    display: block; /* Show in print view */
-    position: static; /* Remove fixed positioning for print */
-    margin: 20px auto 0; /* Center and add spacing */
+    display: block;
+    position: static;
+    margin: 20px auto 0;
     padding: 10px;
-    background: #fff; /* White background for print */
-    border: 1px solid #ccc; /* Subtle border */
-    border-radius: 0; /* Remove rounded corners for print */
-    font-size: 11pt; /* Slightly larger for readability */
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 0;
+    font-size: 11pt;
     text-align: center;
-    color: #000; /* Black text for print */
+    color: #000;
     width: 100%;
-    max-width: 1200px; /* Match nav max-width */
+    max-width: 1200px;
     box-sizing: border-box;
   }
 

@@ -21,7 +21,7 @@ let isDarkMode = true;
 let isFormCollapsed = true;
 let activeTimeManager = null;
 let scheduledSources = [];
-let audioContext = new AudioContext(); // Moved to allow reinitialization
+let audioContext = new AudioContext();
 
 const validTimeSignatures = [
   '4/4', '3/4', '6/8', '2/4', '5/4', '7/8', '12/8', '9/8', '11/8', '15/8', '13/8', '10/4', '8/8', '14/8', '16/8', '7/4', '6/4'
@@ -41,7 +41,7 @@ function loadAudioBuffers() {
   ]).catch(error => console.error('Failed to load audio files:', error));
 }
 
-loadAudioBuffers();
+const audioBufferPromise = loadAudioBuffers(); // Single call, stored as promise
 
 function playSound(buffer, time) {
   if (!buffer || !soundEnabled) return null;
@@ -219,16 +219,23 @@ function validateBlock(block) {
 }
 
 function updateBlockSize(block) {
-  const measures = parseInt(block.getAttribute('data-measures'));
-  const baseWidth = 120;
-  const minWidth = 120;
-  const width = Math.max(minWidth, (measures / 4) * baseWidth);
-  block.style.width = `${width}px`;
+  if (!block.style.width) {
+    const measures = parseInt(block.getAttribute('data-measures'));
+    const baseWidth = 120;
+    const minWidth = 120;
+    const width = Math.max(minWidth, (measures / 4) * baseWidth);
+    block.style.width = `${width}px`;
+  }
 }
 
 function setupBlock(block) {
   block.draggable = true;
+
   block.addEventListener('dragstart', (e) => {
+    if (e.target.classList.contains('resize-handle')) {
+      e.preventDefault();
+      return;
+    }
     draggedBlock = block;
     e.dataTransfer.setData('text/plain', '');
     block.style.opacity = '0.5';
@@ -256,7 +263,8 @@ function setupBlock(block) {
     }
   });
 
-  block.addEventListener('click', () => {
+  block.addEventListener('click', (e) => {
+    if (e.target.classList.contains('delete-btn') || e.target.classList.contains('resize-handle')) return;
     if (selectedBlock) selectedBlock.classList.remove('selected');
     selectedBlock = block;
     block.classList.add('selected');
@@ -282,7 +290,41 @@ function setupBlock(block) {
   });
   block.appendChild(deleteBtn);
 
-  updateBlockSize(block);
+  const resizeHandle = document.createElement('div');
+  resizeHandle.classList.add('resize-handle');
+  block.appendChild(resizeHandle);
+
+  let startX, startWidth;
+  resizeHandle.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    startX = e.pageX;
+    startWidth = block.offsetWidth;
+    document.addEventListener('mousemove', resize);
+    document.addEventListener('mouseup', stopResize);
+  });
+
+  function resize(e) {
+    const snapWidth = 30;
+    const newWidth = Math.min(480, Math.max(120, Math.round((startWidth + (e.pageX - startX)) / snapWidth) * snapWidth));
+    block.style.width = `${newWidth}px`;
+    const measures = Math.round((newWidth / 120) * 4);
+    block.setAttribute('data-measures', measures);
+    const type = block.classList[1];
+    const tempo = block.getAttribute('data-tempo');
+    const timeSignature = block.getAttribute('data-time-signature');
+    const feel = block.getAttribute('data-feel');
+    const lyrics = block.getAttribute('data-lyrics');
+    const rootNote = block.getAttribute('data-root-note');
+    const mode = block.getAttribute('data-mode');
+    block.querySelector('.label').innerHTML = `${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote)} ${mode} ${tempo}b ${feel}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}`;
+  }
+
+  function stopResize() {
+    document.removeEventListener('mousemove', resize);
+    document.removeEventListener('mouseup', stopResize);
+    calculateTimings();
+  }
 }
 
 function addBlock() {
@@ -366,6 +408,10 @@ function updateBlock() {
   });
   selectedBlock.appendChild(deleteBtn);
 
+  const resizeHandle = document.createElement('div');
+  resizeHandle.classList.add('resize-handle');
+  selectedBlock.appendChild(resizeHandle);
+
   const styleDropdown = document.getElementById('style-dropdown');
   if (styleDropdown.value) selectedBlock.classList.add(styleDropdown.value);
 
@@ -389,13 +435,10 @@ function clearSelection() {
 
 function getBeatsPerMeasure(timeSignature) {
   const [numerator, denominator] = timeSignature.split('/').map(Number);
-  if (denominator === 8 && numerator % 3 === 0) {
-    return numerator / 3; // Compound time (e.g., 6/8 = 2 beats)
-  }
   if (timeSignature === '6/4') {
-    return 6; // 6 quarter-note beats
+    return 6; // Special case for 6/4
   }
-  return numerator; // Simple time
+  return numerator; // 9/8 returns 9, 4/4 returns 4, etc.
 }
 
 function calculateTimings() {
@@ -451,8 +494,9 @@ function togglePlay() {
     currentBeat = 0;
     blockBeat = 0;
     blockMeasure = 0;
-    audioContext.resume();
-    playLeadIn(timings, totalSeconds, totalBeats);
+    audioContext.resume().then(() => {
+      audioBufferPromise.then(() => playLeadIn(timings, totalSeconds, totalBeats));
+    });
   }
 }
 
@@ -475,7 +519,8 @@ function playLeadIn(timings, totalSeconds, totalBeats) {
   const startTime = audioContext.currentTime;
   for (let beat = 0; beat < leadInBeats; beat++) {
     const soundTime = startTime + (beat * beatDuration);
-    const source = playSound(beat === 0 ? currentTockBuffer : currentTickBuffer, soundTime);
+    const isFirstBeat = beat === 0; // First beat of the lead-in measure
+    const source = playSound(isFirstBeat ? currentTickBuffer : currentTockBuffer, soundTime);
     if (source) scheduledSources.push(source);
   }
 
@@ -525,8 +570,9 @@ function playSong(timings, totalSeconds, totalBeats) {
 
     for (let beat = 0; beat < totalBlockBeats; beat++) {
       const soundTime = blockStartTime + (beat * beatDuration);
+      // Play "tick" on the first beat of every measure
       const isFirstBeatOfMeasure = beat % currentTiming.beatsPerMeasure === 0;
-      const source = playSound(isFirstBeatOfMeasure ? currentTockBuffer : currentTickBuffer, soundTime);
+      const source = playSound(isFirstBeatOfMeasure ? currentTickBuffer : currentTockBuffer, soundTime);
       if (source) scheduledSources.push(source);
     }
 
@@ -601,10 +647,12 @@ function resetPlayback() {
   });
   scheduledSources = [];
 
-  // Fully reset AudioContext
   audioContext.close().then(() => {
     audioContext = new AudioContext();
-    loadAudioBuffers();
+    // Reload buffers after creating new context
+    audioBufferPromise.then(() => {
+      console.log('Audio buffers reloaded after reset');
+    }).catch(error => console.error('Failed to reload audio buffers:', error));
   });
 
   currentTime = 0;
@@ -708,7 +756,6 @@ function loadSongFromDropdown(filename) {
     return;
   }
 
-  // Ensure full reset before loading new song
   if (isPlaying) resetPlayback();
 
   if (filename === 'new-song') {
@@ -725,33 +772,44 @@ function loadSongFromDropdown(filename) {
     return;
   }
 
-  console.log(`Attempting to load: ${filename}`);
+  // Prepend 'songs/' to the filename for fetching
+  const fullPath = filename.startsWith('songs/') ? filename : `songs/${filename}`;
+  console.log(`Attempting to load: ${fullPath}`);
   try {
-    if (filename === 'pneuma.js') {
-      if (typeof loadPneuma === 'function') loadPneuma();
-      else fetch(filename).then(response => response.text()).then(text => { eval(text); loadPneuma(); });
-    } else if (filename === 'satisfaction.js') {
-      if (typeof loadSatisfaction === 'function') loadSatisfaction();
-      else fetch(filename).then(response => response.text()).then(text => { eval(text); loadSatisfaction(); });
-    } else if (filename === 'dirtyLaundry.js') {
-      if (typeof loadDirtyLaundry === 'function') loadDirtyLaundry();
-      else fetch(filename).then(response => response.text()).then(text => { eval(text); loadDirtyLaundry(); });
-    } else if (filename === 'invincible.js') {
-      if (typeof loadInvincible === 'function') loadInvincible();
-      else fetch(filename).then(response => response.text()).then(text => { eval(text); loadInvincible(); });
-    } else if (filename === 'astroworld.js') {
-      if (typeof loadAstroworld === 'function') loadAstroworld();
-      else fetch(filename).then(response => response.text()).then(text => { eval(text); loadAstroworld(); });
-    } else if (filename === 'astrothunder.js') {
-      if (typeof loadAstrothunder === 'function') loadAstrothunder();
-      else fetch(filename).then(response => response.text()).then(text => { eval(text); loadAstrothunder(); });
-    } else if (filename === 'jambi.js') {
-      if (typeof loadJambi === 'function') loadJambi();
-      else fetch(filename).then(response => response.text()).then(text => { eval(text); loadJambi(); });
-    } else if (filename === 'Echoes of Joy.json') {
-      fetch(filename).then(response => response.text()).then(text => loadSongData(JSON.parse(text)));
+    if (filename.endsWith('.js')) {
+      fetch(fullPath)
+        .then(response => {
+          if (!response.ok) throw new Error(`Failed to fetch ${fullPath}: ${response.statusText}`);
+          return response.text();
+        })
+        .then(text => {
+          eval(text); // Load the script into the global scope
+          if (filename === 'songs/pneuma.js' && typeof loadPneuma === 'function') loadPneuma();
+          else if (filename === 'songs/satisfaction.js' && typeof loadSatisfaction === 'function') loadSatisfaction();
+          else if (filename === 'songs/dirtyLaundry.js' && typeof loadDirtyLaundry === 'function') loadDirtyLaundry();
+          else if (filename === 'songs/invincible.js' && typeof loadInvincible === 'function') loadInvincible();
+          else if (filename === 'songs/astroworld.js' && typeof loadAstroworld === 'function') loadAstroworld();
+          else if (filename === 'songs/astrothunder.js' && typeof loadAstrothunder === 'function') loadAstrothunder();
+          else if (filename === 'songs/jambi.js' && typeof loadJambi === 'function') loadJambi();
+          else throw new Error(`No load function found for ${filename}`);
+        })
+        .catch(error => {
+          console.error(`Error loading ${fullPath}:`, error);
+          alert(`Failed to load song: ${error.message}`);
+        });
+    } else if (filename.endsWith('.json')) {
+      fetch(fullPath)
+        .then(response => {
+          if (!response.ok) throw new Error(`Failed to fetch ${fullPath}: ${response.statusText}`);
+          return response.json();
+        })
+        .then(data => loadSongData(data))
+        .catch(error => {
+          console.error(`Error loading ${fullPath}:`, error);
+          alert(`Failed to load song: ${error.message}`);
+        });
     } else {
-      fetch(filename).then(response => response.json()).then(data => loadSongData(data));
+      throw new Error(`Unsupported file type: ${filename}`);
     }
     songDropdown.value = filename;
   } catch (error) {
@@ -762,13 +820,13 @@ function loadSongFromDropdown(filename) {
 
 function populateSongDropdown() {
   const availableSongs = [
-    'new-song', 'Echoes of Joy.json', 'pneuma.js', 'satisfaction.js',
-    'dirtyLaundry.js', 'invincible.js', 'astroworld.js', 'astrothunder.js', 'jambi.js'
+    'new-song', 'songs/Echoes of Joy.json', 'songs/pneuma.js', 'songs/satisfaction.js',
+    'songs/dirtyLaundry.js', 'songs/invincible.js', 'songs/astroworld.js', 'songs/astrothunder.js', 'songs/jambi.js'
   ];
   availableSongs.forEach(song => {
     const option = document.createElement('option');
     option.value = song;
-    option.textContent = song === 'new-song' ? 'New Song' : song.replace('.json', '').replace('.js', '');
+    option.textContent = song === 'new-song' ? 'New Song' : song.replace('songs/', '').replace('.json', '').replace('.js', '');
     songDropdown.appendChild(option);
   });
 }
@@ -778,4 +836,4 @@ function printSong() {
 }
 
 populateSongDropdown();
-loadSongFromDropdown('satisfaction.js');
+loadSongFromDropdown('songs/satisfaction.js');
