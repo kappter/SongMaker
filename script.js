@@ -149,6 +149,14 @@ function randomizeSong() {
     'Shadows dancing in the moonlight...', 'Break free, let your spirit soar...', 'Echoes of a forgotten dream...'
   ];
 
+  // Random title generator
+  const titleAdjectives = ['Cosmic', 'Silent', 'Electric', 'Fading', 'Raging', 'Dreamy', 'Wild'];
+  const titleNouns = ['Echo', 'Pulse', 'Wave', 'Night', 'Fire', 'Journey', 'Sky'];
+  const randomAdj = titleAdjectives[Math.floor(Math.random() * titleAdjectives.length)];
+  const randomNoun = titleNouns[Math.floor(Math.random() * titleNouns.length)];
+  const newTitle = `${randomAdj} ${randomNoun}`;
+  updateTitle(newTitle);
+
   const numBlocks = Math.floor(Math.random() * (15 - 5 + 1)) + 5;
 
   for (let i = 0; i < numBlocks; i++) {
@@ -832,7 +840,24 @@ function populateSongDropdown() {
 }
 
 function printSong() {
+  const { totalSeconds, totalBeats } = calculateTimings();
+  const blockCount = timeline.children.length;
+
+  // Store original content to restore later
+  const originalContent = currentBlockDisplay.innerHTML;
+
+  // Populate current-block-display with song info and copyright
+  currentBlockDisplay.innerHTML = `
+    <span class="label">
+      Total Duration: ${formatDuration(totalSeconds)} | Beats: ${totalBeats} | Blocks: ${blockCount}<br>
+      © 2025 SongMaker by kappter. All rights reserved.
+    </span>
+  `;
+
   window.print();
+
+  // Restore original content after printing
+  currentBlockDisplay.innerHTML = originalContent;
 }
 
 populateSongDropdown();
