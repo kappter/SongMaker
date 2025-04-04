@@ -6,7 +6,7 @@ const sevenTempestSong = {
   blocks: [
     {
       type: "intro",
-      measures: 32,    // Increased from 16
+      measures: 32,
       rootNote: "D",
       mode: "Dorian",
       tempo: 78,
@@ -26,7 +26,7 @@ const sevenTempestSong = {
     },
     {
       type: "interlude",
-      measures: 20,    // Increased from 10
+      measures: 20,
       rootNote: "D",
       mode: "Dorian",
       tempo: 78,
@@ -56,7 +56,7 @@ const sevenTempestSong = {
     },
     {
       type: "interlude",
-      measures: 28,    // Increased from 14
+      measures: 28,
       rootNote: "D",
       mode: "Dorian",
       tempo: 78,
@@ -66,7 +66,7 @@ const sevenTempestSong = {
     },
     {
       type: "bridge",
-      measures: 30,    // Increased from 20
+      measures: 30,
       rootNote: "D",
       mode: "Dorian",
       tempo: 78,
@@ -76,7 +76,7 @@ const sevenTempestSong = {
     },
     {
       type: "interlude",
-      measures: 24,    // Increased from 12
+      measures: 24,
       rootNote: "D",
       mode: "Dorian",
       tempo: 78,
@@ -96,7 +96,7 @@ const sevenTempestSong = {
     },
     {
       type: "bridge",
-      measures: 36,    // Increased from 24
+      measures: 32,    // Adjusted from 36
       rootNote: "D",
       mode: "Dorian",
       tempo: 78,
@@ -106,7 +106,7 @@ const sevenTempestSong = {
     },
     {
       type: "outro",
-      measures: 30,    // Increased from 18
+      measures: 21,    // Adjusted from 30
       rootNote: "D",
       mode: "Dorian",
       tempo: 78,
