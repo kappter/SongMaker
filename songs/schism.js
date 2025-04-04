@@ -6,7 +6,7 @@ const schismSong = {
   blocks: [
     {
       type: "intro",
-      measures: 6,     // Reduced from 12
+      measures: 6,
       rootNote: "D",
       mode: "Dorian",
       tempo: 107,
@@ -16,7 +16,7 @@ const schismSong = {
     },
     {
       type: "verse",
-      measures: 8,     // Reduced from 16
+      measures: 8,
       rootNote: "D",
       mode: "Dorian",
       tempo: 107,
@@ -26,7 +26,7 @@ const schismSong = {
     },
     {
       type: "interlude",
-      measures: 4,     // Reduced from 8
+      measures: 4,
       rootNote: "D",
       mode: "Dorian",
       tempo: 107,
@@ -36,7 +36,7 @@ const schismSong = {
     },
     {
       type: "verse",
-      measures: 8,     // Reduced from 16
+      measures: 8,
       rootNote: "D",
       mode: "Dorian",
       tempo: 107,
@@ -46,7 +46,7 @@ const schismSong = {
     },
     {
       type: "chorus",
-      measures: 6,     // Reduced from 12
+      measures: 6,
       rootNote: "D",
       mode: "Dorian",
       tempo: 107,
@@ -56,7 +56,7 @@ const schismSong = {
     },
     {
       type: "interlude",
-      measures: 8,     // Reduced from 16
+      measures: 8,
       rootNote: "D",
       mode: "Dorian",
       tempo: 107,
@@ -66,7 +66,7 @@ const schismSong = {
     },
     {
       type: "bridge",
-      measures: 10,    // Reduced from 20
+      measures: 10,
       rootNote: "D",
       mode: "Dorian",
       tempo: 107,
@@ -76,7 +76,7 @@ const schismSong = {
     },
     {
       type: "interlude",
-      measures: 6,     // Reduced from 12
+      measures: 6,
       rootNote: "D",
       mode: "Dorian",
       tempo: 107,
@@ -86,7 +86,7 @@ const schismSong = {
     },
     {
       type: "chorus",
-      measures: 6,     // Reduced from 12
+      measures: 6,
       rootNote: "D",
       mode: "Dorian",
       tempo: 107,
@@ -96,7 +96,7 @@ const schismSong = {
     },
     {
       type: "bridge",
-      measures: 12,    // Reduced from 24
+      measures: 14,
       rootNote: "D",
       mode: "Dorian",
       tempo: 107,
@@ -106,7 +106,7 @@ const schismSong = {
     },
     {
       type: "outro",
-      measures: 8,     // Reduced from 16
+      measures: 13,
       rootNote: "D",
       mode: "Dorian",
       tempo: 107,
