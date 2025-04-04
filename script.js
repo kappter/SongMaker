@@ -8,6 +8,7 @@ const songDropdown = document.getElementById('song-dropdown');
 const toggleFormBtn = document.getElementById('toggle-form-btn');
 const formContent = document.getElementById('form-content');
 const printSongName = document.getElementById('print-song-name');
+const songTitleInput = document.getElementById('song-title-input'); // Reference to parameters input
 let draggedBlock = null;
 let selectedBlock = null;
 let currentSongName = '(I Can’t Get No) Satisfaction';
@@ -150,8 +151,14 @@ function randomizeSong() {
   ];
 
   // Random title generator
-  const titleAdjectives = ['Cosmic', 'Silent', 'Electric', 'Fading', 'Raging', 'Dreamy', 'Wild'];
-  const titleNouns = ['Echo', 'Pulse', 'Wave', 'Night', 'Fire', 'Journey', 'Sky'];
+  const titleAdjectives = [
+    'Cosmic', 'Silent', 'Electric', 'Fading', 'Raging', 'Dreamy', 'Wild', 'Ethereal', 'Vivid', 'Haunting',
+    'Radiant', 'Mystic', 'Glowing', 'Somber', 'Frenzied', 'Tranquil', 'Jagged', 'Luminous', 'Restless', 'Blazing'
+  ];
+  const titleNouns = [
+    'Echo', 'Pulse', 'Wave', 'Night', 'Fire', 'Journey', 'Sky', 'Dawn', 'Shadow', 'Rhythm',
+    'Storm', 'Horizon', 'Drift', 'Flame', 'Void', 'Quest', 'Tide', 'Whisper', 'Thunder', 'Mirage'
+  ];
   const randomAdj = titleAdjectives[Math.floor(Math.random() * titleAdjectives.length)];
   const randomNoun = titleNouns[Math.floor(Math.random() * titleNouns.length)];
   const newTitle = `${randomAdj} ${randomNoun}`;
@@ -201,7 +208,13 @@ function updateTitle(name) {
   currentSongName = name;
   document.title = `${name} - SongMaker`;
   printSongName.textContent = name;
+  songTitleInput.value = name; // Sync the parameters input
 }
+
+// Event listener for manual title updates
+songTitleInput.addEventListener('input', (e) => {
+  updateTitle(e.target.value); // Update title when user types
+});
 
 function formatPart(part) {
   return part.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
@@ -799,6 +812,7 @@ function loadSongFromDropdown(filename) {
           else if (filename === 'songs/astroworld.js' && typeof loadAstroworld === 'function') loadAstroworld();
           else if (filename === 'songs/astrothunder.js' && typeof loadAstrothunder === 'function') loadAstrothunder();
           else if (filename === 'songs/jambi.js' && typeof loadJambi === 'function') loadJambi();
+            else if (filename === 'songs/schism.js' && typeof loadSchism === 'function') loadSchism();
           else throw new Error(`No load function found for ${filename}`);
         })
         .catch(error => {
@@ -826,11 +840,24 @@ function loadSongFromDropdown(filename) {
   }
 }
 
+function populateTimeSignatures() {
+  const select = document.getElementById('time-signature');
+  validTimeSignatures.forEach(ts => {
+    const option = document.createElement('option');
+    option.value = ts;
+    option.textContent = ts;
+    select.appendChild(option);
+  });
+}
+// Call this during initialization, e.g., after populateSongDropdown()
+populateTimeSignatures();
+
 function populateSongDropdown() {
   const availableSongs = [
-    'new-song', 'songs/Echoes of Joy.json', 'songs/pneuma.js', 'songs/satisfaction.js',
-    'songs/dirtyLaundry.js', 'songs/invincible.js', 'songs/astroworld.js', 'songs/astrothunder.js', 'songs/jambi.js'
-  ];
+  'new-song', 'songs/Echoes of Joy.json', 'songs/pneuma.js', 'songs/satisfaction.js',
+  'songs/dirtyLaundry.js', 'songs/invincible.js', 'songs/astroworld.js', 'songs/astrothunder.js', 
+  'songs/jambi.js', 'songs/schism.js'
+];
   availableSongs.forEach(song => {
     const option = document.createElement('option');
     option.value = song;
@@ -860,5 +887,7 @@ function printSong() {
   currentBlockDisplay.innerHTML = originalContent;
 }
 
+// Initial setup
 populateSongDropdown();
 loadSongFromDropdown('songs/satisfaction.js');
+updateTitle(currentSongName); // Sync input on load
