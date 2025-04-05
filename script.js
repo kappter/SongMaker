@@ -135,7 +135,7 @@ function randomizeSong() {
   const partTypes = [
     'verse', 'refrain', 'pre-chorus', 'chorus', 'post-chorus', 'bridge',
     'solo', 'ad-lib', 'hook', 'interlude', 'breakdown', 'drop', 'coda'
-  ]; // Excludes intro and outro, handled separately
+  ];
   const rootNotes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
   const modes = [
     'Ionian', 'Dorian', 'Phrygian', 'Lydian', 'Mixolydian', 'Aeolian', 'Locrian',
@@ -166,7 +166,8 @@ function randomizeSong() {
   // Fixed song-wide properties
   const songRootNote = rootNotes[Math.floor(Math.random() * rootNotes.length)];
   const songMode = modes[Math.floor(Math.random() * modes.length)];
-  const songTempo = Math.floor(Math.random() * (180 - 60 + 1)) + 60; // 60-180 BPM
+  const songTempo = Math.floor(Math.random() * (180 - 60 + 1)) + 60;
+  const songTimeSignature = validTimeSignatures[Math.floor(Math.random() * validTimeSignatures.length)];
 
   // Song structure algorithm
   const songStructure = [];
@@ -174,35 +175,35 @@ function randomizeSong() {
   // 1. Always start with an intro
   songStructure.push({
     type: 'intro',
-    measures: Math.floor(Math.random() * (8 - 4 + 1)) + 4, // 4-8 measures
+    measures: Math.floor(Math.random() * (8 - 4 + 1)) + 4,
     rootNote: songRootNote,
     mode: songMode,
     tempo: songTempo,
-    timeSignature: validTimeSignatures[Math.floor(Math.random() * validTimeSignatures.length)],    feel: 'Atmospheric',
+    timeSignature: songTimeSignature,
+    feel: 'Atmospheric',
     lyrics: ''
   });
 
   // 2. Generate middle sections (6-10 blocks total, including intro/outro)
-  const totalBlocks = Math.floor(Math.random() * (10 - 6 + 1)) + 6; // 6-10 blocks
-  const middleBlocks = totalBlocks - 2; // Subtract intro and outro
+  const totalBlocks = Math.floor(Math.random() * (10 - 6 + 1)) + 6;
+  const middleBlocks = totalBlocks - 2;
   let hasChorus = false;
   let hasBridge = false;
 
   for (let i = 0; i < middleBlocks; i++) {
     let type;
-    const measures = Math.floor(Math.random() * (16 - 4 + 1)) + 4; // 4-16 measures
+    const measures = Math.floor(Math.random() * (16 - 4 + 1)) + 4;
 
     // Logical progression
     if (i === 0) {
-      type = 'verse'; // Start with a verse after intro
+      type = 'verse';
     } else if (i === 1 && !hasChorus) {
-      type = 'chorus'; // Early chorus
+      type = 'chorus';
       hasChorus = true;
     } else if (i === middleBlocks - 1 && !hasBridge) {
-      type = 'bridge'; // Bridge near the end
+      type = 'bridge';
       hasBridge = true;
     } else {
-      // Randomly choose, with bias toward verse/chorus
       const rand = Math.random();
       if (rand < 0.4) type = 'verse';
       else if (rand < 0.7 && hasChorus) type = 'chorus';
@@ -218,7 +219,7 @@ function randomizeSong() {
       rootNote: songRootNote,
       mode: songMode,
       tempo: songTempo,
-      timeSignature: '4/4', // Default, can expand
+      timeSignature: songTimeSignature,
       feel: feels[Math.floor(Math.random() * feels.length)],
       lyrics: possibleLyrics[Math.floor(Math.random() * possibleLyrics.length)]
     });
@@ -227,11 +228,11 @@ function randomizeSong() {
   // 3. Always end with an outro
   songStructure.push({
     type: 'outro',
-    measures: Math.floor(Math.random() * (8 - 4 + 1)) + 4, // 4-8 measures
+    measures: Math.floor(Math.random() * (8 - 4 + 1)) + 4,
     rootNote: songRootNote,
     mode: songMode,
     tempo: songTempo,
-    timeSignature: '4/4', // Default
+    timeSignature: songTimeSignature,
     feel: 'Resolution',
     lyrics: ''
   });
