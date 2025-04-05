@@ -131,75 +131,136 @@ function randomizeSong() {
   timeline.innerHTML = '';
   if (selectedBlock) clearSelection();
 
+  // Core arrays for randomization
   const partTypes = [
-    'intro', 'verse', 'refrain', 'pre-chorus', 'chorus', 'post-chorus', 'bridge', 'outro',
-    'elision', 'solo', 'ad-lib', 'hook', 'interlude', 'breakdown', 'drop', 'coda',
-    'modulation', 'tag', 'chorus-reprise', 'countermelody', 'instrumental-verse-chorus', 'false-ending'
-  ];
+    'verse', 'refrain', 'pre-chorus', 'chorus', 'post-chorus', 'bridge',
+    'solo', 'ad-lib', 'hook', 'interlude', 'breakdown', 'drop', 'coda'
+  ]; // Excludes intro and outro, handled separately
   const rootNotes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
   const modes = [
     'Ionian', 'Dorian', 'Phrygian', 'Lydian', 'Mixolydian', 'Aeolian', 'Locrian',
-    'Harmonic Minor', 'Melodic Minor', 'Blues Scale', 'Pentatonic Major', 'Pentatonic Minor', 'Whole Tone'
+    'Harmonic Minor', 'Melodic Minor', 'Blues Scale', 'Pentatonic Major', 'Pentatonic Minor'
   ];
   const feels = [
     'Happiness', 'Sadness', 'Tension', 'Euphoria', 'Calmness', 'Anger', 'Mystical',
-    'Rebellion', 'Triumph', 'Bliss', 'Frustration', 'Atmospheric', 'Trippy', 'Awakening', 'Intense', 'Climactic'
+    'Rebellion', 'Triumph', 'Bliss', 'Frustration', 'Atmospheric', 'Trippy', 'Awakening'
   ];
   const possibleLyrics = [
     '', 'La la la, here we go again...', 'Feel the rhythm, let it flow...',
-    'Shadows dancing in the moonlight...', 'Break free, let your spirit soar...', 'Echoes of a forgotten dream...'
+    'Shadows dancing in the moonlight...', 'Break free, let your spirit soar...', 
+    'Echoes of a forgotten dream...'
   ];
 
   // Random title generator
   const titleAdjectives = [
-    'Cosmic', 'Silent', 'Electric', 'Fading', 'Raging', 'Dreamy', 'Wild', 'Ethereal', 'Vivid', 'Haunting',
-    'Radiant', 'Mystic', 'Glowing', 'Somber', 'Frenzied', 'Tranquil', 'Jagged', 'Luminous', 'Restless', 'Blazing'
+    'Cosmic', 'Silent', 'Electric', 'Fading', 'Raging', 'Dreamy', 'Wild', 'Ethereal', 'Vivid', 'Haunting'
   ];
   const titleNouns = [
-    'Echo', 'Pulse', 'Wave', 'Night', 'Fire', 'Journey', 'Sky', 'Dawn', 'Shadow', 'Rhythm',
-    'Storm', 'Horizon', 'Drift', 'Flame', 'Void', 'Quest', 'Tide', 'Whisper', 'Thunder', 'Mirage'
+    'Echo', 'Pulse', 'Wave', 'Night', 'Fire', 'Journey', 'Sky', 'Dawn', 'Shadow', 'Rhythm'
   ];
   const randomAdj = titleAdjectives[Math.floor(Math.random() * titleAdjectives.length)];
   const randomNoun = titleNouns[Math.floor(Math.random() * titleNouns.length)];
   const newTitle = `${randomAdj} ${randomNoun}`;
   updateTitle(newTitle);
 
-  const numBlocks = Math.floor(Math.random() * (15 - 5 + 1)) + 5;
+  // Fixed song-wide properties
+  const songRootNote = rootNotes[Math.floor(Math.random() * rootNotes.length)];
+  const songMode = modes[Math.floor(Math.random() * modes.length)];
+  const songTempo = Math.floor(Math.random() * (180 - 60 + 1)) + 60; // 60-180 BPM
 
-  for (let i = 0; i < numBlocks; i++) {
-    const type = partTypes[Math.floor(Math.random() * partTypes.length)];
-    const measures = Math.floor(Math.random() * (16 - 1 + 1)) + 1;
-    const rootNote = rootNotes[Math.floor(Math.random() * rootNotes.length)];
-    const mode = modes[Math.floor(Math.random() * modes.length)];
-    const tempo = Math.floor(Math.random() * (180 - 60 + 1)) + 60;
-    const timeSignature = validTimeSignatures[Math.floor(Math.random() * validTimeSignatures.length)];
-    const feel = feels[Math.floor(Math.random() * feels.length)];
-    const lyrics = possibleLyrics[Math.floor(Math.random() * possibleLyrics.length)];
+  // Song structure algorithm
+  const songStructure = [];
+  
+  // 1. Always start with an intro
+  songStructure.push({
+    type: 'intro',
+    measures: Math.floor(Math.random() * (8 - 4 + 1)) + 4, // 4-8 measures
+    rootNote: songRootNote,
+    mode: songMode,
+    tempo: songTempo,
+    timeSignature: validTimeSignatures[Math.floor(Math.random() * validTimeSignatures.length)],    feel: 'Atmospheric',
+    lyrics: ''
+  });
 
-    const blockData = { type, measures, rootNote, mode, tempo, timeSignature, feel, lyrics };
+  // 2. Generate middle sections (6-10 blocks total, including intro/outro)
+  const totalBlocks = Math.floor(Math.random() * (10 - 6 + 1)) + 6; // 6-10 blocks
+  const middleBlocks = totalBlocks - 2; // Subtract intro and outro
+  let hasChorus = false;
+  let hasBridge = false;
+
+  for (let i = 0; i < middleBlocks; i++) {
+    let type;
+    const measures = Math.floor(Math.random() * (16 - 4 + 1)) + 4; // 4-16 measures
+
+    // Logical progression
+    if (i === 0) {
+      type = 'verse'; // Start with a verse after intro
+    } else if (i === 1 && !hasChorus) {
+      type = 'chorus'; // Early chorus
+      hasChorus = true;
+    } else if (i === middleBlocks - 1 && !hasBridge) {
+      type = 'bridge'; // Bridge near the end
+      hasBridge = true;
+    } else {
+      // Randomly choose, with bias toward verse/chorus
+      const rand = Math.random();
+      if (rand < 0.4) type = 'verse';
+      else if (rand < 0.7 && hasChorus) type = 'chorus';
+      else if (rand < 0.85 && !hasBridge) {
+        type = 'bridge';
+        hasBridge = true;
+      } else type = partTypes[Math.floor(Math.random() * partTypes.length)];
+    }
+
+    songStructure.push({
+      type,
+      measures,
+      rootNote: songRootNote,
+      mode: songMode,
+      tempo: songTempo,
+      timeSignature: '4/4', // Default, can expand
+      feel: feels[Math.floor(Math.random() * feels.length)],
+      lyrics: possibleLyrics[Math.floor(Math.random() * possibleLyrics.length)]
+    });
+  }
+
+  // 3. Always end with an outro
+  songStructure.push({
+    type: 'outro',
+    measures: Math.floor(Math.random() * (8 - 4 + 1)) + 4, // 4-8 measures
+    rootNote: songRootNote,
+    mode: songMode,
+    tempo: songTempo,
+    timeSignature: '4/4', // Default
+    feel: 'Resolution',
+    lyrics: ''
+  });
+
+  // Build blocks in the timeline
+  songStructure.forEach(blockData => {
     const error = validateBlock(blockData);
     if (error) {
       console.error(`Generated block failed validation: ${error}`);
-      continue;
+      return;
     }
 
     const block = document.createElement('div');
-    block.classList.add('song-block', type);
-    block.setAttribute('data-measures', measures);
-    block.setAttribute('data-tempo', tempo);
-    block.setAttribute('data-time-signature', timeSignature);
-    block.setAttribute('data-feel', feel);
-    block.setAttribute('data-lyrics', lyrics);
-    block.setAttribute('data-root-note', rootNote);
-    block.setAttribute('data-mode', mode);
-    block.innerHTML = `<span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote)} ${mode} ${tempo}b ${feel}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span><span class="tooltip">${lyrics || 'No lyrics'}</span>`;
+    block.classList.add('song-block', blockData.type);
+    block.setAttribute('data-measures', blockData.measures);
+    block.setAttribute('data-tempo', blockData.tempo);
+    block.setAttribute('data-time-signature', blockData.timeSignature);
+    block.setAttribute('data-feel', blockData.feel);
+    block.setAttribute('data-lyrics', blockData.lyrics);
+    block.setAttribute('data-root-note', blockData.rootNote);
+    block.setAttribute('data-mode', blockData.mode);
+    block.innerHTML = `<span class="label">${formatPart(blockData.type)}: ${blockData.timeSignature} ${blockData.measures}m<br>${abbreviateKey(blockData.rootNote)} ${blockData.mode} ${blockData.tempo}b ${blockData.feel}${blockData.lyrics ? '<br>-<br>' + truncateLyrics(blockData.lyrics) : ''}</span><span class="tooltip">${blockData.lyrics || 'No lyrics'}</span>`;
     updateBlockSize(block);
     setupBlock(block);
     timeline.appendChild(block);
 
     const styleDropdown = document.getElementById('style-dropdown');
     if (styleDropdown.value) block.classList.add(styleDropdown.value);
-  }
+  });
 
   calculateTimings();
 }
