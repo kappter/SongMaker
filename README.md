@@ -1,3 +1,58 @@
+# SongMaker
+
+Welcome to **SongMaker**, a web-based application designed to create, edit, and visualize musical compositions with ease. Built with HTML, CSS, and JavaScript, SongMaker allows users to define song structures, calculate timings, and print concise song summaries—all within a sleek, user-friendly interface.
+
+## Features
+
+### 1. Song Structure Creation
+- Define songs using a block-based system with customizable properties:
+  - **Type**: Intro, verse, chorus, interlude, bridge, outro.
+  - **Measures**: Number of measures per block.
+  - **Root Note**: Key of the block (e.g., D, C).
+  - **Mode**: Musical mode (e.g., Dorian, Aeolian, Ionian).
+  - **Tempo**: Beats per minute (BPM).
+  - **Time Signature**: Supports common and odd meters (e.g., 4/4, 7/4, 11/8).
+  - **Feel**: Descriptive mood (e.g., Atmospheric, Climactic).
+  - **Lyrics**: Optional text for vocal sections.
+- Load songs from `.js` files in the `songs/` directory (e.g., `pneuma.js`, `schism.js`).
+
+### 2. Dynamic Song Loading
+- Select from a dropdown of predefined songs (e.g., "Pneuma," "Schism," "7empest," "Canon in D Minor").
+- Instantly populate the timeline with song blocks for editing or review.
+
+### 3. Time Calculation
+- Real-time computation of:
+  - **Total Duration**: Formatted as MM:SS (e.g., 6:46 for "Schism").
+  - **Total Beats**: Summed across all blocks based on measures and time signatures.
+  - **Block Count**: Number of sections in the song.
+- Displayed in the `#time-calculator` section for quick reference.
+
+### 4. Print-Friendly Output
+- Generate a compact, single-page print view with:
+  - Song name, total duration, beats, and block count.
+  - Copyright notice (e.g., "© 2025 SongMaker by kappter").
+- Optimized to avoid page breaks, ensuring all info fits on one sheet.
+
+### 5. Flexible Editing
+- Add, remove, or modify blocks directly in the timeline.
+- Validate inputs against supported time signatures and other constraints.
+
+### 6. Responsive Design
+- Adapts to various screen sizes for seamless use on desktop or mobile.
+- Clean, minimalistic UI with toggleable forms and controls.
+
+## Getting Started
+
+### Prerequisites
+- A modern web browser (e.g., Chrome, Firefox).
+- Basic knowledge of JavaScript for adding new song files.
+
+### Installation
+1. **Clone the Repository**:
+   ```bash
+   git clone https://github.com/kappter/SongMaker.git
+   cd SongMaker
+
 # Echoes of Joy – SongMaker
 
 A versatile song creation tool and a portable metronome for musicians and composers. It allows users to build songs by defining structure blocks (e.g., verse, chorus, bridge), selecting root notes and scales (including major, minor, and modal options), and adjusting parameters like tempo, time signature, and emotional feel (e.g., happiness, tension). It supports importing/exporting, printing, and offers a randomized mode for creative inspiration. This makes it ideal for experimenting with song structures and tonal variety, catering to both novice and experienced musicians.
