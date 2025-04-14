@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SongMaker</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>SongMaker</h1>
+    <h2 id="print-song-name"></h2>
+  </header>
+  <nav>
+    <select id="song-dropdown"></select>
+    <button id="randomize-btn">Randomize</button>
+    <button id="print-btn">Print</button>
+    <button id="toggle-form-btn">SHOW PARAMETERS</button>
+    <button id="play-btn">Play</button>
+    <button id="theme-btn">Light Mode</button>
+    <button id="riffusion-prompt-btn">Copy Riffusion Prompt</button>
+  </nav>
+  <div class="controls">
+    <select id="style-dropdown">
+      <option value="">Select style...</option>
+      <option value="style1">Style 1</option>
+      <option value="style2">Style 2</option>
+      <option value="style3">Style 3</option>
+    </select>
+    <span id="current-block-display"></span>
+  </div>
+  <div id="form-content" class="form-content">
+    <form id="song-form">
+      <label for="song-title">Song Title:</label>
+      <input type="text" id="song-title" name="song-title" maxlength="100"><br>
+
+      <label for="song-artist">Song Artist:</label>
+      <input type="text" id="song-artist" name="song-artist" maxlength="100"><br>
+
+      <label for="song-lyrics">Lyrics:</label>
+      <textarea id="song-lyrics" name="song-lyrics" maxlength="1000"></textarea><br>
+
+      <label for="block-type">Block Type:</label>
+      <select id="block-type" name="block-type">
+        <option value="intro">Intro</option>
+        <option value="verse">Verse</option>
+        <option value="chorus">Chorus</option>
+        <option value="pre-chorus">Pre-Chorus</option>
+        <option value="post-chorus">Post-Chorus</option>
+        <option value="refrain">Refrain</option>
+        <option value="bridge">Bridge</option>
+        <option value="solo">Solo</option>
+        <option value="interlude">Interlude</option>
+        <option value="breakdown">Breakdown</option>
+        <option value="drop">Drop</option>
+        <option value="instrumental-verse-chorus">Instrumental-Verse-Chorus</option>
+        <option value="outro">Outro</option>
+        <option value="coda">Coda</option>
+        <option value="false-ending">False-Ending</option>
+      </select><br>
+
+      <label for="block-measures">Measures:</label>
+      <input type="number" id="block-measures" name="block-measures" min="1" max="1000"><br>
+
+      <label for="block-time-signature">Time Signature:</label>
+      <select id="block-time-signature" name="block-time-signature">
+        <option value="4/4">4/4</option>
+        <option value="3/4">3/4</option>
+        <option value="2/4">2/4</option>
+        <option value="6/8">6/8</option>
+        <option value="5/4">5/4</option>
+        <option value="7/8">7/8</option>
+      </select><br>
+
+      <label for="block-tempo">Tempo:</label>
+      <input type="number" id="block-tempo" name="block-tempo" min="1" max="300"><br>
+
+      <label for="block-root-note">Root Note:</label>
+      <select id="block-root-note" name="block-root-note">
+        <option value="C">C</option>
+        <option value="C#">C#</option>
+        <option value="D">D</option>
+        <option value="D#">D#</option>
+        <option value="E">E</option>
+        <option value="F">F</option>
+        <option value="F#">F#</option>
+        <option value="G">G</option>
+        <option value="G#">G#</option>
+        <option value="A">A</option>
+        <option value="A#">A#</option>
+        <option value="B">B</option>
+      </select><br>
+
+      <label for="block-mode">Mode:</label>
+      <select id="block-mode" name="block-mode">
+        <option value="Ionian">Ionian</option>
+        <option value="Dorian">Dorian</option>
+        <option value="Phrygian">Phrygian</option>
+        <option value="Lydian">Lydian</option>
+        <option value="Mixolydian">Mixolydian</option>
+        <option value="Aeolian">Aeolian</option>
+        <option value="Locrian">Locrian</option>
+        <option value="Harmonic Minor">Harmonic Minor</option>
+        <option value="Melodic Minor">Melodic Minor</option>
+        <option value="Blues Scale">Blues Scale</option>
+        <option value="Pentatonic Major">Pentatonic Major</option>
+        <option value="Pentatonic Minor">Pentatonic Minor</option>
+        <option value="Whole Tone">Whole Tone</option>
+      </select><br>
+
+      <label for="block-feel">Feel:</label>
+      <select id="block-feel" name="block-feel">
+        <option value="Happiness">Happiness</option>
+        <option value="Sadness">Sadness</option>
+        <option value="Tension">Tension</option>
+        <option value="Euphoria">Euphoria</option>
+        <option value="Calmness">Calmness</option>
+        <option value="Anger">Anger</option>
+        <option value="Mystical">Mystical</option>
+        <option value="Rebellion">Rebellion</option>
+        <option value="Triumph">Triumph</option>
+        <option value="Bliss">Bliss</option>
+        <option value="Frustration">Frustration</option>
+        <option value="Atmospheric">Atmospheric</option>
+        <option value="Trippy">Trippy</option>
+        <option value="Awakening">Awakening</option>
+        <option value="Intense">Intense</option>
+        <option value="Climactic">Climactic</option>
+        <option value="Dreamy">Dreamy</option>
+      </select><br>
+
+      <button type="button" id="add-block-btn">Add Block</button>
+      <button type="button" id="clear-timeline-btn">Clear Timeline</button>
+    </form>
+  </div>
+  <div id="timeline" class="timeline"></div>
+  <div id="time-calculator" class="info-box"></div>
+  <script src="songs/bohemian_rhapsody.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
