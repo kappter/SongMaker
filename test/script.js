@@ -28,6 +28,11 @@ const validTimeSignatures = [
   '4/4', '3/4', '6/8', '2/4', '5/4', '7/8', '12/8', '9/8', '11/8', '15/8', '13/8', '10/4', '8/8', '14/8', '16/8', '7/4', '6/4'
 ];
 
+const moods = ["progressive", "ambient", "energetic", "dreamy"];
+const themes = ["rebellion", "triumph", "freedom", "nostalgia"];
+// Add to song generation
+song.mood = moods[Math.floor(Math.random() * moods.length)];
+
 let tickBuffer = null;
 let tockBuffer = null;
 let tickShortBuffer = null;
