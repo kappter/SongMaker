@@ -5,7 +5,7 @@ let currentBeat = 0;
 let totalBeats = 0;
 let currentBlockIndex = 0;
 const validTimeSignatures = ['4/4', '3/4', '2/4', '6/8', '5/4', '7/8'];
-let currentSong = null; // Store the current song data
+let currentSong = null;
 
 function formatPart(part) {
   return part.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
@@ -181,108 +181,6 @@ async function populateSongDropdown() {
   return processedSongs;
 }
 
-function generateRandomTitle() {
-  const adjectives = ['Cosmic', 'Eternal', 'Mystic', 'Neon', 'Silent', 'Echoing', 'Fading', 'Radiant', 'Frozen', 'Blazing'];
-  const nouns = ['Fire', 'Dream', 'Storm', 'Voyage', 'Echo', 'Pulse', 'Horizon', 'Abyss', 'Light', 'Shadow'];
-  const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
-  const noun = nouns[Math.floor(Math.random() * nouns.length)];
-  return `${adj} ${noun}`;
-}
-
-function generateRandomGenre() {
-  const genres = ['Progressive', 'Atmospheric', 'Cinematic', 'Electronic', 'Ambient', 'Psychedelic', 'Indie', 'Synthwave', 'Rock', 'Jazz'];
-  const genre1 = genres[Math.floor(Math.random() * genres.length)];
-  let genre2 = genres[Math.floor(Math.random() * genres.length)];
-  while (genre2 === genre1) {
-    genre2 = genres[Math.floor(Math.random() * genres.length)];
-  }
-  return `${genre1.toLowerCase()}, ${genre2.toLowerCase()}`;
-}
-
-function getMoodForFeel(feel) {
-  const moodMap = {
-    'Happiness': 'joyful and uplifting',
-    'Sadness': 'melancholy and reflective',
-    'Tension': 'tense and suspenseful',
-    'Euphoria': 'euphoric and soaring',
-    'Calmness': 'calm and serene',
-    'Anger': 'angry and intense',
-    'Mystical': 'mysterious and enchanting',
-    'Rebellion': 'rebellious and defiant',
-    'Triumph': 'triumphant and victorious',
-    'Bliss': 'blissful and dreamy',
-    'Frustration': 'frustrated and gritty',
-    'Atmospheric': 'spacey and atmospheric',
-    'Trippy': 'trippy and psychedelic',
-    'Awakening': 'awakening and inspiring',
-    'Intense': 'intense and powerful',
-    'Climactic': 'climactic and dramatic',
-    'Dreamy': 'dreamy and ethereal'
-  };
-  return moodMap[feel] || 'dynamic';
-}
-
-function getInstrumentsForBlock(type, feel) {
-  const instrumentOptions = {
-    intro: ['layered synths', 'ambient pads', 'soft piano'],
-    verse: ['expressive synths', 'subtle guitar riffs', 'driving bass'],
-    chorus: ['bright synths', 'punchy drums', 'layered vocals'],
-    bridge: ['reverb-heavy textures', 'dreamy pads', 'electric guitar'],
-    interlude: ['cinematic strings', 'ethereal synths', 'percussive elements'],
-    outro: ['soft piano', 'fading synths', 'strings'],
-    default: ['synths', 'guitar riffs', 'cinematic textures']
-  };
-  const instruments = instrumentOptions[type] || instrumentOptions.default;
-  return instruments.join(', ');
-}
-
-function generateVocalPhrase() {
-  const phrases = [
-    'La la la, here we go again',
-    'Oh oh oh, we rise again',
-    'Na na na, feel the light',
-    'Hey hey hey, into the night',
-    'Ah ah ah, we’re alive'
-  ];
-  return phrases[Math.floor(Math.random() * phrases.length)];
-}
-
-function generateRiffusionPrompt(song) {
-  const blocks = song.blocks || [];
-  if (!blocks.length) return 'No song data available to generate a Riffusion prompt.';
-
-  const title = song.title || generateRandomTitle();
-  const genre = generateRandomGenre();
-  const firstBlock = blocks[0];
-  const key = `${firstBlock.rootNote} ${firstBlock.mode}`;
-  const tempo = `${firstBlock.tempo} BPM`;
-  const timeSignature = firstBlock.timeSignature;
-
-  let prompt = `Create a ${genre} track titled "${title}" in ${key}, ${tempo}, ${timeSignature} time signature. `;
-
-  blocks.forEach((block, index) => {
-    const sectionType = block.type.toLowerCase();
-    const mood = getMoodForFeel(block.feel);
-    const instruments = getInstrumentsForBlock(sectionType, block.feel);
-
-    if (sectionType.includes('intro')) {
-      prompt += `Begin with a ${mood} intro that feels ambient, using ${instruments}. `;
-    } else if (sectionType.includes('verse')) {
-      prompt += `Transition into ${mood} verses with themes of ${block.feel.toLowerCase()}, using expressive melodies and syncopated rhythms with ${instruments}. `;
-    } else if (sectionType.includes('chorus')) {
-      const vocalPhrase = generateVocalPhrase();
-      prompt += `Introduce a catchy, ${mood} chorus with a repetitive vocal phrase ("${vocalPhrase}...") to contrast the verses, using ${instruments}. `;
-    } else if (sectionType.includes('bridge') || sectionType.includes('interlude')) {
-      prompt += `Include a ${mood} bridge section that evokes echoes of forgotten dreams with ${instruments}. `;
-    } else if (sectionType.includes('outro')) {
-      prompt += `End with a conclusive, ${mood} outro that brings resolution, tying together the song’s themes with ${instruments}. `;
-    }
-  });
-
-  prompt += `Use layered synths, subtle guitar riffs, and cinematic textures to maintain an epic, interstellar vibe throughout.`;
-  return prompt;
-}
-
 async function randomizeSong() {
   timeline.innerHTML = '';
   if (selectedBlock) clearSelection();
@@ -403,8 +301,8 @@ async function randomizeSong() {
   });
 
   currentSong = {
-    title: generateRandomTitle(),
-    artist: 'Random Artist',
+    title: songBlocks[0].data-song-title,
+    artist: songBlocks[0].data-song-artist,
     blocks: songBlocks
   };
 
@@ -551,6 +449,109 @@ async function playSong() {
   await playBlock(0);
 }
 
+// Riffusion Prompt Functions
+function generateRandomTitle() {
+  const adjectives = ['Cosmic', 'Eternal', 'Mystic', 'Neon', 'Silent', 'Echoing', 'Fading', 'Radiant', 'Frozen', 'Blazing'];
+  const nouns = ['Fire', 'Dream', 'Storm', 'Voyage', 'Echo', 'Pulse', 'Horizon', 'Abyss', 'Light', 'Shadow'];
+  const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+  const noun = nouns[Math.floor(Math.random() * nouns.length)];
+  return `${adj} ${noun}`;
+}
+
+function generateRandomGenre() {
+  const genres = ['Progressive', 'Atmospheric', 'Cinematic', 'Electronic', 'Ambient', 'Psychedelic', 'Indie', 'Synthwave', 'Rock', 'Jazz'];
+  const genre1 = genres[Math.floor(Math.random() * genres.length)];
+  let genre2 = genres[Math.floor(Math.random() * genres.length)];
+  while (genre2 === genre1) {
+    genre2 = genres[Math.floor(Math.random() * genres.length)];
+  }
+  return `${genre1.toLowerCase()}, ${genre2.toLowerCase()}`;
+}
+
+function getMoodForFeel(feel) {
+  const moodMap = {
+    'Happiness': 'joyful and uplifting',
+    'Sadness': 'melancholy and reflective',
+    'Tension': 'tense and suspenseful',
+    'Euphoria': 'euphoric and soaring',
+    'Calmness': 'calm and serene',
+    'Anger': 'angry and intense',
+    'Mystical': 'mysterious and enchanting',
+    'Rebellion': 'rebellious and defiant',
+    'Triumph': 'triumphant and victorious',
+    'Bliss': 'blissful and dreamy',
+    'Frustration': 'frustrated and gritty',
+    'Atmospheric': 'spacey and atmospheric',
+    'Trippy': 'trippy and psychedelic',
+    'Awakening': 'awakening and inspiring',
+    'Intense': 'intense and powerful',
+    'Climactic': 'climactic and dramatic',
+    'Dreamy': 'dreamy and ethereal'
+  };
+  return moodMap[feel] || 'dynamic';
+}
+
+function getInstrumentsForBlock(type, feel) {
+  const instrumentOptions = {
+    intro: ['layered synths', 'ambient pads', 'soft piano'],
+    verse: ['expressive synths', 'subtle guitar riffs', 'driving bass'],
+    chorus: ['bright synths', 'punchy drums', 'layered vocals'],
+    bridge: ['reverb-heavy textures', 'dreamy pads', 'electric guitar'],
+    interlude: ['cinematic strings', 'ethereal synths', 'percussive elements'],
+    outro: ['soft piano', 'fading synths', 'strings'],
+    default: ['synths', 'guitar riffs', 'cinematic textures']
+  };
+  const instruments = instrumentOptions[type] || instrumentOptions.default;
+  return instruments.join(', ');
+}
+
+function generateVocalPhrase() {
+  const phrases = [
+    'La la la, here we go again',
+    'Oh oh oh, we rise again',
+    'Na na na, feel the light',
+    'Hey hey hey, into the night',
+    'Ah ah ah, we’re alive'
+  ];
+  return phrases[Math.floor(Math.random() * phrases.length)];
+}
+
+function generateRiffusionPrompt(song) {
+  const blocks = song.blocks || [];
+  if (!blocks.length) return 'No song data available to generate a Riffusion prompt.';
+
+  const title = song.title || generateRandomTitle();
+  const genre = generateRandomGenre();
+  const firstBlock = blocks[0];
+  const key = `${firstBlock.rootNote} ${firstBlock.mode}`;
+  const tempo = `${firstBlock.tempo} BPM`;
+  const timeSignature = firstBlock.timeSignature;
+
+  let prompt = `Create a ${genre} track titled "${title}" in ${key}, ${tempo}, ${timeSignature} time signature. `;
+
+  blocks.forEach((block, index) => {
+    const sectionType = block.type.toLowerCase();
+    const mood = getMoodForFeel(block.feel);
+    const instruments = getInstrumentsForBlock(sectionType, block.feel);
+
+    if (sectionType.includes('intro')) {
+      prompt += `Begin with a ${mood} intro that feels ambient, using ${instruments}. `;
+    } else if (sectionType.includes('verse')) {
+      prompt += `Transition into ${mood} verses with themes of ${block.feel.toLowerCase()}, using expressive melodies and syncopated rhythms with ${instruments}. `;
+    } else if (sectionType.includes('chorus')) {
+      const vocalPhrase = generateVocalPhrase();
+      prompt += `Introduce a catchy, ${mood} chorus with a repetitive vocal phrase ("${vocalPhrase}...") to contrast the verses, using ${instruments}. `;
+    } else if (sectionType.includes('bridge') || sectionType.includes('interlude')) {
+      prompt += `Include a ${mood} bridge section that evokes echoes of forgotten dreams with ${instruments}. `;
+    } else if (sectionType.includes('outro')) {
+      prompt += `End with a conclusive, ${mood} outro that brings resolution, tying together the song’s themes with ${instruments}. `;
+    }
+  });
+
+  prompt += `Use layered synths, subtle guitar riffs, and cinematic textures to maintain an epic, interstellar vibe throughout.`;
+  return prompt;
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   const processedSongs = await populateSongDropdown();
 
@@ -619,21 +620,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       calculateTimings();
       resetPlayback();
-
-      currentSong = {
-        title: songTitle,
-        artist: songArtist,
-        blocks: Array.from(timeline.children).map(b => ({
-          type: b.classList[1],
-          measures: parseInt(b.getAttribute('data-measures'), 10),
-          timeSignature: b.getAttribute('data-time-signature'),
-          rootNote: b.getAttribute('data-root-note'),
-          mode: b.getAttribute('data-mode'),
-          tempo: parseInt(b.getAttribute('data-tempo'), 10),
-          feel: b.getAttribute('data-feel'),
-          lyrics: b.getAttribute('data-lyrics')
-        }))
-      };
     });
   }
 
