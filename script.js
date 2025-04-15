@@ -43,6 +43,14 @@ function generateRiffusionPrompt(song) {
          `Use ${song.instruments} to maintain an ${song.overallVibe} vibe throughout.`;
 }
 
+function copyRiffusionPrompt() {
+  const song = generateRandomSong(); // Your existing SongMaker logic
+  const prompt = generateRiffusionPrompt(song);
+  navigator.clipboard.writeText(prompt)
+    .then(() => alert("Prompt copied to clipboard!"))
+    .catch(err => console.error("Failed to copy: ", err));
+}
+
 function loadAudioBuffers() {
   return Promise.all([
     fetch('tick.wav').then(response => response.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => tickBuffer = decoded),
