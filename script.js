@@ -33,6 +33,16 @@ let tockBuffer = null;
 let tickShortBuffer = null;
 let tockShortBuffer = null;
 
+function generateRiffusionPrompt(song) {
+  return `Create a ${song.mood}, ${song.vibe} track titled "${song.title}" in ${song.key} ${song.mode}, ${song.bpm} BPM, ${song.timeSignature} time signature. ` +
+         `Begin with a ${song.introMood} intro that feels ${song.introVibe}. ` +
+         `Transition into ${song.verseMood} verses with themes of ${song.verseThemes}, using ${song.verseStyle}. ` +
+         `Introduce a ${song.chorusMood} chorus with a ${song.chorusHook}, ${song.chorusVibe}. ` +
+         `Include a bridge section that is ${song.bridgeMood}, evoking ${song.bridgeVibe} with ${song.bridgeTexture}. ` +
+         `End with a ${song.outroMood} outro that ${song.outroVibe}, tying together the song’s themes. ` +
+         `Use ${song.instruments} to maintain an ${song.overallVibe} vibe throughout.`;
+}
+
 function loadAudioBuffers() {
   return Promise.all([
     fetch('tick.wav').then(response => response.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => tickBuffer = decoded),
