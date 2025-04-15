@@ -7,6 +7,25 @@ let currentBlockIndex = 0;
 const validTimeSignatures = ['4/4', '3/4', '2/4', '6/8', '5/4', '7/8'];
 let currentSong = null;
 
+// Audio setup (for future metronome feature)
+const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+let tickBuffer, tockBuffer;
+
+async function loadAudioBuffers() {
+  try {
+    const tickResponse = await fetch('../tick_short.wav'); // Adjusted path
+    const tockResponse = await fetch('../tock_short.wav'); // Adjusted path
+    const tickArrayBuffer = await tickResponse.arrayBuffer();
+    const tockArrayBuffer = await tockResponse.arrayBuffer();
+    tickBuffer = await audioContext.decodeAudioData(tickArrayBuffer);
+    tockBuffer = await audioContext.decodeAudioData(tockArrayBuffer);
+  } catch (err) {
+    console.error('Failed to load audio files:', err);
+  }
+}
+
+loadAudioBuffers();
+
 function formatPart(part) {
   return part.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 }
@@ -301,8 +320,8 @@ async function randomizeSong() {
   });
 
   currentSong = {
-    title: songBlocks[0].data-song-title,
-    artist: songBlocks[0].data-song-artist,
+    title: songBlocks[0].songTitle || 'Random Song',
+    artist: songBlocks[0].songArtist || 'Random Artist',
     blocks: songBlocks
   };
 
@@ -552,6 +571,23 @@ function generateRiffusionPrompt(song) {
   return prompt;
 }
 
+// Retry mechanism for DOM elements
+function waitForElement(id, callback, maxRetries = 10, delay = 100) {
+  let retries = 0;
+  const tryFindElement = () => {
+    const element = document.getElementById(id);
+    if (element) {
+      callback(element);
+    } else if (retries < maxRetries) {
+      retries++;
+      setTimeout(tryFindElement, delay);
+    } else {
+      console.error(`Element with ID "${id}" not found after ${maxRetries} retries.`);
+    }
+  };
+  tryFindElement();
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   const processedSongs = await populateSongDropdown();
 
@@ -563,20 +599,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.error('Failed to load songs; cannot load default song');
   }
 
-  const songDropdown = document.getElementById('song-dropdown');
-  if (songDropdown) {
+  waitForElement('song-dropdown', (songDropdown) => {
     songDropdown.addEventListener('change', (event) => {
       const selectedSongTitle = event.target.value;
       if (selectedSongTitle) {
         loadSong(selectedSongTitle);
       }
     });
-  } else {
-    console.error('Song dropdown element not found for event listener');
-  }
+  });
 
-  const addBlockBtn = document.getElementById('add-block-btn');
-  if (addBlockBtn) {
+  waitForElement('add-block-btn', (addBlockBtn) => {
     addBlockBtn.addEventListener('click', () => {
       const songTitle = document.getElementById('song-title').value || 'Untitled Song';
       const songArtist = document.getElementById('song-artist').value || 'Unknown Artist';
@@ -621,10 +653,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       calculateTimings();
       resetPlayback();
     });
-  }
+  });
 
-  const clearTimelineBtn = document.getElementById('clear-timeline-btn');
-  if (clearTimelineBtn) {
+  waitForElement('clear-timeline-btn', (clearTimelineBtn) => {
     clearTimelineBtn.addEventListener('click', () => {
       timeline.innerHTML = '';
       clearSelection();
@@ -632,10 +663,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       resetPlayback();
       currentSong = null;
     });
-  }
+  });
 
-  const styleDropdown = document.getElementById('style-dropdown');
-  if (styleDropdown) {
+  waitForElement('style-dropdown', (styleDropdown) => {
     styleDropdown.addEventListener('change', (event) => {
       const style = event.target.value;
       const blocks = timeline.children;
@@ -644,49 +674,47 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (style) block.classList.add(style);
       }
     });
-  }
+  });
 
-  const playBtn = document.getElementById('play-btn');
-  if (playBtn) {
+  waitForElement('play-btn', (playBtn) => {
     playBtn.addEventListener('click', () => {
       playSong();
     });
-  }
+  });
 
-  const randomizeBtn = document.getElementById('randomize-btn');
-  if (randomizeBtn) {
+  waitForElement('randomize-btn', (randomizeBtn) => {
     randomizeBtn.addEventListener('click', () => {
       randomizeSong();
     });
-  }
+  });
 
-  const printBtn = document.getElementById('print-btn');
-  if (printBtn) {
+  waitForElement('print-btn', (printBtn) => {
     printBtn.addEventListener('click', () => {
       window.print();
     });
-  }
+  });
 
-  const toggleFormBtn = document.getElementById('toggle-form-btn');
-  const formContent = document.getElementById('form-content');
-  if (toggleFormBtn && formContent) {
-    toggleFormBtn.addEventListener('click', () => {
-      const isHidden = formContent.style.display === 'none';
-      formContent.style.display = isHidden ? 'block' : 'none';
-      toggleFormBtn.textContent = isHidden ? 'HIDE PARAMETERS' : 'SHOW PARAMETERS';
-    });
-  }
+  waitForElement('toggle-form-btn', (toggleFormBtn) => {
+    const formContent = document.getElementById('form-content');
+    if (formContent) {
+      toggleFormBtn.addEventListener('click', () => {
+        const isHidden = formContent.style.display === 'none';
+        formContent.style.display = isHidden ? 'block' : 'none';
+        toggleFormBtn.textContent = isHidden ? 'HIDE PARAMETERS' : 'SHOW PARAMETERS';
+      });
+    } else {
+      console.error('Form content element not found for toggle-form-btn');
+    }
+  });
 
-  const themeBtn = document.getElementById('theme-btn');
-  if (themeBtn) {
+  waitForElement('theme-btn', (themeBtn) => {
     themeBtn.addEventListener('click', () => {
       document.body.classList.toggle('light-mode');
       themeBtn.textContent = document.body.classList.contains('light-mode') ? 'Dark Mode' : 'Light Mode';
     });
-  }
+  });
 
-  const riffusionPromptBtn = document.getElementById('riffusion-prompt-btn');
-  if (riffusionPromptBtn) {
+  waitForElement('riffusion-prompt-btn', (riffusionPromptBtn) => {
     riffusionPromptBtn.addEventListener('click', () => {
       if (!currentSong) {
         alert('Please load or create a song first.');
@@ -701,5 +729,5 @@ document.addEventListener('DOMContentLoaded', async () => {
         alert('Failed to copy prompt. Please try again.');
       });
     });
-  }
+  });
 });
