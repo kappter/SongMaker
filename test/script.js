@@ -51,9 +51,11 @@ function generateRandomSong() {
     verseMood: moods[Math.floor(Math.random() * moods.length)],
     verseThemes: 'introspection, freedom',
     verseStyle: 'melodic, rhythmic',
+    verseLyrics: 'no lyrics provided',
     chorusMood: moods[Math.floor(Math.random() * moods.length)],
     chorusHook: 'catchy, uplifting',
     chorusVibe: vibes[Math.floor(Math.random() * vibes.length)],
+    chorusLyrics: 'no lyrics provided',
     bridgeMood: moods[Math.floor(Math.random() * moods.length)],
     bridgeVibe: vibes[Math.floor(Math.random() * vibes.length)],
     bridgeTexture: 'sparse, atmospheric',
@@ -67,15 +69,55 @@ function generateRandomSong() {
 function generateRiffusionPrompt(song) {
   return `Create a ${song.mood}, ${song.vibe} track titled "${song.title}" in ${song.key} ${song.mode}, ${song.bpm} BPM, ${song.timeSignature} time signature. ` +
          `Begin with a ${song.introMood} intro that feels ${song.introVibe}. ` +
-         `Transition into ${song.verseMood} verses with themes of ${song.verseThemes}, using ${song.verseStyle}. ` +
-         `Introduce a ${song.chorusMood} chorus with a ${song.chorusHook}, ${song.chorusVibe}. ` +
+         `Transition into ${song.verseMood} verses with themes of ${song.verseThemes}, using ${song.verseStyle}, with lyrics: "${song.verseLyrics}". ` +
+         `Introduce a ${song.chorusMood} chorus with a ${song.chorusHook}, ${song.chorusVibe}, with lyrics: "${song.chorusLyrics}". ` +
          `Include a bridge section that is ${song.bridgeMood}, evoking ${song.bridgeVibe} with ${song.bridgeTexture}. ` +
          `End with a ${song.outroMood} outro that ${song.outroVibe}, tying together the song’s themes. ` +
          `Use ${song.instruments} to maintain an ${song.overallVibe} vibe throughout.`;
 }
 
 function copyRiffusionPrompt() {
-  const song = generateRandomSong();
+  const blocks = Array.from(timeline.children);
+  const firstBlock = blocks[0];
+  const introBlock = blocks.find(b => b.classList.contains('intro'));
+  const verseBlock = blocks.find(b => b.classList.contains('verse'));
+  const chorusBlock = blocks.find(b => b.classList.contains('chorus'));
+  const bridgeBlock = blocks.find(b => b.classList.contains('bridge'));
+  const outroBlock = blocks.find(b => b.classList.contains('outro'));
+
+  const truncateLyrics = (lyrics) => {
+    if (!lyrics) return 'no lyrics provided';
+    const maxLength = 100;
+    return lyrics.length > maxLength ? lyrics.substring(0, maxLength - 3) + '...' : lyrics;
+  };
+
+  const song = {
+    title: currentSongName || 'Untitled Song',
+    mood: firstBlock?.getAttribute('data-feel') || 'Happiness',
+    vibe: 'Atmospheric',
+    key: firstBlock?.getAttribute('data-root-note') || 'C',
+    mode: firstBlock?.getAttribute('data-mode') || 'Ionian',
+    bpm: parseInt(firstBlock?.getAttribute('data-tempo')) || 120,
+    timeSignature: firstBlock?.getAttribute('data-time-signature') || '4/4',
+    introMood: introBlock?.getAttribute('data-feel') || 'Calmness',
+    introVibe: 'Mystical',
+    verseMood: verseBlock?.getAttribute('data-feel') || 'Sadness',
+    verseThemes: 'introspection, freedom',
+    verseStyle: 'melodic, rhythmic',
+    verseLyrics: truncateLyrics(verseBlock?.getAttribute('data-lyrics')),
+    chorusMood: chorusBlock?.getAttribute('data-feel') || 'Euphoria',
+    chorusHook: 'catchy, uplifting',
+    chorusVibe: 'Triumph',
+    chorusLyrics: truncateLyrics(chorusBlock?.getAttribute('data-lyrics')),
+    bridgeMood: bridgeBlock?.getAttribute('data-feel') || 'Tension',
+    bridgeVibe: 'sparse',
+    bridgeTexture: 'atmospheric',
+    outroMood: outroBlock?.getAttribute('data-feel') || 'Resolution',
+    outroVibe: 'fading',
+    instruments: 'guitar, drums, synth',
+    overallVibe: 'Bliss'
+  };
+
   const prompt = generateRiffusionPrompt(song);
   navigator.clipboard.writeText(prompt)
     .then(() => alert("Prompt copied to clipboard!"))
@@ -793,7 +835,7 @@ function resetPlayback() {
   blockMeasure = 0;
 
   isPlaying = false;
-  playBtn.textContent = 'Play';
+  playBtn.textContent = 'Clip';
 
   const previousBlock = timeline.querySelector('.playing');
   if (previousBlock) previousBlock.classList.remove('playing');
@@ -923,8 +965,8 @@ function loadSongFromDropdown(filename) {
           else if (filename === 'songs/astroworld.js' && typeof loadAstroworld === 'function') loadAstroworld();
           else if (filename === 'songs/astrothunder.js' && typeof loadAstrothunder === 'function') loadAstrothunder();
           else if (filename === 'songs/jambi.js' && typeof loadJambi === 'function') loadJambi();
-            else if (filename === 'songs/schism.js' && typeof loadSchism === 'function') loadSchism();
-              else if (filename === 'songs/7empest.js' && typeof loadSevenTempest === 'function') loadSevenTempest();
+          else if (filename === 'songs/schism.js' && typeof loadSchism === 'function') loadSchism();
+          else if (filename === 'songs/7empest.js' && typeof loadSevenTempest === 'function') loadSevenTempest();
           else throw new Error(`No load function found for ${filename}`);
         })
         .catch(error => {
