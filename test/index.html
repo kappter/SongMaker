@@ -1,522 +1,189 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SongMaker</title>
-  <style>
-    :root {
-      --bg-color: #2c3e50;
-      --text-color: #ecf0f1;
-      --block-bg: #34495e;
-      --block-border: #3498db;
-      --intro-color: #2ecc71;
-      --verse-color: #3498db;
-      --pre-chorus-color: #9b59b6;
-      --chorus-color: #e67e22;
-      --post-chorus-color: #f1c40f;
-      --bridge-color: #1abc9c;
-      --solo-color: #e74c3c;
-      --outro-color: #95a5a6;
-      --default-color: #7f8c8d;
-      --highlight-color: #f39c12;
-      --playing-color: #e74c3c;
-    }
-
-    body[data-theme="light"] {
-      --bg-color: #ecf0f1;
-      --text-color: #2c3e50;
-      --block-bg: #bdc3c7;
-      --block-border: #3498db;
-    }
-
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      transition: all 0.3s ease;
-    }
-
-    header {
-      background-color: rgba(0, 0, 0, 0.2);
-      padding: 20px;
-      text-align: center;
-    }
-
-    h1 {
-      margin: 0;
-    }
-
-    h2 {
-      margin: 10px 0;
-      font-weight: normal;
-    }
-
-    .controls {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      padding: 10px;
-      background-color: rgba(0, 0, 0, 0.1);
-      flex-wrap: wrap;
-    }
-
-    button, select, label {
-      padding: 8px 12px;
-      border: none;
-      border-radius: 4px;
-      background-color: #3498db;
-      color: white;
-      cursor: pointer;
-      font-size: 14px;
-    }
-
-    button:hover {
-      background-color: #2980b9;
-    }
-
-    select {
-      background-color: #2c3e50;
-    }
-
-    body[data-theme="light"] select {
-      background-color: #bdc3c7;
-      color: #2c3e50;
-    }
-
-    .form-container {
-      max-width: 800px;
-      margin: 20px auto;
-      padding: 20px;
-      background-color: rgba(0, 0, 0, 0.1);
-      border-radius: 8px;
-    }
-
-    .form-content {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 10px;
-      margin-top: 10px;
-    }
-
-    .form-content.collapsed {
-      display: none;
-    }
-
-    .form-group {
-      margin-bottom: 10px;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 5px;
-      background: none;
-      padding: 0;
-      color: var(--text-color);
-    }
-
-    input, select, textarea {
-      width: 100%;
-      padding: 8px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      background-color: var(--block-bg);
-      color: var(--text-color);
-    }
-
-    textarea {
-      resize: vertical;
-      min-height: 100px;
-    }
-
-    .button-group {
-      display: flex;
-      gap: 10px;
-      margin-top: 10px;
-    }
-
-    .timeline {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-      padding: 20px;
-      min-height: 300px;
-    }
-
-    .block {
-      position: relative;
-      padding: 15px;
-      background-color: var(--block-bg);
-      border-radius: 8px;
-      border-left: 5px solid var(--block-border);
-      cursor: grab;
-      transition: all 0.3s ease;
-    }
-
-    .block[data-type="intro"] {
-      border-left-color: var(--intro-color);
-    }
-
-    .block[data-type="verse"] {
-      border-left-color: var(--verse-color);
-    }
-
-    .block[data-type="pre-chorus"] {
-      border-left-color: var(--pre-chorus-color);
-    }
-
-    .block[data-type="chorus"] {
-      border-left-color: var(--chorus-color);
-    }
-
-    .block[data-type="post-chorus"] {
-      border-left-color: var(--post-chorus-color);
-    }
-
-    .block[data-type="bridge"] {
-      border-left-color: var(--bridge-color);
-    }
-
-    .block[data-type="solo"] {
-      border-left-color: var(--solo-color);
-    }
-
-    .block[data-type="outro"] {
-      border-left-color: var(--outro-color);
-    }
-
-    .block.selected {
-      box-shadow: 0 0 0 2px var(--highlight-color);
-    }
-
-    .block.playing {
-      box-shadow: 0 0 0 2px var(--playing-color);
-    }
-
-    .block.dragging {
-      opacity: 0.5;
-    }
-
-    .block-content {
-      pointer-events: none;
-    }
-
-    .block-type {
-      font-weight: bold;
-      margin-bottom: 5px;
-    }
-
-    .block-details {
-      margin-bottom: 5px;
-      font-size: 14px;
-    }
-
-    .block-lyrics {
-      font-style: italic;
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.7);
-    }
-
-    body[data-theme="light"] .block-lyrics {
-      color: rgba(0, 0, 0, 0.7);
-    }
-
-    .delete-btn {
-      position: absolute;
-      top: 5px;
-      right: 5px;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background-color: #e74c3c;
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      cursor: pointer;
-      padding: 0;
-    }
-
-    .delete-btn:hover {
-      background-color: #c0392b;
-    }
-
-    .time-calculator {
-      padding: 10px;
-      background-color: rgba(0, 0, 0, 0.1);
-      text-align: center;
-      font-size: 14px;
-    }
-
-    .current-block-display {
-      padding: 10px;
-      background-color: rgba(0, 0, 0, 0.1);
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    .current-block-display .label {
-      font-weight: bold;
-    }
-
-    footer {
-      padding: 20px;
-      text-align: center;
-      background-color: rgba(0, 0, 0, 0.2);
-      font-size: 14px;
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    /* Print styles */
-    @media print {
-      body {
-        background-color: white;
-        color: black;
-      }
-      
-      .controls, .form-container, .delete-btn, footer {
-        display: none;
-      }
-      
-      .timeline {
-        display: block;
-      }
-      
-      .block {
-        page-break-inside: avoid;
-        margin-bottom: 20px;
-        border: 1px solid #ccc;
-      }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SongMaker: Create and visualize song structures with precise timing and playback.">
+    <meta name="author" content="kappter">
+    <title>SongMaker</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
 </head>
 <body data-theme="dark">
-  <header>
-    <h1>SongMaker</h1>
-    <h2 id="print-song-name">(I Can't Get No) Satisfaction</h2>
-  </header>
+    <header>
+        <h1>SongMaker</h1>
+        <h2 id="print-song-name">(I Can’t Get No) Satisfaction</h2>
+    </header>
+    <nav>
+        <div class="controls">
+            <button id="play-btn" onclick="togglePlay()">Play</button>
+            <button id="sound-btn" onclick="toggleSound()">Sound On</button>
+            <button id="theme-btn" onclick="toggleTheme()">Light Mode</button>
+            <button onclick="exportSong()">Export</button>
+            <label class="file-input-label">
+                Import
+                <input type="file" accept=".json" onchange="importSong(event)">
+            </label>
+            <select id="song-dropdown" onchange="loadSongFromDropdown(this.value)">
+                <!-- Options populated by JS -->
+            </select>
+            <select id="style-dropdown" onchange="changeBlockStyle(this.value)">
+                <option value="">Default Style</option>
+                <option value="vibrant">Vibrant</option>
+                <option value="pastel">Pastel</option>
+                <option value="monochrome">Monochrome</option>
+            </select>
+            <button onclick="randomizeSong()">Randomize</button>
+            <button id="copy-prompt-btn" onclick="copyRiffusionPrompt()">Copy Prompt</button>
+            <!-- <button onclick="copyRiffusionPrompt()">Copy Prompt</button> -->
+            <button onclick="printSong()">Print</button>
+        </div>
+    </nav>
 
-  <div class="controls">
-    <button id="play-btn">Play</button>
-    <button id="sound-btn">Sound On</button>
-    <button id="theme-btn">Light Mode</button>
-    <button id="export-btn">Export</button>
-    <label for="import-btn">Import</label>
-    <input type="file" id="import-btn" accept=".json" class="hidden">
-    <select id="song-dropdown"></select>
-    <select id="style-dropdown">
-      <option value="default">Default Style</option>
-      <option value="vibrant">Vibrant</option>
-      <option value="pastel">Pastel</option>
-      <option value="monochrome">Monochrome</option>
-    </select>
-    <button id="randomize-btn">Randomize</button>
-    <button id="copy-riffusion-btn">Copy Riffusion Prompt</button>
-    <button id="print-btn">Print</button>
-  </div>
+    <main>
+        <div class="form-container">
+            <button id="toggle-form-btn" onclick="toggleForm()">Show Parameters</button>
+            <div id="form-content" class="collapsed">
+                <label>
+                    Song Title:
+                    <input type="text" id="song-title-input" value="(I Can’t Get No) Satisfaction" placeholder="Enter song title">
+                </label>
+                <label>
+                    Part Type:
+                    <select id="part-type">
+                        <option value="intro">Intro</option>
+                        <option value="verse">Verse</option>
+                        <option value="refrain">Refrain</option>
+                        <option value="pre-chorus">Pre-Chorus</option>
+                        <option value="chorus">Chorus</option>
+                        <option value="post-chorus">Post-Chorus</option>
+                        <option value="bridge">Bridge</option>
+                        <option value="outro">Outro</option>
+                        <option value="elision">Elision</option>
+                        <option value="solo">Solo</option>
+                        <option value="ad-lib">Ad-Lib</option>
+                        <option value="hook">Hook</option>
+                        <option value="interlude">Interlude</option>
+                        <option value="breakdown">Breakdown</option>
+                        <option value="drop">Drop</option>
+                        <option value="coda">Coda</option>
+                        <option value="modulation">Modulation</option>
+                        <option value="tag">Tag</option>
+                        <option value="chorus-reprise">Chorus Reprise</option>
+                        <option value="countermelody">Countermelody</option>
+                        <option value="instrumental-verse-chorus">Instrumental Verse-Chorus</option>
+                        <option value="false-ending">False Ending</option>
+                    </select>
+                </label>
+                <label>
+                    Measures:
+                    <input type="number" id="measures" min="1" value="4">
+                </label>
+                <label>
+                    Root Note:
+                    <select id="root-note">
+                        <option value="C">C</option>
+                        <option value="C#">C#</option>
+                        <option value="D">D</option>
+                        <option value="D#">D#</option>
+                        <option value="E">E</option>
+                        <option value="F">F</option>
+                        <option value="F#">F#</option>
+                        <option value="G">G</option>
+                        <option value="G#">G#</option>
+                        <option value="A">A</option>
+                        <option value="A#">A#</option>
+                        <option value="B">B</option>
+                    </select>
+                </label>
+                <label>
+                    Mode:
+                    <select id="mode">
+                        <option value="Ionian">Ionian</option>
+                        <option value="Dorian">Dorian</option>
+                        <option value="Phrygian">Phrygian</option>
+                        <option value="Lydian">Lydian</option>
+                        <option value="Mixolydian">Mixolydian</option>
+                        <option value="Aeolian">Aeolian</option>
+                        <option value="Locrian">Locrian</option>
+                        <option value="Harmonic Minor">Harmonic Minor</option>
+                        <option value="Melodic Minor">Melodic Minor</option>
+                        <option value="Blues Scale">Blues Scale</option>
+                        <option value="Pentatonic Major">Pentatonic Major</option>
+                        <option value="Pentatonic Minor">Pentatonic Minor</option>
+                        <option value="Whole Tone">Whole Tone</option>
+                    </select>
+                </label>
+                <label>
+                    Tempo (BPM):
+                    <input type="number" id="tempo" min="1" value="120">
+                </label>
+                <label>
+                    Time Signature:
+                    <select id="time-signature">
+                        <option value="4/4">4/4</option>
+                        <option value="3/4">3/4</option>
+                        <option value="6/8">6/8</option>
+                        <option value="2/4">2/4</option>
+                        <option value="5/4">5/4</option>
+                        <option value="7/8">7/8</option>
+                        <option value="12/8">12/8</option>
+                        <option value="9/8">9/8</option>
+                        <option value="11/8">11/8</option>
+                        <option value="15/8">15/8</option>
+                        <option value="13/8">13/8</option>
+                        <option value="10/4">10/4</option>
+                        <option value="8/8">8/8</option>
+                        <option value="14/8">14/8</option>
+                        <option value="16/8">16/8</option>
+                        <option value="7/4">7/4</option>
+                        <option value="6/4">6/4</option>
+                        <option value="5/8">6/4</option>
+                    </select>
+                </label>
+                <label>
+                    Feel:
+                    <select id="feel">
+                        <option valuekd="Happiness">Happiness</option>
+                        <option value="Sadness">Sadness</option>
+                        <option value="Tension">Tension</option>
+                        <option value="Euphoria">Euphoria</option>
+                        <option value="Calmness">Calmness</option>
+                        <option value="Anger">Anger</option>
+                        <option value="Mystical">Mystical</option>
+                        <option value="Rebellion">Rebellion</option>
+                        <option value="Triumph">Triumph</option>
+                        <option value="Bliss">Bliss</option>
+                        <option value="Frustration">Frustration</option>
+                        <option value="Atmospheric">Atmospheric</option>
+                        <option value="Trippy">Trippy</option>
+                        <option value="Awakening">Awakening</option>
+                        <option value="Intense">Intense</option>
+                        <option value="Climactic">Climactic</option>
+                    </select>
+                </label>
+                <label>
+                    Lyrics:
+                    <textarea id="lyrics" rows="3" placeholder="Enter lyrics here..."></textarea>
+                </label>
+                <button onclick="addBlock()">Add Block</button>
+                <button onclick="updateBlock()">Update Block</button>
+            </div>
+        </div>
 
-  <div class="form-container">
-    <button id="toggle-form-btn">Show Parameters</button>
-    <div id="form-content" class="form-content collapsed">
-      <div class="form-group">
-        <label for="song-title-input">Song Title</label>
-        <input type="text" id="song-title-input" value="(I Can't Get No) Satisfaction">
-      </div>
-      <div class="form-group">
-        <label for="part-type">Part Type</label>
-        <select id="part-type">
-          <option value="intro">Intro</option>
-          <option value="verse">Verse</option>
-          <option value="pre-chorus">Pre-Chorus</option>
-          <option value="chorus">Chorus</option>
-          <option value="post-chorus">Post-Chorus</option>
-          <option value="bridge">Bridge</option>
-          <option value="solo">Solo</option>
-          <option value="outro">Outro</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="measures">Measures</label>
-        <input type="number" id="measures" min="1" max="32" value="8">
-      </div>
-      <div class="form-group">
-        <label for="root-note">Root Note</label>
-        <select id="root-note">
-          <option value="C">C</option>
-          <option value="C#">C#</option>
-          <option value="D">D</option>
-          <option value="D#">D#</option>
-          <option value="E" selected>E</option>
-          <option value="F">F</option>
-          <option value="F#">F#</option>
-          <option value="G">G</option>
-          <option value="G#">G#</option>
-          <option value="A">A</option>
-          <option value="A#">A#</option>
-          <option value="B">B</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="mode">Mode</label>
-        <select id="mode">
-          <option value="Ionian" selected>Ionian (Major)</option>
-          <option value="Dorian">Dorian</option>
-          <option value="Phrygian">Phrygian</option>
-          <option value="Lydian">Lydian</option>
-          <option value="Mixolydian">Mixolydian</option>
-          <option value="Aeolian">Aeolian (Minor)</option>
-          <option value="Locrian">Locrian</option>
-          <option value="Pentatonic Major">Pentatonic Major</option>
-          <option value="Pentatonic Minor">Pentatonic Minor</option>
-          <option value="Blues Scale">Blues Scale</option>
-          <option value="Harmonic Minor">Harmonic Minor</option>
-          <option value="Melodic Minor">Melodic Minor</option>
-          <option value="Whole Tone">Whole Tone</option>
-          <option value="Diminished">Diminished</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="tempo">Tempo (BPM)</label>
-        <input type="number" id="tempo" min="40" max="240" value="136">
-      </div>
-      <div class="form-group">
-        <label for="time-signature">Time Signature</label>
-        <select id="time-signature">
-          <option value="4/4" selected>4/4</option>
-          <option value="3/4">3/4</option>
-          <option value="6/8">6/8</option>
-          <option value="2/4">2/4</option>
-          <option value="5/4">5/4</option>
-          <option value="7/8">7/8</option>
-          <option value="12/8">12/8</option>
-          <option value="9/8">9/8</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="feel">Feel</label>
-        <select id="feel">
-          <option value="Tension">Tension</option>
-          <option value="Rebellion" selected>Rebellion</option>
-          <option value="Frustration">Frustration</option>
-          <option value="Happiness">Happiness</option>
-          <option value="Sadness">Sadness</option>
-          <option value="Anger">Anger</option>
-          <option value="Calmness">Calmness</option>
-          <option value="Euphoria">Euphoria</option>
-          <option value="Atmospheric">Atmospheric</option>
-          <option value="Intense">Intense</option>
-          <option value="Mystical">Mystical</option>
-          <option value="Trippy">Trippy</option>
-          <option value="Bliss">Bliss</option>
-          <option value="Triumph">Triumph</option>
-          <option value="Awakening">Awakening</option>
-        </select>
-      </div>
-      <div class="form-group" style="grid-column: 1 / -1;">
-        <label for="lyrics">Lyrics</label>
-        <textarea id="lyrics"></textarea>
-      </div>
-      <div class="button-group" style="grid-column: 1 / -1;">
-        <button id="add-btn">Add Block</button>
-        <button id="update-btn">Update Block</button>
-      </div>
-    </div>
-  </div>
+        <div id="current-block-display">
+            <span class="label">No block playing</span>
+        </div>
 
-  <div id="current-block-display" class="current-block-display">
-    <span class="label">No block playing</span>
-  </div>
+        <div id="timeline">
+            <!-- Song blocks will be dynamically added here -->
+        </div>
+    </main>
 
-  <div id="timeline" class="timeline">
-    <!-- Blocks will be added here -->
-  </div>
+    <footer>
+        <span id="time-calculator">Current Time: 0:00 / Total Duration: 0:00 | Song Beat: 0 of 0 | Block: 0 of 0 (Measure: 0 of 0)</span>
+    </footer>
 
-  <div id="time-calculator" class="time-calculator">
-    Current Time: 0:00 / Total Duration: 0:00 | Song Beat: 0 of 0 | Block: 0 of 0 (Measure: 0 of 0)
-  </div>
-
-  <footer>
-    SongMaker - A tool for visualizing song structure and timing
-  </footer>
-
-  <script src="script_fixed.js"></script>
-  <script>
-    // Event listeners
-    document.getElementById('play-btn').addEventListener('click', togglePlay);
-    document.getElementById('sound-btn').addEventListener('click', toggleSound);
-    document.getElementById('theme-btn').addEventListener('click', toggleTheme);
-    document.getElementById('export-btn').addEventListener('click', exportSong);
-    document.getElementById('import-btn').addEventListener('change', importSong);
-    document.getElementById('song-dropdown').addEventListener('change', function() {
-      loadSongFromDropdown(this.value);
-    });
-    document.getElementById('randomize-btn').addEventListener('click', randomizeSong);
-    document.getElementById('toggle-form-btn').addEventListener('click', toggleForm);
-    document.getElementById('add-btn').addEventListener('click', addBlock);
-    document.getElementById('update-btn').addEventListener('click', updateBlock);
-    document.getElementById('print-btn').addEventListener('click', printSong);
-    document.getElementById('copy-riffusion-btn').addEventListener('click', copyRiffusionPrompt);
-    
-    // Update song title when input changes
-    document.getElementById('song-title-input').addEventListener('input', function() {
-      currentSongName = this.value;
-      document.getElementById('print-song-name').textContent = currentSongName;
-    });
-    
-    // Style dropdown
-    document.getElementById('style-dropdown').addEventListener('change', function() {
-      const style = this.value;
-      let root = document.documentElement;
-      
-      switch(style) {
-        case 'vibrant':
-          root.style.setProperty('--intro-color', '#FF5733');
-          root.style.setProperty('--verse-color', '#33A8FF');
-          root.style.setProperty('--pre-chorus-color', '#B033FF');
-          root.style.setProperty('--chorus-color', '#FF33A8');
-          root.style.setProperty('--post-chorus-color', '#FFDB33');
-          root.style.setProperty('--bridge-color', '#33FF57');
-          root.style.setProperty('--solo-color', '#FF3333');
-          root.style.setProperty('--outro-color', '#33FFDB');
-          break;
-        case 'pastel':
-          root.style.setProperty('--intro-color', '#A8E6CF');
-          root.style.setProperty('--verse-color', '#DCEDC1');
-          root.style.setProperty('--pre-chorus-color', '#FFD3B6');
-          root.style.setProperty('--chorus-color', '#FFAAA5');
-          root.style.setProperty('--post-chorus-color', '#FF8B94');
-          root.style.setProperty('--bridge-color', '#BDE4A7');
-          root.style.setProperty('--solo-color', '#B8E0D2');
-          root.style.setProperty('--outro-color', '#D6EADF');
-          break;
-        case 'monochrome':
-          root.style.setProperty('--intro-color', '#2C3E50');
-          root.style.setProperty('--verse-color', '#34495E');
-          root.style.setProperty('--pre-chorus-color', '#7F8C8D');
-          root.style.setProperty('--chorus-color', '#95A5A6');
-          root.style.setProperty('--post-chorus-color', '#BDC3C7');
-          root.style.setProperty('--bridge-color', '#ECF0F1');
-          root.style.setProperty('--solo-color', '#3498DB');
-          root.style.setProperty('--outro-color', '#2980B9');
-          break;
-        default:
-          // Reset to default colors
-          root.style.setProperty('--intro-color', '#2ecc71');
-          root.style.setProperty('--verse-color', '#3498db');
-          root.style.setProperty('--pre-chorus-color', '#9b59b6');
-          root.style.setProperty('--chorus-color', '#e67e22');
-          root.style.setProperty('--post-chorus-color', '#f1c40f');
-          root.style.setProperty('--bridge-color', '#1abc9c');
-          root.style.setProperty('--solo-color', '#e74c3c');
-          root.style.setProperty('--outro-color', '#95a5a6');
-      }
-    });
-  </script>
-</body>
+    <script src="script.js"></script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9326be6478ebbfb8',t:'MTc0NTAwNjM3Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
