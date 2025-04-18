@@ -11,7 +11,7 @@ const printSongName = document.getElementById('print-song-name');
 const songTitleInput = document.getElementById('song-title-input'); // Reference to parameters input
 let draggedBlock = null;
 let selectedBlock = null;
-let currentSongName = '(I Can’t Get No) Satisfaction';
+let currentSongName = '(I Can't Get No) Satisfaction';
 let isPlaying = false;
 let currentTime = 0;
 let currentBeat = 0;
@@ -30,8 +30,6 @@ const validTimeSignatures = [
 
 const moods = ["progressive", "ambient", "energetic", "dreamy"];
 const themes = ["rebellion", "triumph", "freedom", "nostalgia"];
-// Add to song generation
-song.mood = moods[Math.floor(Math.random() * moods.length)];
 
 let tickBuffer = null;
 let tockBuffer = null;
@@ -39,22 +37,258 @@ let tickShortBuffer = null;
 let tockShortBuffer = null;
 
 function copyRiffusionPrompt() {
-  const song = generateRandomSong(); // Your existing SongMaker logic
+  const song = extractCurrentSongData();
+  if (!song) return; // Exit if no song data available
+  
   const prompt = generateRiffusionPrompt(song);
   navigator.clipboard.writeText(prompt)
-    .then(() => alert("Prompt copied to clipboard!"))
-    .catch(err => console.error("Failed to copy: ", err));
+    .then(() => alert("Riffusion prompt copied to clipboard!"))
+    .catch(err => {
+      console.error("Failed to copy: ", err);
+      alert("Failed to copy prompt. See console for details.");
+    });
+}
+
+function extractCurrentSongData() {
+  // Get all blocks from the timeline
+  const blocks = Array.from(timeline.children);
+  if (blocks.length === 0) {
+    alert("Please create a song first!");
+    return null;
+  }
+
+  // Extract song-wide properties
+  const songData = {
+    title: currentSongName,
+    key: blocks[0].getAttribute('data-root-note') || 'C',
+    mode: blocks[0].getAttribute('data-mode') || 'Ionian',
+    bpm: parseInt(blocks[0].getAttribute('data-tempo')) || 120,
+    timeSignature: blocks[0].getAttribute('data-time-signature') || '4/4',
+    
+    // Analyze overall mood and vibe based on block feels
+    mood: getMostCommonFeel(blocks),
+    vibe: getVibeFromFeels(blocks),
+    
+    // Extract section-specific data
+    introData: getSectionData(blocks, 'intro'),
+    verseData: getSectionData(blocks, 'verse'),
+    chorusData: getSectionData(blocks, 'chorus'),
+    bridgeData: getSectionData(blocks, 'bridge'),
+    outroData: getSectionData(blocks, 'outro'),
+    
+    // Additional properties for richness
+    instruments: getInstrumentSuggestions(blocks),
+    overallVibe: getOverallVibe(blocks)
+  };
+  
+  return songData;
+}
+
+function getMostCommonFeel(blocks) {
+  const feelCounts = {};
+  blocks.forEach(block => {
+    const feel = block.getAttribute('data-feel');
+    if (feel) {
+      feelCounts[feel] = (feelCounts[feel] || 0) + 1;
+    }
+  });
+  
+  let mostCommonFeel = 'energetic';
+  let maxCount = 0;
+  
+  for (const feel in feelCounts) {
+    if (feelCounts[feel] > maxCount) {
+      maxCount = feelCounts[feel];
+      mostCommonFeel = feel;
+    }
+  }
+  
+  return mostCommonFeel.toLowerCase();
+}
+
+function getVibeFromFeels(blocks) {
+  const feels = blocks.map(block => block.getAttribute('data-feel')).filter(Boolean);
+  
+  // Map common feels to vibes
+  const vibeMap = {
+    'Happiness': 'uplifting',
+    'Sadness': 'melancholic',
+    'Tension': 'intense',
+    'Euphoria': 'euphoric',
+    'Calmness': 'serene',
+    'Anger': 'aggressive',
+    'Mystical': 'ethereal',
+    'Rebellion': 'rebellious',
+    'Triumph': 'triumphant',
+    'Bliss': 'blissful',
+    'Frustration': 'angsty',
+    'Atmospheric': 'atmospheric',
+    'Trippy': 'psychedelic',
+    'Awakening': 'enlightening',
+    'Intense': 'powerful',
+    'Climactic': 'climactic'
+  };
+  
+  // Default vibe
+  let vibe = 'dynamic';
+  
+  // If we have feels, pick one randomly from the mapped vibes
+  if (feels.length > 0) {
+    const mappedVibes = feels.map(feel => vibeMap[feel] || 'dynamic').filter(Boolean);
+    vibe = mappedVibes[Math.floor(Math.random() * mappedVibes.length)];
+  }
+  
+  return vibe;
+}
+
+function getSectionData(blocks, sectionType) {
+  const sectionBlocks = blocks.filter(block => block.classList.contains(sectionType));
+  
+  if (sectionBlocks.length === 0) {
+    return null;
+  }
+  
+  // Get the first block of this section type
+  const block = sectionBlocks[0];
+  const feel = block.getAttribute('data-feel') || '';
+  
+  // Map feels to moods and vibes
+  const moodMap = {
+    'Happiness': 'joyful',
+    'Sadness': 'melancholic',
+    'Tension': 'tense',
+    'Euphoria': 'euphoric',
+    'Calmness': 'calm',
+    'Anger': 'angry',
+    'Mystical': 'mystical',
+    'Rebellion': 'rebellious',
+    'Triumph': 'triumphant',
+    'Bliss': 'blissful',
+    'Frustration': 'frustrated',
+    'Atmospheric': 'atmospheric',
+    'Trippy': 'psychedelic',
+    'Awakening': 'awakening',
+    'Intense': 'intense',
+    'Climactic': 'climactic'
+  };
+  
+  const vibeMap = {
+    'Happiness': 'upbeat and cheerful',
+    'Sadness': 'somber and reflective',
+    'Tension': 'suspenseful and building',
+    'Euphoria': 'ecstatic and liberating',
+    'Calmness': 'peaceful and soothing',
+    'Anger': 'aggressive and raw',
+    'Mystical': 'mysterious and otherworldly',
+    'Rebellion': 'defiant and energetic',
+    'Triumph': 'victorious and powerful',
+    'Bliss': 'serene and transcendent',
+    'Frustration': 'restless and yearning',
+    'Atmospheric': 'spacious and immersive',
+    'Trippy': 'disorienting and surreal',
+    'Awakening': 'enlightening and expansive',
+    'Intense': 'powerful and overwhelming',
+    'Climactic': 'peak emotional intensity'
+  };
+  
+  return {
+    mood: moodMap[feel] || 'dynamic',
+    vibe: vibeMap[feel] || 'engaging',
+    key: block.getAttribute('data-root-note') || 'C',
+    mode: block.getAttribute('data-mode') || 'Ionian',
+    tempo: parseInt(block.getAttribute('data-tempo')) || 120,
+    timeSignature: block.getAttribute('data-time-signature') || '4/4',
+    lyrics: block.getAttribute('data-lyrics') || ''
+  };
+}
+
+function getInstrumentSuggestions(blocks) {
+  // Suggest instruments based on the overall feel of the song
+  const feels = blocks.map(block => block.getAttribute('data-feel')).filter(Boolean);
+  
+  // Default instruments for different vibes
+  const instrumentMap = {
+    'Happiness': 'bright guitars, upbeat drums, and cheerful synths',
+    'Sadness': 'piano, strings, and soft drums',
+    'Tension': 'distorted guitars, heavy bass, and dramatic percussion',
+    'Euphoria': 'layered synths, pulsing bass, and energetic drums',
+    'Calmness': 'acoustic guitar, piano, and gentle percussion',
+    'Anger': 'distorted guitars, aggressive drums, and powerful bass',
+    'Mystical': 'ambient pads, bells, and atmospheric textures',
+    'Rebellion': 'raw guitars, punchy drums, and gritty vocals',
+    'Triumph': 'orchestral elements, powerful drums, and soaring leads',
+    'Bliss': 'dreamy synths, soft pads, and gentle percussion',
+    'Frustration': 'tense strings, driving rhythm, and dynamic percussion',
+    'Atmospheric': 'reverb-heavy guitars, ambient pads, and sparse percussion',
+    'Trippy': 'modulated synths, phased guitars, and unconventional percussion',
+    'Awakening': 'bright pads, evolving textures, and building percussion',
+    'Intense': 'heavy guitars, powerful drums, and driving bass',
+    'Climactic': 'full orchestration, epic percussion, and soaring melodies'
+  };
+  
+  // Default instruments
+  let instruments = 'guitars, bass, drums, and synths';
+  
+  // If we have feels, pick one randomly from the mapped instruments
+  if (feels.length > 0) {
+    const mappedInstruments = feels.map(feel => instrumentMap[feel] || instruments).filter(Boolean);
+    instruments = mappedInstruments[Math.floor(Math.random() * mappedInstruments.length)];
+  }
+  
+  return instruments;
+}
+
+function getOverallVibe(blocks) {
+  // Get a general vibe descriptor based on the song structure
+  const blockTypes = blocks.map(block => block.classList[1]);
+  const tempos = blocks.map(block => parseInt(block.getAttribute('data-tempo'))).filter(Boolean);
+  const avgTempo = tempos.reduce((sum, tempo) => sum + tempo, 0) / tempos.length || 120;
+  
+  // Determine complexity based on number of different block types
+  const uniqueBlockTypes = new Set(blockTypes).size;
+  const complexity = uniqueBlockTypes <= 3 ? 'simple' : uniqueBlockTypes <= 5 ? 'moderately complex' : 'complex';
+  
+  // Determine energy level based on average tempo
+  const energy = avgTempo < 80 ? 'relaxed' : avgTempo < 120 ? 'moderate' : 'energetic';
+  
+  // Combine for overall vibe
+  return `${energy} and ${complexity}`;
 }
 
 function generateRiffusionPrompt(song) {
-  return `Create a ${song.mood}, ${song.vibe} track titled "${song.title}" in ${song.key} ${song.mode}, ${song.bpm} BPM, ${song.timeSignature} time signature. ` +
-         `Begin with a ${song.introMood} intro that feels ${song.introVibe}. ` +
-         `Transition into ${song.verseMood} verses with themes of ${song.verseThemes}, using ${song.verseStyle}. ` +
-         `Introduce a ${song.chorusMood} chorus with a ${song.chorusHook}, ${song.chorusVibe}. ` +
-         `Include a bridge section that is ${song.bridgeMood}, evoking ${song.bridgeVibe} with ${song.bridgeTexture}. ` +
-         `End with a ${song.outroMood} outro that ${song.outroVibe}, tying together the song’s themes. ` +
-         `Use ${song.instruments} to maintain an ${song.overallVibe} vibe throughout.`;
+  if (!song) return '';
+  
+  // Base prompt with song-wide properties
+  let prompt = `Create a ${song.mood}, ${song.vibe} track titled "${song.title}" in ${song.key} ${song.mode}, ${song.bpm} BPM, ${song.timeSignature} time signature. `;
+  
+  // Add section-specific details if available
+  if (song.introData) {
+    prompt += `Begin with a ${song.introData.mood} intro that feels ${song.introData.vibe}. `;
+  }
+  
+  if (song.verseData) {
+    const verseThemes = song.verseData.lyrics ? `themes from lyrics: "${song.verseData.lyrics.substring(0, 50)}${song.verseData.lyrics.length > 50 ? '...' : ''}"` : 'dynamic progression';
+    prompt += `Transition into ${song.verseData.mood} verses with ${verseThemes}, using ${song.verseData.vibe} style. `;
+  }
+  
+  if (song.chorusData) {
+    prompt += `Introduce a ${song.chorusData.mood} chorus with a memorable hook, ${song.chorusData.vibe}. `;
+  }
+  
+  if (song.bridgeData) {
+    prompt += `Include a bridge section that is ${song.bridgeData.mood}, evoking ${song.bridgeData.vibe} with textural contrast. `;
+  }
+  
+  if (song.outroData) {
+    prompt += `End with a ${song.outroData.mood} outro that ${song.outroData.vibe}, tying together the song's themes. `;
+  }
+  
+  // Add instrument suggestions
+  prompt += `Use ${song.instruments} to maintain an ${song.overallVibe} vibe throughout.`;
+  
+  return prompt;
 }
+
 function loadAudioBuffers() {
   return Promise.all([
     fetch('tick.wav').then(response => response.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => tickBuffer = decoded),
@@ -755,6 +989,7 @@ function resetPlayback() {
   audioContext.close().then(() => {
     audioContext = new AudioContext();
     // Reload buffers after creating new context
+    audioBufferPromise = loadAudioBuffers();
     audioBufferPromise.then(() => {
       console.log('Audio buffers reloaded after reset');
     }).catch(error => console.error('Failed to reload audio buffers:', error));
@@ -823,158 +1058,212 @@ function loadSongData(songData) {
 
   for (let i = 0; i < songData.blocks.length; i++) {
     const error = validateBlock(songData.blocks[i]);
-    if (error) throw new Error(`Block ${i + 1}: ${error}`);
+    if (error) {
+      throw new Error(`Block ${i + 1} is invalid: ${error}`);
+    }
   }
-
-  if (isPlaying) resetPlayback();
 
   timeline.innerHTML = '';
   if (selectedBlock) clearSelection();
-
   updateTitle(songData.songName);
 
-  songData.blocks.forEach(({ type, measures, rootNote, mode, tempo, timeSignature, feel, lyrics }) => {
+  songData.blocks.forEach(blockData => {
     const block = document.createElement('div');
-    block.classList.add('song-block', type);
-    block.setAttribute('data-measures', measures);
-    block.setAttribute('data-tempo', tempo);
-    block.setAttribute('data-time-signature', timeSignature);
-    block.setAttribute('data-feel', feel || '');
-    block.setAttribute('data-lyrics', lyrics || '');
-    block.setAttribute('data-root-note', rootNote);
-    block.setAttribute('data-mode', mode);
-    block.innerHTML = `<span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote)} ${mode} ${tempo}b ${feel || ''}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span><span class="tooltip">${lyrics || 'No lyrics'}</span>`;
+    block.classList.add('song-block', blockData.type);
+    block.setAttribute('data-measures', blockData.measures);
+    block.setAttribute('data-tempo', blockData.tempo);
+    block.setAttribute('data-time-signature', blockData.timeSignature);
+    block.setAttribute('data-feel', blockData.feel || '');
+    block.setAttribute('data-lyrics', blockData.lyrics || '');
+    block.setAttribute('data-root-note', blockData.rootNote);
+    block.setAttribute('data-mode', blockData.mode);
+    block.innerHTML = `<span class="label">${formatPart(blockData.type)}: ${blockData.timeSignature} ${blockData.measures}m<br>${abbreviateKey(blockData.rootNote)} ${blockData.mode} ${blockData.tempo}b ${blockData.feel || ''}${blockData.lyrics ? '<br>-<br>' + truncateLyrics(blockData.lyrics) : ''}</span><span class="tooltip">${blockData.lyrics || 'No lyrics'}</span>`;
     updateBlockSize(block);
     setupBlock(block);
     timeline.appendChild(block);
   });
 
   const styleDropdown = document.getElementById('style-dropdown');
-  if (styleDropdown.value) changeBlockStyle(styleDropdown.value);
+  if (styleDropdown.value) {
+    const blocks = document.querySelectorAll('.song-block');
+    blocks.forEach(block => block.classList.add(styleDropdown.value));
+  }
 
   calculateTimings();
 }
 
-function loadSongFromDropdown(filename) {
-  if (!filename) {
-    console.log("No filename selected");
-    return;
-  }
-
-  if (isPlaying) resetPlayback();
-
-  if (filename === 'new-song') {
-    timeline.innerHTML = '';
-    if (selectedBlock) clearSelection();
-    isFormCollapsed = false;
-    formContent.classList.remove('collapsed');
-    toggleFormBtn.textContent = 'Hide Parameters';
-    currentSongName = 'New Song';
-    updateTitle(currentSongName);
-    calculateTimings();
-    const styleDropdown = document.getElementById('style-dropdown');
-    styleDropdown.value = '';
-    return;
-  }
-
-  // Prepend 'songs/' to the filename for fetching
-  const fullPath = filename.startsWith('songs/') ? filename : `songs/${filename}`;
-  console.log(`Attempting to load: ${fullPath}`);
-  try {
-    if (filename.endsWith('.js')) {
-      fetch(fullPath)
-        .then(response => {
-          if (!response.ok) throw new Error(`Failed to fetch ${fullPath}: ${response.statusText}`);
-          return response.text();
-        })
-        .then(text => {
-          eval(text); // Load the script into the global scope
-          if (filename === 'songs/pneuma.js' && typeof loadPneuma === 'function') loadPneuma();
-          else if (filename === 'songs/satisfaction.js' && typeof loadSatisfaction === 'function') loadSatisfaction();
-          else if (filename === 'songs/dirtyLaundry.js' && typeof loadDirtyLaundry === 'function') loadDirtyLaundry();
-          else if (filename === 'songs/invincible.js' && typeof loadInvincible === 'function') loadInvincible();
-          else if (filename === 'songs/astroworld.js' && typeof loadAstroworld === 'function') loadAstroworld();
-          else if (filename === 'songs/astrothunder.js' && typeof loadAstrothunder === 'function') loadAstrothunder();
-          else if (filename === 'songs/jambi.js' && typeof loadJambi === 'function') loadJambi();
-            else if (filename === 'songs/schism.js' && typeof loadSchism === 'function') loadSchism();
-              else if (filename === 'songs/7empest.js' && typeof loadSevenTempest === 'function') loadSevenTempest();
-          else throw new Error(`No load function found for ${filename}`);
-        })
-        .catch(error => {
-          console.error(`Error loading ${fullPath}:`, error);
-          alert(`Failed to load song: ${error.message}`);
-        });
-    } else if (filename.endsWith('.json')) {
-      fetch(fullPath)
-        .then(response => {
-          if (!response.ok) throw new Error(`Failed to fetch ${fullPath}: ${response.statusText}`);
-          return response.json();
-        })
-        .then(data => loadSongData(data))
-        .catch(error => {
-          console.error(`Error loading ${fullPath}:`, error);
-          alert(`Failed to load song: ${error.message}`);
-        });
-    } else {
-      throw new Error(`Unsupported file type: ${filename}`);
-    }
-    songDropdown.value = filename;
-  } catch (error) {
-    console.error(`Error in loadSongFromDropdown: ${error.message}`);
-    alert(`Error loading song: ${error.message}`);
-  }
+function loadSongFromDropdown(value) {
+  if (!value) return;
+  
+  fetch(`songs/${value}`)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(songData => {
+      loadSongData(songData);
+    })
+    .catch(error => {
+      console.error('Error loading song:', error);
+      alert(`Failed to load song: ${error.message}`);
+    });
 }
 
-function populateTimeSignatures() {
-  const select = document.getElementById('time-signature');
-  validTimeSignatures.forEach(ts => {
-    const option = document.createElement('option');
-    option.value = ts;
-    option.textContent = ts;
-    select.appendChild(option);
-  });
-}
-// Call this during initialization, e.g., after populateSongDropdown()
-populateTimeSignatures();
-
-function populateSongDropdown() {
-const availableSongs = [
-  'new-song', 'songs/Echoes of Joy.json', 'songs/pneuma.js', 'songs/satisfaction.js',
-  'songs/dirtyLaundry.js', 'songs/invincible.js', 'songs/astroworld.js', 'songs/astrothunder.js',
-  'songs/jambi.js', 'songs/schism.js', 'songs/7empest.js'
-];
-  availableSongs.forEach(song => {
-    const option = document.createElement('option');
-    option.value = song;
-    option.textContent = song === 'new-song' ? 'New Song' : song.replace('songs/', '').replace('.json', '').replace('.js', '');
-    songDropdown.appendChild(option);
-  });
-}
-
+// Fixed print function to avoid extra page
 function printSong() {
-  const { totalSeconds, totalBeats } = calculateTimings();
-  const blockCount = timeline.children.length;
-
-  // Store original content to restore later
-  const originalContent = currentBlockDisplay.innerHTML;
-
-  // Populate with concise info, add print-specific class
-  currentBlockDisplay.classList.add('print-view');
-  currentBlockDisplay.innerHTML = `
-    <span class="label">
-      ${currentSongName} | ${formatDuration(totalSeconds)} | ${totalBeats} Beats | ${blockCount} Blocks
-      <br>© 2025 SongMaker by kappter
-    </span>
-  `;
-
-  window.print();
-
-  // Restore original state
-  currentBlockDisplay.classList.remove('print-view');
-  currentBlockDisplay.innerHTML = originalContent;
+  const printWindow = window.open('', '_blank');
+  
+  if (!printWindow) {
+    alert('Please allow pop-ups to print the song.');
+    return;
+  }
+  
+  const blocks = Array.from(timeline.children);
+  const { totalSeconds } = calculateTimings();
+  
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>${currentSongName} - SongMaker</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          margin: 0;
+          padding: 20px;
+          color: #333;
+        }
+        h1, h2 {
+          margin: 0 0 10px 0;
+        }
+        .song-info {
+          margin-bottom: 20px;
+        }
+        .timeline {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          margin-bottom: 20px;
+        }
+        .block {
+          border: 1px solid #333;
+          padding: 10px;
+          border-radius: 5px;
+          page-break-inside: avoid;
+        }
+        .intro { background-color: #e6f7ff; }
+        .verse { background-color: #f0f5ff; }
+        .chorus { background-color: #f9f0ff; }
+        .bridge { background-color: #fff7e6; }
+        .outro { background-color: #f6ffed; }
+        .pre-chorus { background-color: #fff2e8; }
+        .post-chorus { background-color: #fcffe6; }
+        .solo { background-color: #fff1f0; }
+        .breakdown { background-color: #f5f5f5; }
+        .interlude { background-color: #e6fffb; }
+        .hook { background-color: #fff0f6; }
+        .coda { background-color: #e8e8e8; }
+        .drop { background-color: #f0f2ff; }
+        .ad-lib { background-color: #fffbe6; }
+        .lyrics {
+          margin-top: 5px;
+          font-style: italic;
+        }
+        footer {
+          margin-top: 20px;
+          font-size: 0.8em;
+          text-align: center;
+          color: #666;
+        }
+        @media print {
+          body {
+            padding: 0;
+            margin: 0;
+          }
+          @page {
+            margin: 1cm;
+            size: auto;
+          }
+        }
+      </style>
+    </head>
+    <body>
+      <h1>${currentSongName}</h1>
+      <div class="song-info">
+        <p>Total Duration: ${formatDuration(totalSeconds)} | Total Blocks: ${blocks.length}</p>
+      </div>
+      <div class="timeline">
+  `);
+  
+  blocks.forEach(block => {
+    const type = block.classList[1];
+    const measures = block.getAttribute('data-measures');
+    const rootNote = block.getAttribute('data-root-note');
+    const mode = block.getAttribute('data-mode');
+    const tempo = block.getAttribute('data-tempo');
+    const timeSignature = block.getAttribute('data-time-signature');
+    const feel = block.getAttribute('data-feel');
+    const lyrics = block.getAttribute('data-lyrics');
+    
+    printWindow.document.write(`
+      <div class="block ${type}">
+        <h3>${formatPart(type)}</h3>
+        <p>
+          ${timeSignature} | ${measures} measures | ${rootNote} ${mode}<br>
+          ${tempo} BPM | ${feel}
+        </p>
+        ${lyrics ? `<div class="lyrics">${lyrics}</div>` : ''}
+      </div>
+    `);
+  });
+  
+  printWindow.document.write(`
+      </div>
+      <footer>
+        Created with SongMaker
+      </footer>
+    </body>
+    </html>
+  `);
+  
+  printWindow.document.close();
+  
+  // Wait for resources to load before printing
+  setTimeout(() => {
+    printWindow.print();
+    // Don't close the window after printing to allow user to save as PDF if desired
+  }, 500);
 }
 
-// Initial setup
-populateSongDropdown();
-loadSongFromDropdown('songs/satisfaction.js');
-updateTitle(currentSongName); // Sync input on load
+// Load songs for dropdown
+fetch('songs/songs.json')
+  .then(response => response.json())
+  .then(data => {
+    songDropdown.innerHTML = '<option value="">Select a Song</option>';
+    data.songs.forEach(song => {
+      const option = document.createElement('option');
+      option.value = song.file;
+      option.textContent = song.name;
+      songDropdown.appendChild(option);
+    });
+  })
+  .catch(error => console.error('Error loading songs:', error));
+
+// Initialize with default song
+window.addEventListener('DOMContentLoaded', () => {
+  loadSongFromDropdown('satisfaction.js');
+});
+
+// Add CSS for light mode text color fix
+document.head.insertAdjacentHTML('beforeend', `
+  <style>
+    /* Fix for light mode text colors */
+    body[data-theme="light"] footer,
+    body[data-theme="light"] h2,
+    body[data-theme="light"] #time-calculator {
+      color: #333 !important;
+    }
+  </style>
+`);
