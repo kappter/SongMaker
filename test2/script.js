@@ -75,7 +75,39 @@ function generateRiffusionPrompt(song) {
 }
 
 function copyRiffusionPrompt() {
-  const song = generateRandomSong();
+  const blocks = Array.from(timeline.children);
+  const firstBlock = blocks[0];
+  const introBlock = blocks.find(b => b.classList.contains('intro'));
+  const verseBlock = blocks.find(b => b.classList.contains('verse'));
+  const chorusBlock = blocks.find(b => b.classList.contains('chorus'));
+  const bridgeBlock = blocks.find(b => b.classList.contains('bridge'));
+  const outroBlock = blocks.find(b => b.classList.contains('outro'));
+
+  const song = {
+    title: currentSongName || 'Untitled Song',
+    mood: firstBlock?.getAttribute('data-feel') || 'Happiness',
+    vibe: 'Atmospheric',
+    key: firstBlock?.getAttribute('data-root-note') || 'C',
+    mode: firstBlock?.getAttribute('data-mode') || 'Ionian',
+    bpm: parseInt(firstBlock?.getAttribute('data-tempo')) || 120,
+    timeSignature: firstBlock?.getAttribute('data-time-signature') || '4/4',
+    introMood: introBlock?.getAttribute('data-feel') || 'Calmness',
+    introVibe: 'Mystical',
+    verseMood: verseBlock?.getAttribute('data-feel') || 'Sadness',
+    verseThemes: 'introspection, freedom',
+    verseStyle: 'melodic, rhythmic',
+    chorusMood: chorusBlock?.getAttribute('data-feel') || 'Euphoria',
+    chorusHook: 'catchy, uplifting',
+    chorusVibe: 'Triumph',
+    bridgeMood: bridgeBlock?.getAttribute('data-feel') || 'Tension',
+    bridgeVibe: 'sparse',
+    bridgeTexture: 'atmospheric',
+    outroMood: outroBlock?.getAttribute('data-feel') || 'Resolution',
+    outroVibe: 'fading',
+    instruments: 'guitar, drums, synth',
+    overallVibe: 'Bliss'
+  };
+
   const prompt = generateRiffusionPrompt(song);
   navigator.clipboard.writeText(prompt)
     .then(() => alert("Prompt copied to clipboard!"))
@@ -923,8 +955,8 @@ function loadSongFromDropdown(filename) {
           else if (filename === 'songs/astroworld.js' && typeof loadAstroworld === 'function') loadAstroworld();
           else if (filename === 'songs/astrothunder.js' && typeof loadAstrothunder === 'function') loadAstrothunder();
           else if (filename === 'songs/jambi.js' && typeof loadJambi === 'function') loadJambi();
-            else if (filename === 'songs/schism.js' && typeof loadSchism === 'function') loadSchism();
-              else if (filename === 'songs/7empest.js' && typeof loadSevenTempest === 'function') loadSevenTempest();
+          else if (filename === 'songs/schism.js' && typeof loadSchism === 'function') loadSchism();
+          else if (filename === 'songs/7empest.js' && typeof loadSevenTempest === 'function') loadSevenTempest();
           else throw new Error(`No load function found for ${filename}`);
         })
         .catch(error => {
