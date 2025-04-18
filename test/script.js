@@ -290,15 +290,87 @@ function generateRiffusionPrompt(song) {
 }
 
 function loadAudioBuffers() {
+  console.log('Loading audio buffers...');
+  // Create a new audio context if needed
+  if (audioContext.state === 'closed') {
+    audioContext = new AudioContext();
+  }
+  
+  // Resume the audio context if it's suspended
+  if (audioContext.state === 'suspended') {
+    audioContext.resume();
+  }
+  
   return Promise.all([
-    fetch('tick.wav').then(response => response.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => tickBuffer = decoded),
-    fetch('tock.wav').then(response => response.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => tockBuffer = decoded),
-    fetch('tick_short.wav').then(response => response.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => tickShortBuffer = decoded),
-    fetch('tock_short.wav').then(response => response.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => tockShortBuffer = decoded)
-  ]).catch(error => console.error('Failed to load audio files:', error));
+    fetch('tick.wav')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Failed to load tick.wav: ${response.status}`);
+        }
+        return response.arrayBuffer();
+      })
+      .then(buffer => audioContext.decodeAudioData(buffer))
+      .then(decoded => {
+        tickBuffer = decoded;
+        console.log('Tick buffer loaded successfully');
+      }),
+    fetch('tock.wav')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Failed to load tock.wav: ${response.status}`);
+        }
+        return response.arrayBuffer();
+      })
+      .then(buffer => audioContext.decodeAudioData(buffer))
+      .then(decoded => {
+        tockBuffer = decoded;
+        console.log('Tock buffer loaded successfully');
+      }),
+    // Use tick and tock for short versions if the short versions aren't available
+    fetch('tick.wav')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Failed to load tick.wav for short: ${response.status}`);
+        }
+        return response.arrayBuffer();
+      })
+      .then(buffer => audioContext.decodeAudioData(buffer))
+      .then(decoded => {
+        tickShortBuffer = decoded;
+        console.log('Tick short buffer loaded successfully');
+      }),
+    fetch('tock.wav')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Failed to load tock.wav for short: ${response.status}`);
+        }
+        return response.arrayBuffer();
+      })
+      .then(buffer => audioContext.decodeAudioData(buffer))
+      .then(decoded => {
+        tockShortBuffer = decoded;
+        console.log('Tock short buffer loaded successfully');
+      })
+  ]).catch(error => {
+    console.error('Failed to load audio files:', error);
+    // Create silent buffers as fallback
+    const silentBuffer = audioContext.createBuffer(1, 44100, 44100);
+    tickBuffer = silentBuffer;
+    tockBuffer = silentBuffer;
+    tickShortBuffer = silentBuffer;
+    tockShortBuffer = silentBuffer;
+  });
 }
 
-const audioBufferPromise = loadAudioBuffers(); // Single call, stored as promise
+// Initialize audio context and load buffers
+let audioBufferPromise;
+try {
+  audioContext = new AudioContext();
+  audioBufferPromise = loadAudioBuffers(); // Single call, stored as promise
+  console.log('Audio context initialized and buffers loading started');
+} catch (e) {
+  console.error('Failed to initialize audio context:', e);
+}
 
 function playSound(buffer, time) {
   if (!buffer || !soundEnabled) return null;
@@ -826,16 +898,53 @@ function togglePlay() {
     resetPlayback();
   } else {
     const { timings, totalSeconds, totalBeats } = calculateTimings();
-    if (timings.length === 0) return;
+    if (timings.length === 0) {
+      console.log('No blocks to play');
+      alert('Please add some blocks to the timeline first');
+      return;
+    }
+    
     playBtn.textContent = 'Reset';
     isPlaying = true;
     currentTime = 0;
     currentBeat = 0;
     blockBeat = 0;
     blockMeasure = 0;
-    audioContext.resume().then(() => {
-      audioBufferPromise.then(() => playLeadIn(timings, totalSeconds, totalBeats));
+    
+    // Make sure audio context is running
+    if (audioContext.state === 'suspended') {
+      console.log('Resuming audio context');
+      audioContext.resume().then(() => {
+        console.log('Audio context resumed successfully');
+        startPlayback(timings, totalSeconds, totalBeats);
+      }).catch(err => {
+        console.error('Failed to resume audio context:', err);
+        alert('Failed to start audio playback. Please try again.');
+        isPlaying = false;
+        playBtn.textContent = 'Play';
+      });
+    } else {
+      startPlayback(timings, totalSeconds, totalBeats);
+    }
+  }
+}
+
+function startPlayback(timings, totalSeconds, totalBeats) {
+  console.log('Starting playback with timings:', timings);
+  // Check if audio buffers are loaded
+  if (!tickBuffer || !tockBuffer) {
+    console.log('Audio buffers not loaded yet, waiting for promise to resolve');
+    audioBufferPromise.then(() => {
+      console.log('Audio buffers now loaded, starting lead-in');
+      playLeadIn(timings, totalSeconds, totalBeats);
+    }).catch(err => {
+      console.error('Failed to load audio buffers:', err);
+      alert('Failed to load audio files. Playback will continue without sound.');
+      playLeadIn(timings, totalSeconds, totalBeats);
     });
+  } else {
+    console.log('Audio buffers already loaded, starting lead-in');
+    playLeadIn(timings, totalSeconds, totalBeats);
   }
 }
 
@@ -1095,19 +1204,65 @@ function loadSongData(songData) {
 function loadSongFromDropdown(value) {
   if (!value) return;
   
+  console.log(`Attempting to load song: songs/${value}`);
+  
+  // Check if the file exists first
   fetch(`songs/${value}`)
     .then(response => {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
+      console.log(`Song file found: songs/${value}`);
       return response.json();
     })
     .then(songData => {
+      console.log('Song data loaded successfully:', songData);
       loadSongData(songData);
     })
     .catch(error => {
       console.error('Error loading song:', error);
-      alert(`Failed to load song: ${error.message}`);
+      alert(`Failed to load song: ${error.message}. Check console for details.`);
+      
+      // Try loading a hardcoded default song as fallback
+      if (value === 'satisfaction.js') {
+        console.log('Attempting to load hardcoded default song');
+        const defaultSong = {
+          songName: "(I Can't Get No) Satisfaction",
+          blocks: [
+            {
+              type: "intro",
+              measures: 4,
+              rootNote: "E",
+              mode: "Mixolydian",
+              tempo: 136,
+              timeSignature: "4/4",
+              feel: "Tension",
+              lyrics: ""
+            },
+            {
+              type: "verse",
+              measures: 8,
+              rootNote: "E",
+              mode: "Mixolydian",
+              tempo: 136,
+              timeSignature: "4/4",
+              feel: "Frustration",
+              lyrics: "I can't get no satisfaction, I can't get no satisfaction..."
+            },
+            {
+              type: "chorus",
+              measures: 4,
+              rootNote: "E",
+              mode: "Mixolydian",
+              tempo: 136,
+              timeSignature: "4/4",
+              feel: "Rebellion",
+              lyrics: "Cause I try, and I try, and I try, and I try..."
+            }
+          ]
+        };
+        loadSongData(defaultSong);
+      }
     });
 }
 
@@ -1239,7 +1394,12 @@ function printSong() {
 
 // Load songs for dropdown
 fetch('songs/songs.json')
-  .then(response => response.json())
+  .then(response => {
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  })
   .then(data => {
     songDropdown.innerHTML = '<option value="">Select a Song</option>';
     data.songs.forEach(song => {
@@ -1248,12 +1408,22 @@ fetch('songs/songs.json')
       option.textContent = song.name;
       songDropdown.appendChild(option);
     });
+    console.log('Songs loaded into dropdown successfully');
   })
-  .catch(error => console.error('Error loading songs:', error));
+  .catch(error => {
+    console.error('Error loading songs:', error);
+    // Add fallback options if fetch fails
+    songDropdown.innerHTML = '<option value="">Select a Song</option>' +
+                            '<option value="satisfaction.js">(I Can\'t Get No) Satisfaction</option>' +
+                            '<option value="bohemian_rhapsody.js">Bohemian Rhapsody</option>';
+  });
 
 // Initialize with default song
-window.addEventListener('DOMContentLoaded', () => {
-  loadSongFromDropdown('satisfaction.js');
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('DOM fully loaded, initializing default song');
+  setTimeout(() => {
+    loadSongFromDropdown('satisfaction.js');
+  }, 500); // Small delay to ensure everything is loaded
 });
 
 // Add CSS for light mode text color fix
