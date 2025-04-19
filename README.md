@@ -60,7 +60,7 @@
 - Clean, high-contrast design for readability.
 - Tooltips and labeled inputs enhance accessibility.
 
-[![Edit Screen](https://github.com/kappter/SongMaker/blob/main/hidePara.jpeg?raw=true)](https://kappter.github.io/SongMaker/)
+[![Edit Screen](https://github.com/kappter/SongMaker/blob/main/hidePara.jpg?raw=true)](https://kappter.github.io/SongMaker/)
 
 ## 🚀 Getting Started
 
