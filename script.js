@@ -28,10 +28,41 @@ const validTimeSignatures = [
   '4/4', '3/4', '6/8', '2/4', '5/4', '7/8', '12/8', '9/8', '11/8', '15/8', '13/8', '10/4', '8/8', '14/8', '16/8', '7/4', '6/4'
 ];
 
-let tickBuffer = null;
-let tockBuffer = null;
-let tickShortBuffer = null;
-let tockShortBuffer = null;
+// Generate a random song object for Riffusion prompt
+function generateRandomSong() {
+  const titleAdjectives = ['Cosmic', 'Silent', 'Electric', 'Fading', 'Raging', 'Dreamy', 'Wild', 'Ethereal', 'Vivid', 'Haunting'];
+  const titleNouns = ['Echo', 'Pulse', 'Wave', 'Night', 'Fire', 'Journey', 'Sky', 'Dawn', 'Shadow', 'Rhythm'];
+  const moods = ['Happiness', 'Sadness', 'Tension', 'Euphoria', 'Calmness', 'Mystical'];
+  const vibes = ['Rebellion', 'Triumph', 'Bliss', 'Atmospheric', 'Trippy', 'Awakening'];
+  const keys = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+  const modes = ['Ionian', 'Dorian', 'Aeolian', 'Mixolydian'];
+  const instruments = ['guitar, drums, bass', 'synth, piano, strings', 'electronic beats, vocal chops'];
+
+  return {
+    title: `${titleAdjectives[Math.floor(Math.random() * titleAdjectives.length)]} ${titleNouns[Math.floor(Math.random() * titleNouns.length)]}`,
+    mood: moods[Math.floor(Math.random() * moods.length)],
+    vibe: vibes[Math.floor(Math.random() * vibes.length)],
+    key: keys[Math.floor(Math.random() * keys.length)],
+    mode: modes[Math.floor(Math.random() * modes.length)],
+    bpm: Math.floor(Math.random() * (180 - 60 + 1)) + 60,
+    timeSignature: validTimeSignatures[Math.floor(Math.random() * validTimeSignatures.length)],
+    introMood: moods[Math.floor(Math.random() * moods.length)],
+    introVibe: vibes[Math.floor(Math.random() * vibes.length)],
+    verseMood: moods[Math.floor(Math.random() * moods.length)],
+    verseThemes: 'introspection, freedom',
+    verseStyle: 'melodic, rhythmic',
+    chorusMood: moods[Math.floor(Math.random() * moods.length)],
+    chorusHook: 'catchy, uplifting',
+    chorusVibe: vibes[Math.floor(Math.random() * vibes.length)],
+    bridgeMood: moods[Math.floor(Math.random() * moods.length)],
+    bridgeVibe: vibes[Math.floor(Math.random() * vibes.length)],
+    bridgeTexture: 'sparse, atmospheric',
+    outroMood: moods[Math.floor(Math.random() * moods.length)],
+    outroVibe: 'resolving, fading',
+    instruments: instruments[Math.floor(Math.random() * instruments.length)],
+    overallVibe: vibes[Math.floor(Math.random() * vibes.length)]
+  };
+}
 
 function generateRiffusionPrompt(song) {
   return `Create a ${song.mood}, ${song.vibe} track titled "${song.title}" in ${song.key} ${song.mode}, ${song.bpm} BPM, ${song.timeSignature} time signature. ` +
@@ -44,7 +75,39 @@ function generateRiffusionPrompt(song) {
 }
 
 function copyRiffusionPrompt() {
-  const song = generateRandomSong(); // Your existing SongMaker logic
+  const blocks = Array.from(timeline.children);
+  const firstBlock = blocks[0];
+  const introBlock = blocks.find(b => b.classList.contains('intro'));
+  const verseBlock = blocks.find(b => b.classList.contains('verse'));
+  const chorusBlock = blocks.find(b => b.classList.contains('chorus'));
+  const bridgeBlock = blocks.find(b => b.classList.contains('bridge'));
+  const outroBlock = blocks.find(b => b.classList.contains('outro'));
+
+  const song = {
+    title: currentSongName || 'Untitled Song',
+    mood: firstBlock?.getAttribute('data-feel') || 'Happiness',
+    vibe: 'Atmospheric',
+    key: firstBlock?.getAttribute('data-root-note') || 'C',
+    mode: firstBlock?.getAttribute('data-mode') || 'Ionian',
+    bpm: parseInt(firstBlock?.getAttribute('data-tempo')) || 120,
+    timeSignature: firstBlock?.getAttribute('data-time-signature') || '4/4',
+    introMood: introBlock?.getAttribute('data-feel') || 'Calmness',
+    introVibe: 'Mystical',
+    verseMood: verseBlock?.getAttribute('data-feel') || 'Sadness',
+    verseThemes: 'introspection, freedom',
+    verseStyle: 'melodic, rhythmic',
+    chorusMood: chorusBlock?.getAttribute('data-feel') || 'Euphoria',
+    chorusHook: 'catchy, uplifting',
+    chorusVibe: 'Triumph',
+    bridgeMood: bridgeBlock?.getAttribute('data-feel') || 'Tension',
+    bridgeVibe: 'sparse',
+    bridgeTexture: 'atmospheric',
+    outroMood: outroBlock?.getAttribute('data-feel') || 'Resolution',
+    outroVibe: 'fading',
+    instruments: 'guitar, drums, synth',
+    overallVibe: 'Bliss'
+  };
+
   const prompt = generateRiffusionPrompt(song);
   navigator.clipboard.writeText(prompt)
     .then(() => alert("Prompt copied to clipboard!"))
@@ -892,8 +955,8 @@ function loadSongFromDropdown(filename) {
           else if (filename === 'songs/astroworld.js' && typeof loadAstroworld === 'function') loadAstroworld();
           else if (filename === 'songs/astrothunder.js' && typeof loadAstrothunder === 'function') loadAstrothunder();
           else if (filename === 'songs/jambi.js' && typeof loadJambi === 'function') loadJambi();
-            else if (filename === 'songs/schism.js' && typeof loadSchism === 'function') loadSchism();
-              else if (filename === 'songs/7empest.js' && typeof loadSevenTempest === 'function') loadSevenTempest();
+          else if (filename === 'songs/schism.js' && typeof loadSchism === 'function') loadSchism();
+          else if (filename === 'songs/7empest.js' && typeof loadSevenTempest === 'function') loadSevenTempest();
           else throw new Error(`No load function found for ${filename}`);
         })
         .catch(error => {
