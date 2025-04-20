@@ -65,7 +65,7 @@
 ## 🚀 Getting Started
 
 ### Prerequisites
-- A modern browser (e.g., Chrome, Firefox)
+- A modern browser (e.g., Chrome, Firefox) [Click here to make your first masterpiece or challenge a musician to create something you dream up.](https://kappter.github.io/SongMaker/)
 - Basic knowledge of JavaScript to add songs to the `/songs` folder
 
 ### Installation
