@@ -23,6 +23,10 @@ let isFormCollapsed = true;
 let activeTimeManager = null;
 let scheduledSources = [];
 let audioContext = new AudioContext();
+let tickBuffer, tockBuffer, tickShortBuffer, tockShortBuffer;
+let scheduledSources = [];
+let activeTimeManager = null;
+let leadInTimeout = null; // Track lead-in timeout
 
 const validTimeSignatures = [
   '4/4', '3/4', '6/8', '2/4', '5/4', '7/8', '12/8', '9/8', '11/8', '15/8', '13/8', '10/4', '8/8', '14/8', '16/8', '7/4', '6/4'
@@ -120,10 +124,12 @@ function loadAudioBuffers() {
     fetch('tock.wav').then(response => response.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => tockBuffer = decoded),
     fetch('tick_short.wav').then(response => response.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => tickShortBuffer = decoded),
     fetch('tock_short.wav').then(response => response.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => tockShortBuffer = decoded)
-  ]).catch(error => console.error('Failed to load audio files:', error));
+  ]).catch(error => {
+    console.error('Failed to load audio files:', error);
+    throw error; // Ensure errors are propagated
+  });
 }
-
-const audioBufferPromise = loadAudioBuffers(); // Single call, stored as promise
+let audioBufferPromise = loadAudioBuffers();
 
 function playSound(buffer, time) {
   if (!buffer || !soundEnabled) return null;
@@ -133,7 +139,6 @@ function playSound(buffer, time) {
   source.start(time);
   return source;
 }
-
 const TEMPO_THRESHOLD = 150;
 
 class TimeManager {
@@ -646,8 +651,6 @@ function formatDuration(seconds) {
 
 function togglePlay() {
   if (isPlaying) {
-    isPlaying = false;
-    playBtn.textContent = 'Play';
     resetPlayback();
   } else {
     const { timings, totalSeconds, totalBeats } = calculateTimings();
@@ -659,11 +662,11 @@ function togglePlay() {
     blockBeat = 0;
     blockMeasure = 0;
     audioContext.resume().then(() => {
-      audioBufferPromise.then(() => playLeadIn(timings, totalSeconds, totalBeats));
-    });
+      audioBufferPromise.then(() => playLeadIn(timings, totalSeconds, totalBeats))
+        .catch(error => console.error('Failed to load buffers for playback:', error));
+    }).catch(error => console.error('Failed to resume AudioContext:', error));
   }
 }
-
 function playLeadIn(timings, totalSeconds, totalBeats) {
   const firstBlock = timings[0];
   const beatDuration = 60 / firstBlock.tempo;
@@ -683,12 +686,13 @@ function playLeadIn(timings, totalSeconds, totalBeats) {
   const startTime = audioContext.currentTime;
   for (let beat = 0; beat < leadInBeats; beat++) {
     const soundTime = startTime + (beat * beatDuration);
-    const isFirstBeat = beat === 0; // First beat of the lead-in measure
-    const source = playSound(isFirstBeat ? currentTickBuffer : currentTockBuffer, soundTime);
+    const isFirstBeat = beat === 0; // First beat of the lead-in
+    const source = playSound(isFirstBeat ? currentTockBuffer : currentTickBuffer, soundTime);
     if (source) scheduledSources.push(source);
   }
 
   activeTimeManager = new TimeManager(firstBlock.tempo, leadInBeats, leadInBeats - 1, ({ elapsedTime, beat, isFirstBeat }) => {
+    if (!isPlaying) return; // Exit if playback stopped
     currentBlockDisplay.innerHTML = `
       <span class="label">Lead-In (${firstBlock.block.getAttribute('data-time-signature')})</span>
       <span class="info">Beat: ${beat + 1} of ${leadInBeats}</span>
@@ -705,11 +709,12 @@ function playLeadIn(timings, totalSeconds, totalBeats) {
 
   activeTimeManager.start();
 
-  setTimeout(() => {
+  leadInTimeout = setTimeout(() => {
     if (activeTimeManager) activeTimeManager.stop();
     activeTimeManager = null;
     currentTime = 0;
-    playSong(timings, totalSeconds, totalBeats);
+    leadInTimeout = null;
+    if (isPlaying) playSong(timings, totalSeconds, totalBeats);
   }, leadInBeats * beatDuration * 1000);
 }
 
@@ -734,9 +739,8 @@ function playSong(timings, totalSeconds, totalBeats) {
 
     for (let beat = 0; beat < totalBlockBeats; beat++) {
       const soundTime = blockStartTime + (beat * beatDuration);
-      // Play "tick" on the first beat of every measure
       const isFirstBeatOfMeasure = beat % currentTiming.beatsPerMeasure === 0;
-      const source = playSound(isFirstBeatOfMeasure ? currentTickBuffer : currentTockBuffer, soundTime);
+      const source = playSound(isFirstBeatOfMeasure ? currentTockBuffer : currentTickBuffer, soundTime);
       if (source) scheduledSources.push(source);
     }
 
@@ -747,6 +751,7 @@ function playSong(timings, totalSeconds, totalBeats) {
       currentTiming.beatsPerMeasure,
       totalBlockBeats - 1,
       ({ elapsedTime, beat, measure, isFirstBeat }) => {
+        if (!isPlaying) return; // Exit if playback stopped
         blockBeat = beat + 1;
         blockMeasure = measure;
         currentTime = elapsedTime + (cumulativeBeats * (60 / timings[currentIndex].tempo));
@@ -797,11 +802,19 @@ function updateCurrentBlock(timing) {
 }
 
 function resetPlayback() {
+  // Clear any pending lead-in timeout
+  if (leadInTimeout) {
+    clearTimeout(leadInTimeout);
+    leadInTimeout = null;
+  }
+
+  // Stop and clear TimeManager
   if (activeTimeManager) {
     activeTimeManager.stop();
     activeTimeManager = null;
   }
 
+  // Stop all scheduled sources
   scheduledSources.forEach(source => {
     try {
       source.stop();
@@ -811,22 +824,22 @@ function resetPlayback() {
   });
   scheduledSources = [];
 
+  // Close and recreate AudioContext
   audioContext.close().then(() => {
     audioContext = new AudioContext();
-    // Reload buffers after creating new context
-    audioBufferPromise.then(() => {
-      console.log('Audio buffers reloaded after reset');
-    }).catch(error => console.error('Failed to reload audio buffers:', error));
-  });
+    // Reinitialize audio buffers
+    audioBufferPromise = loadAudioBuffers();
+  }).catch(error => console.error('Failed to recreate AudioContext:', error));
 
+  // Reset playback state
   currentTime = 0;
   currentBeat = 0;
   blockBeat = 0;
   blockMeasure = 0;
-
   isPlaying = false;
   playBtn.textContent = 'Play';
 
+  // Reset visual indicators
   const previousBlock = timeline.querySelector('.playing');
   if (previousBlock) previousBlock.classList.remove('playing');
 
@@ -836,7 +849,6 @@ function resetPlayback() {
 
   calculateTimings();
 }
-
 function exportSong() {
   const blocks = Array.from(timeline.children).map(block => ({
     type: block.classList[1],
@@ -920,7 +932,8 @@ function loadSongFromDropdown(filename) {
     return;
   }
 
-  if (isPlaying) resetPlayback();
+  // Always reset playback to clear audio state
+  resetPlayback();
 
   if (filename === 'new-song') {
     timeline.innerHTML = '';
@@ -936,7 +949,6 @@ function loadSongFromDropdown(filename) {
     return;
   }
 
-  // Prepend 'songs/' to the filename for fetching
   const fullPath = filename.startsWith('songs/') ? filename : `songs/${filename}`;
   console.log(`Attempting to load: ${fullPath}`);
   try {
@@ -947,7 +959,7 @@ function loadSongFromDropdown(filename) {
           return response.text();
         })
         .then(text => {
-          eval(text); // Load the script into the global scope
+          eval(text);
           if (filename === 'songs/pneuma.js' && typeof loadPneuma === 'function') loadPneuma();
           else if (filename === 'songs/satisfaction.js' && typeof loadSatisfaction === 'function') loadSatisfaction();
           else if (filename === 'songs/dirtyLaundry.js' && typeof loadDirtyLaundry === 'function') loadDirtyLaundry();
