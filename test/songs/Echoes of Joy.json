@@ -1,0 +1,55 @@
+{
+  "songName": "Echoes of Joy",
+  "blocks": [
+    {
+      "type": "intro",
+      "measures": 4,
+      "rootNote": "C",
+      "mode": "Ionian",
+      "tempo": 120,
+      "timeSignature": "4/4",
+      "feel": "Happiness",
+      "lyrics": ""
+    },
+    {
+      "type": "verse",
+      "measures": 8,
+      "rootNote": "C",
+      "mode": "Ionian",
+      "tempo": 120,
+      "timeSignature": "4/4",
+      "feel": "Happiness",
+      "lyrics": "La la la, here we go again..."
+    },
+    {
+      "type": "chorus",
+      "measures": 8,
+      "rootNote": "G",
+      "mode": "Ionian",
+      "tempo": 120,
+      "timeSignature": "4/4",
+      "feel": "Euphoria",
+      "lyrics": "Feel the joy, let it rise!"
+    },
+    {
+      "type": "verse",
+      "measures": 8,
+      "rootNote": "C",
+      "mode": "Ionian",
+      "tempo": 120,
+      "timeSignature": "4/4",
+      "feel": "Happiness",
+      "lyrics": "Through the skies, we will soar..."
+    },
+    {
+      "type": "outro",
+      "measures": 4,
+      "rootNote": "C",
+      "mode": "Ionian",
+      "tempo": 120,
+      "timeSignature": "4/4",
+      "feel": "Calmness",
+      "lyrics": ""
+    }
+  ]
+}
