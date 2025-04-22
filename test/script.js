@@ -115,13 +115,51 @@ function copyRiffusionPrompt() {
 }
 
 function loadAudioBuffers() {
+  let tickBuffer, tockBuffer, tickShortBuffer, tockShortBuffer;
+  
   return Promise.all([
-    fetch('tick.wav').then(response => response.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => tickBuffer = decoded),
-    fetch('tock.wav').then(response => response.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => tockBuffer = decoded),
-    fetch('tick_short.wav').then(response => response.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => tickShortBuffer = decoded),
-    fetch('tock_short.wav').then(response => response.arrayBuffer()).then(buffer => audioContext.decodeAudioData(buffer)).then(decoded => tockShortBuffer = decoded)
-  ]).catch(error => console.error('Failed to load audio files:', error));
+    fetch('tick.wav')
+      .then(response => {
+        if (!response.ok) throw new Error('Failed to load tick.wav');
+        return response.arrayBuffer();
+      })
+      .then(buffer => audioContext.decodeAudioData(buffer))
+      .then(decoded => tickBuffer = decoded),
+      
+    fetch('tock.wav')
+      .then(response => {
+        if (!response.ok) throw new Error('Failed to load tock.wav');
+        return response.arrayBuffer();
+      })
+      .then(buffer => audioContext.decodeAudioData(buffer))
+      .then(decoded => tockBuffer = decoded),
+      
+    fetch('tick_short.wav')
+      .then(response => {
+        if (!response.ok) throw new Error('Failed to load tick_short.wav');
+        return response.arrayBuffer();
+      })
+      .then(buffer => audioContext.decodeAudioData(buffer))
+      .then(decoded => tickShortBuffer = decoded),
+      
+    fetch('tock_short.wav')
+      .then(response => {
+        if (!response.ok) throw new Error('Failed to load tock_short.wav');
+        return response.arrayBuffer();
+      })
+      .then(buffer => audioContext.decodeAudioData(buffer))
+      .then(decoded => tockShortBuffer = decoded)
+  ])
+  .then(() => {
+    // Return all buffers as an object
+    return { tickBuffer, tockBuffer, tickShortBuffer, tockShortBuffer };
+  })
+  .catch(error => {
+    console.error('Failed to load audio files:', error);
+    throw error;
+  });
 }
+
 
 const audioBufferPromise = loadAudioBuffers(); // Single call, stored as promise
 
@@ -136,6 +174,7 @@ function playSound(buffer, time) {
 
 const TEMPO_THRESHOLD = 150;
 
+// Replace the TimeManager class with this improved version
 class TimeManager {
   constructor(tempo, beatsPerMeasure, totalBeats, callback) {
     this.tempo = tempo;
@@ -146,22 +185,28 @@ class TimeManager {
     this.lastBeat = -1;
     this.beatDuration = 60 / tempo;
     this.running = false;
+    this.animationFrameId = null;
   }
 
   start() {
     this.running = true;
-    this.startTime = performance.now() / 1000 - (this.lastBeat + 1) * this.beatDuration;
-    requestAnimationFrame(this.tick.bind(this));
+    this.startTime = audioContext.currentTime; // Use the audio context time for precise timing
+    this.lastBeat = -1;
+    this.tick();
   }
 
   stop() {
     this.running = false;
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
   }
 
-  tick(timestamp) {
+  tick() {
     if (!this.running) return;
-    const currentTime = timestamp / 1000;
-    const elapsed = currentTime - this.startTime;
+
+    const elapsed = audioContext.currentTime - this.startTime;
     const currentBeat = Math.floor(elapsed / this.beatDuration);
 
     if (currentBeat <= this.totalBeats && currentBeat !== this.lastBeat) {
@@ -176,7 +221,7 @@ class TimeManager {
     }
 
     if (currentBeat < this.totalBeats) {
-      requestAnimationFrame(this.tick.bind(this));
+      this.animationFrameId = requestAnimationFrame(() => this.tick());
     } else {
       this.stop();
     }
@@ -652,15 +697,22 @@ function togglePlay() {
   } else {
     const { timings, totalSeconds, totalBeats } = calculateTimings();
     if (timings.length === 0) return;
+    
     playBtn.textContent = 'Reset';
     isPlaying = true;
     currentTime = 0;
     currentBeat = 0;
     blockBeat = 0;
     blockMeasure = 0;
-    audioContext.resume().then(() => {
+    
+    // Make sure audio context is in running state
+    if (audioContext.state === 'suspended') {
+      audioContext.resume().then(() => {
+        audioBufferPromise.then(() => playLeadIn(timings, totalSeconds, totalBeats));
+      });
+    } else {
       audioBufferPromise.then(() => playLeadIn(timings, totalSeconds, totalBeats));
-    });
+    }
   }
 }
 
@@ -688,7 +740,7 @@ function playLeadIn(timings, totalSeconds, totalBeats) {
     if (source) scheduledSources.push(source);
   }
 
-  activeTimeManager = new TimeManager(firstBlock.tempo, leadInBeats, leadInBeats - 1, ({ elapsedTime, beat, isFirstBeat }) => {
+  activeTimeManager = new TimeManager(firstBlock.tempo, leadInBeats, leadInBeats, ({ elapsedTime, beat, isFirstBeat }) => {
     currentBlockDisplay.innerHTML = `
       <span class="label">Lead-In (${firstBlock.block.getAttribute('data-time-signature')})</span>
       <span class="info">Beat: ${beat + 1} of ${leadInBeats}</span>
@@ -705,18 +757,30 @@ function playLeadIn(timings, totalSeconds, totalBeats) {
 
   activeTimeManager.start();
 
+  // Calculate precise timing for the lead-in
+  const leadInDuration = leadInBeats * beatDuration;
+  const leadInEndTime = startTime + leadInDuration;
+  const currentTime = audioContext.currentTime;
+  const waitTime = (leadInEndTime - currentTime) * 1000;
+
   setTimeout(() => {
-    if (activeTimeManager) activeTimeManager.stop();
-    activeTimeManager = null;
+    if (!isPlaying) return;
+    
+    if (activeTimeManager) {
+      activeTimeManager.stop();
+      activeTimeManager = null;
+    }
+    
     currentTime = 0;
     playSong(timings, totalSeconds, totalBeats);
-  }, leadInBeats * beatDuration * 1000);
+  }, Math.max(0, waitTime)); // Ensure waitTime is not negative
 }
+
 
 function playSong(timings, totalSeconds, totalBeats) {
   let currentIndex = 0;
-  let blockStartTime = audioContext.currentTime;
   let cumulativeBeats = 0;
+  let cumulativeDuration = 0;
 
   function playNextBlock() {
     if (!isPlaying || currentIndex >= timings.length) {
@@ -727,14 +791,18 @@ function playSong(timings, totalSeconds, totalBeats) {
     const currentTiming = timings[currentIndex];
     const beatDuration = 60 / currentTiming.tempo;
     const totalBlockBeats = currentTiming.totalBeats;
+    const blockDuration = currentTiming.duration;
 
     const useShortSounds = currentTiming.tempo > TEMPO_THRESHOLD;
     const currentTickBuffer = useShortSounds ? tickShortBuffer : tickBuffer;
     const currentTockBuffer = useShortSounds ? tockShortBuffer : tockBuffer;
 
+    // Current base time from the audio context
+    const blockStartTime = audioContext.currentTime;
+
+    // Schedule all the metronome sounds for this block at once
     for (let beat = 0; beat < totalBlockBeats; beat++) {
       const soundTime = blockStartTime + (beat * beatDuration);
-      // Play "tick" on the first beat of every measure
       const isFirstBeatOfMeasure = beat % currentTiming.beatsPerMeasure === 0;
       const source = playSound(isFirstBeatOfMeasure ? currentTickBuffer : currentTockBuffer, soundTime);
       if (source) scheduledSources.push(source);
@@ -745,11 +813,11 @@ function playSong(timings, totalSeconds, totalBeats) {
     activeTimeManager = new TimeManager(
       currentTiming.tempo,
       currentTiming.beatsPerMeasure,
-      totalBlockBeats - 1,
+      totalBlockBeats,
       ({ elapsedTime, beat, measure, isFirstBeat }) => {
         blockBeat = beat + 1;
         blockMeasure = measure;
-        currentTime = elapsedTime + (cumulativeBeats * (60 / timings[currentIndex].tempo));
+        currentTime = cumulativeDuration + elapsedTime;
         currentBeat = cumulativeBeats + beat + 1;
 
         const totalBlocks = timings.length;
@@ -777,18 +845,29 @@ function playSong(timings, totalSeconds, totalBeats) {
 
     activeTimeManager.start();
 
+    // Instead of using setTimeout, schedule the next block precisely with the Web Audio API's timing
+    const nextBlockStartTime = blockStartTime + blockDuration;
+    const currentTime = audioContext.currentTime;
+    const waitTime = (nextBlockStartTime - currentTime) * 1000;
+
     setTimeout(() => {
-      if (activeTimeManager) activeTimeManager.stop();
-      activeTimeManager = null;
+      if (!isPlaying) return;
+      
+      if (activeTimeManager) {
+        activeTimeManager.stop();
+        activeTimeManager = null;
+      }
+      
       cumulativeBeats += totalBlockBeats;
-      blockStartTime += currentTiming.duration;
+      cumulativeDuration += blockDuration;
       currentIndex++;
       playNextBlock();
-    }, currentTiming.duration * 1000 + 10);
+    }, Math.max(0, waitTime)); // Ensure waitTime is not negative
   }
 
   playNextBlock();
 }
+
 
 function updateCurrentBlock(timing) {
   const previousBlock = timeline.querySelector('.playing');
@@ -811,12 +890,10 @@ function resetPlayback() {
   });
   scheduledSources = [];
 
-  audioContext.close().then(() => {
-    audioContext = new AudioContext();
-    // Reload buffers after creating new context
-    audioBufferPromise.then(() => {
-      console.log('Audio buffers reloaded after reset');
-    }).catch(error => console.error('Failed to reload audio buffers:', error));
+  // Instead of closing and reopening the audio context (which can cause issues),
+  // just suspend it
+  audioContext.suspend().then(() => {
+    audioContext.resume(); // Resume immediately but in suspended state (ready for next play)
   });
 
   currentTime = 0;
@@ -836,6 +913,7 @@ function resetPlayback() {
 
   calculateTimings();
 }
+
 
 function exportSong() {
   const blocks = Array.from(timeline.children).map(block => ({
