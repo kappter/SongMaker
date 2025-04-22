@@ -219,7 +219,6 @@ main {
 
 #current-block-display.one-count {
   border-color: var(--highlight-green);
-  box-shadow: 0 0 5px var(--highlight-green);
 }
 
 #current-block-display.pulse {
@@ -237,9 +236,7 @@ main {
   font-size: 0.85em;
   color: #bbb;
 }
-#current-block-display:not(.pulse) {
-  animation: none;
-}
+
 /* Timeline */
 #timeline {
   display: flex;
@@ -407,7 +404,7 @@ main {
 
 @keyframes pulse {
   0% { transform: scale(1); }
-  50% { transform: scale(1.03); }
+  50% { transform: scale(1.05); }
   100% { transform: scale(1); }
 }
 
