@@ -10,6 +10,7 @@
   --tooltip-text: #fff;
   --footer-bg: #2c3434;
   --highlight-green: #00ff00;
+  --primary: #2a7a5a;
 }
 
 [data-theme="light"] {
@@ -24,6 +25,7 @@
   --tooltip-text: #fff;
   --footer-bg: #d0d0d0;
   --highlight-green: #00cc00;
+  --primary: #1e6b4a;
 }
 
 body {
@@ -59,20 +61,148 @@ h2 {
   color: #bbb;
 }
 
-/* Navigation */
+/* ── Navigation ───────────────────────────────────────────────────────────── */
 nav {
-  padding: 10px;
   background: var(--form-bg);
   border-bottom: 1px solid var(--border-color);
+  padding: 8px 16px;
 }
 
-.controls {
+.nav-bar {
   display: flex;
+  align-items: center;
   justify-content: center;
-  gap: 12px;
   flex-wrap: wrap;
+  gap: 6px;
   max-width: 1200px;
   margin: 0 auto;
+}
+
+.nav-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+
+/* Separator between groups */
+.nav-group + .nav-group {
+  padding-left: 6px;
+  border-left: 1px solid var(--border-color);
+}
+
+/* Base nav button */
+.nav-btn {
+  padding: 6px 12px;
+  font-size: 0.85em;
+  font-weight: 500;
+  white-space: nowrap;
+  background: var(--form-bg);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  line-height: 1.4;
+}
+.nav-btn:hover {
+  background: var(--block-bg);
+  border-color: var(--text-color);
+}
+.nav-btn:active { transform: scale(0.97); }
+
+/* Icon-only buttons — square */
+.nav-btn-icon {
+  padding: 6px 9px;
+  font-size: 1em;
+}
+
+/* Primary (Play) */
+.nav-btn-primary {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+  font-weight: 600;
+}
+.nav-btn-primary:hover { filter: brightness(1.15); }
+
+/* Analyze — always bright green */
+.nav-btn-analyze, #analyze-track-btn {
+  background: #22c55e !important;
+  color: #fff !important;
+  border-color: #16a34a !important;
+  font-weight: 700;
+  box-shadow: 0 0 0 2px rgba(34,197,94,0.35);
+}
+.nav-btn-analyze:hover { filter: brightness(1.12); }
+
+/* Select elements in nav */
+.nav-select {
+  padding: 6px 8px;
+  font-size: 0.85em;
+  background: var(--form-bg);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  max-width: 160px;
+}
+
+/* ── Dropdown menus ────────────────────────────────────────────────────────── */
+.nav-dropdown {
+  position: relative;
+}
+
+.nav-dropdown-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 180px;
+  background: var(--form-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  z-index: 1000;
+  overflow: hidden;
+  animation: dropdownIn 0.15s ease;
+}
+
+@keyframes dropdownIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(-6px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.nav-dropdown.open .nav-dropdown-menu { display: block; }
+
+.nav-dropdown-menu button,
+.nav-dropdown-item-label {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  text-align: left;
+  background: transparent;
+  color: var(--text-color);
+  border: none;
+  border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
+  font-size: 0.88em;
+  font-weight: 500;
+  transition: background 0.12s;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+.nav-dropdown-menu button:last-child,
+.nav-dropdown-item-label:last-child {
+  border-bottom: none;
+}
+.nav-dropdown-menu button:hover,
+.nav-dropdown-item-label:hover {
+  background: var(--block-bg);
+}
+.nav-dropdown-item-label input[type="file"] {
+  display: none;
 }
 
 button, select, .file-input-label {
@@ -202,6 +332,57 @@ main {
 
 #form-content button {
   flex: 0 0 auto;
+}
+
+/* Energy Grid */
+.energy-grid-label {
+  flex: 1 1 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.energy-grid-title {
+  font-size: 0.85em;
+  font-weight: 600;
+  color: var(--text-color);
+  opacity: 0.8;
+}
+
+.energy-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.energy-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.energy-role {
+  font-size: 0.8em;
+  font-weight: 500;
+  width: 64px;
+  flex-shrink: 0;
+}
+
+.energy-role.drums  { color: #ef4444; }
+.energy-role.bass   { color: #3b82f6; }
+.energy-role.guitar { color: #f97316; }
+.energy-role.keys   { color: #a855f7; }
+.energy-role.vocals { color: #22c55e; }
+
+.energy-input {
+  width: 52px;
+  padding: 3px 5px;
+  background: var(--background);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 0.85em;
+  text-align: center;
 }
 
 /* Current Block Display (Reference Clock) */
@@ -563,5 +744,679 @@ footer {
     @top-center {
       content: none;
     }
+  }
+}
+
+/* ========================================
+   RESPONSIVE DESIGN IMPROVEMENTS
+   ======================================== */
+
+/* Tablet and below (768px) */
+@media (max-width: 768px) {
+  /* Header adjustments */
+  header {
+    padding: 15px;
+  }
+  
+  h1 {
+    font-size: 1.5em;
+  }
+  
+  h2 {
+    font-size: 0.95em;
+  }
+  
+  /* Navigation controls */
+  .controls {
+    gap: 8px;
+    padding: 0 10px;
+  }
+  
+  button, select, .file-input-label {
+    padding: 6px 12px;
+    font-size: 0.85em;
+  }
+  
+  /* Timeline adjustments */
+  #timeline {
+    gap: 15px;
+    padding: 15px;
+  }
+  
+  /* Form container */
+  .form-container {
+    padding: 12px;
+    margin: 0 10px 15px;
+  }
+  
+  #form-content label {
+    flex: 1 1 100%;
+  }
+  
+  /* Footer */
+  footer {
+    font-size: 0.75em;
+    padding: 8px 5px;
+  }
+  
+  #time-calculator {
+    display: block;
+    overflow-x: auto;
+  }
+}
+
+/* Mobile (480px and below) */
+@media (max-width: 480px) {
+  /* Header */
+  header {
+    padding: 15px 10px;
+  }
+  
+  h1 {
+    font-size: 1.3em;
+  }
+  
+  h2 {
+    font-size: 0.85em;
+  }
+  
+  /* Navigation - stack vertically */
+  .controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    padding: 0 5px;
+  }
+  
+  button, select, .file-input-label {
+    width: 100%;
+    text-align: center;
+    padding: 10px 16px;
+  }
+  
+  /* Timeline - better spacing */
+  #timeline {
+    gap: 10px;
+    padding: 10px;
+  }
+  
+  /* Song blocks */
+  .song-block {
+    min-height: 100px;
+    padding: 10px;
+  }
+  
+  /* Current block display */
+  #current-block-display {
+    max-width: 95%;
+    padding: 10px;
+    margin: 0 auto 15px;
+  }
+  
+  #current-block-display .label {
+    font-size: 0.9em;
+  }
+  
+  #current-block-display .info {
+    font-size: 0.75em;
+  }
+  
+  /* Form container */
+  .form-container {
+    padding: 10px;
+    margin: 0 5px 10px;
+  }
+  
+  #form-content {
+    gap: 10px;
+    padding: 8px;
+  }
+  
+  /* Footer */
+  footer {
+    font-size: 0.65em;
+    padding: 6px 3px;
+    white-space: normal;
+    text-align: left;
+  }
+}
+
+/* Touch-friendly targets for mobile devices */
+@media (max-width: 768px) and (hover: none) {
+  button, select, .file-input-label {
+    min-height: 44px; /* iOS recommended touch target */
+    padding: 10px 16px;
+  }
+  
+  .song-block .delete-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 1em;
+    top: 8px;
+    right: 8px;
+  }
+  
+  .song-block .resize-handle {
+    width: 15px;
+  }
+}
+
+/* Landscape mobile optimization */
+@media (max-width: 768px) and (orientation: landscape) {
+  header {
+    padding: 10px;
+  }
+  
+  h1 {
+    font-size: 1.2em;
+  }
+  
+  h2 {
+    font-size: 0.85em;
+    margin: 2px 0 0;
+  }
+}
+
+/* ========== REPORT DIALOG STYLES ========== */
+
+.report-dialog {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+}
+
+.report-dialog-content {
+  background-color: var(--form-bg);
+  color: var(--text-color);
+  padding: 30px;
+  border-radius: 12px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.report-dialog-content h2 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: var(--text-color);
+  font-size: 24px;
+}
+
+.report-dialog-content p {
+  margin-bottom: 20px;
+  color: var(--text-color);
+  opacity: 0.9;
+}
+
+.role-checkboxes {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 25px;
+}
+
+.role-checkboxes label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.role-checkboxes label:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.role-checkboxes input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.report-dialog-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.report-dialog-buttons button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.report-dialog-buttons .primary-btn {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.report-dialog-buttons .primary-btn:hover {
+  background-color: #45a049;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.report-dialog-buttons button:not(.primary-btn) {
+  background-color: #555;
+  color: white;
+}
+
+.report-dialog-buttons button:not(.primary-btn):hover {
+  background-color: #666;
+}
+/* ========================================
+   MOBILE METRONOME MODE OPTIMIZATIONS
+   ======================================== */
+
+/* Mobile metronome mode - hide unnecessary UI elements */
+@media (max-width: 768px) {
+  /* Add a mobile metronome mode toggle */
+  body.metronome-mode nav {
+    flex-wrap: wrap;
+  }
+  
+  /* Hide less critical buttons in metronome mode */
+  body.metronome-mode #copy-prompt-btn,
+  body.metronome-mode button:has-text("Randomize"),
+  body.metronome-mode button:has-text("Print"),
+  body.metronome-mode button:has-text("Export"),
+  body.metronome-mode button:has-text("Generate Reports") {
+    display: none;
+  }
+  
+  /* Make current block display more prominent */
+  body.metronome-mode #current-block {
+    font-size: 1.5em;
+    padding: 30px 20px;
+    min-height: 120px;
+  }
+  
+  /* Larger play/reset button for metronome mode */
+  body.metronome-mode #play-btn {
+    font-size: 1.5em;
+    padding: 20px 40px;
+    min-height: 60px;
+    font-weight: bold;
+  }
+  
+  /* Make sound toggle more prominent */
+  body.metronome-mode #sound-btn {
+    font-size: 1.2em;
+    padding: 15px 30px;
+  }
+  
+  /* Optimize timeline blocks for mobile viewing */
+  body.metronome-mode .song-block {
+    min-height: 100px;
+    font-size: 1.1em;
+  }
+  
+  /* Hide form when not needed */
+  body.metronome-mode #block-form {
+    display: none;
+  }
+  
+  /* Make footer more compact */
+  body.metronome-mode footer {
+    font-size: 0.9em;
+    padding: 10px;
+  }
+}
+
+/* Enhanced current block display for all mobile */
+@media (max-width: 768px) {
+  #current-block {
+    font-size: 1.2em;
+    padding: 25px 15px;
+    margin: 15px auto;
+  }
+  
+  #current-block.pulse {
+    animation: pulse 0.3s ease-in-out;
+  }
+  
+  /* Larger, more visible beat counter */
+  #current-block .label {
+    line-height: 1.6;
+    font-weight: 500;
+  }
+  
+  /* Make playing block more visible */
+  .song-block.playing {
+    border: 4px solid var(--highlight-green);
+    box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+    transform: scale(1.05);
+  }
+}
+
+/* Portrait mode - stack everything vertically */
+@media (max-width: 768px) and (orientation: portrait) {
+  nav {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  nav button,
+  nav select {
+    width: 100%;
+    max-width: none;
+  }
+  
+  /* Full width play button */
+  #play-btn {
+    width: 100%;
+    font-size: 1.3em;
+    padding: 18px;
+  }
+  
+  /* Stack sound and theme buttons */
+  #sound-btn,
+  #theme-btn {
+    width: 48%;
+    display: inline-block;
+  }
+}
+
+/* Landscape mode - optimize horizontal space */
+@media (max-width: 768px) and (orientation: landscape) {
+  header {
+    padding: 8px 15px;
+  }
+  
+  h1 {
+    font-size: 1.1em;
+    margin: 5px 0;
+  }
+  
+  h2 {
+    font-size: 0.8em;
+    margin: 3px 0;
+  }
+  
+  nav {
+    padding: 8px;
+    gap: 8px;
+  }
+  
+  #current-block {
+    padding: 15px;
+    margin: 10px auto;
+    font-size: 1em;
+  }
+  
+  .song-block {
+    min-height: 70px;
+  }
+  
+  footer {
+    padding: 8px;
+    font-size: 0.85em;
+  }
+}
+
+/* Very small screens - minimal UI */
+@media (max-width: 380px) {
+  h1 {
+    font-size: 1.1em;
+  }
+  
+  h2 {
+    font-size: 0.75em;
+  }
+  
+  nav button,
+  nav select {
+    font-size: 0.85em;
+    padding: 8px 12px;
+  }
+  
+  #play-btn {
+    font-size: 1.1em;
+    padding: 15px;
+  }
+  
+  .song-block {
+    font-size: 0.85em;
+    min-height: 70px;
+    padding: 8px;
+  }
+  
+  footer {
+    font-size: 0.75em;
+  }
+}
+
+/* Add metronome mode toggle button */
+.metronome-toggle {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  background: var(--form-bg);
+  border: 2px solid var(--border-color);
+  color: var(--text-color);
+  padding: 12px 20px;
+  border-radius: 25px;
+  font-size: 0.9em;
+  cursor: pointer;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .metronome-toggle {
+    display: block;
+  }
+  
+  body.metronome-mode .metronome-toggle {
+    background: var(--highlight-green);
+    color: #000;
+    font-weight: bold;
+  }
+}
+/* ========================================
+   MINI PROGRESS TRACKER
+   ======================================== */
+
+#mini-progress-container {
+  position: relative;
+  width: 100%;
+  height: 10px;
+  background: var(--form-bg);
+  border: 1px solid var(--border-color);
+  margin: 15px 0 10px 0;
+  overflow: visible;
+}
+
+#mini-progress-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: row;
+}
+
+/* Individual section segments in the progress bar */
+.mini-section {
+  height: 100%;
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
+  box-sizing: border-box;
+  transition: opacity 0.2s;
+}
+
+/* Section colors matching the main blocks */
+.mini-section.intro {
+  background: #5a7a5a;
+}
+
+.mini-section.verse {
+  background: #4a5f7f;
+}
+
+.mini-section.chorus {
+  background: #8a5a5a;
+}
+
+.mini-section.bridge {
+  background: #7a6a5a;
+}
+
+.mini-section.solo {
+  background: #6a5a7a;
+}
+
+.mini-section.interlude {
+  background: #5a7a7a;
+}
+
+.mini-section.outro {
+  background: #6a6a6a;
+}
+
+.mini-section.breakdown {
+  background: #7a5a6a;
+}
+
+.mini-section.prechorus {
+  background: #7a7a5a;
+}
+
+.mini-section.postchorus {
+  background: #5a6a7a;
+}
+
+/* Highlight the currently playing section */
+.mini-section.playing {
+  opacity: 1;
+  box-shadow: inset 0 0 5px rgba(255, 255, 255, 0.5);
+}
+
+.mini-section:not(.playing) {
+  opacity: 0.6;
+}
+
+/* Circular progress marker */
+#mini-progress-marker {
+  position: absolute;
+  top: 50%;
+  left: 0%;
+  width: 16px;
+  height: 16px;
+  background: var(--highlight-green);
+  border: 2px solid #fff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 8px rgba(0, 255, 0, 0.8);
+  z-index: 10;
+  transition: left 0.1s linear;
+  display: none; /* Hidden until playback starts */
+}
+
+#mini-progress-marker.active {
+  display: block;
+}
+
+/* Pulse animation for the marker */
+@keyframes marker-pulse {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    box-shadow: 0 0 8px rgba(0, 255, 0, 0.8);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.2);
+    box-shadow: 0 0 12px rgba(0, 255, 0, 1);
+  }
+}
+
+#mini-progress-marker.pulse {
+  animation: marker-pulse 0.3s ease-in-out;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  #mini-progress-container {
+    height: 12px;
+    margin: 12px 10px 8px 10px;
+  }
+  
+  #mini-progress-marker {
+    width: 18px;
+    height: 18px;
+    border-width: 3px;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 480px) {
+  #mini-progress-container {
+    height: 14px;
+    margin: 10px 8px 6px 8px;
+  }
+  
+  #mini-progress-marker {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* Duration Markers for Mini Progress Bar */
+#mini-progress-markers {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.time-marker {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  pointer-events: none;
+}
+
+.marker-line {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 10px;
+  background-color: rgba(255, 255, 255, 0.4);
+}
+
+.marker-label {
+  position: absolute;
+  left: 2px;
+  top: 12px;
+  font-size: 8px;
+  color: rgba(255, 255, 255, 0.6);
+  white-space: nowrap;
+  font-family: monospace;
+}
+
+.time-marker.end-marker .marker-label {
+  left: auto;
+  right: 2px;
+}
+
+@media (max-width: 768px) {
+  .marker-label {
+    font-size: 7px;
   }
 }

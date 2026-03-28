@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SongMaker: Create and visualize song structures with precise timing and playback.">
+    <meta name="author" content="kappter">
+    <title>SongMaker</title>
+    <link rel="stylesheet" href="styles.css?v=20260328">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+</head>
+<body data-theme="dark">
+    <header>
+        <h1>SongMaker</h1>
+        <h2 id="print-song-name">(I Can’t Get No) Satisfaction</h2>
+    </header>
+    <nav>
+        <div class="nav-bar">
+            <!-- Playback group -->
+            <div class="nav-group">
+                <button id="play-btn" class="nav-btn nav-btn-primary" onclick="playMusic()">&#9654; Play</button>
+                <button id="pause-btn" class="nav-btn" onclick="pauseMusic()" style="display:none;">&#9646;&#9646; Pause</button>
+                <button id="stop-btn" class="nav-btn" onclick="stopMusic()" style="display:none;">&#9632; Stop</button>
+                <button id="sound-btn" class="nav-btn nav-btn-icon" onclick="toggleSound()" title="Toggle sound">&#128266;</button>
+                <button id="theme-btn" class="nav-btn nav-btn-icon" onclick="toggleTheme()" title="Toggle theme">&#9728;</button>
+            </div>
+
+            <!-- Song selector group -->
+            <div class="nav-group">
+                <select id="song-dropdown" class="nav-select" onchange="loadSongFromDropdown(this.value)"></select>
+                <select id="style-dropdown" class="nav-select" onchange="changeBlockStyle(this.value)">
+                    <option value="">Default Style</option>
+                    <option value="vibrant">Vibrant</option>
+                    <option value="pastel">Pastel</option>
+                    <option value="monochrome">Monochrome</option>
+                </select>
+                <button class="nav-btn" onclick="randomizeSong()">&#127922; Randomize</button>
+            </div>
+
+            <!-- Files dropdown -->
+            <div class="nav-group">
+                <div class="nav-dropdown" id="files-dropdown">
+                    <button class="nav-btn nav-dropdown-trigger" onclick="toggleNavDropdown('files-dropdown')">&#128193; Files &#9662;</button>
+                    <div class="nav-dropdown-menu">
+                        <button onclick="exportSong(); closeNavDropdowns()">&#8593; Export JSON</button>
+                        <label class="nav-dropdown-item-label">
+                            &#8595; Import JSON
+                            <input type="file" accept=".json" onchange="importSong(event); closeNavDropdowns()">
+                        </label>
+                        <button onclick="exportMIDI(); closeNavDropdowns()">&#127925; Export MIDI</button>
+                    </div>
+                </div>
+
+                <!-- Tools dropdown -->
+                <div class="nav-dropdown" id="tools-dropdown">
+                    <button class="nav-btn nav-dropdown-trigger" onclick="toggleNavDropdown('tools-dropdown')">&#9881; Tools &#9662;</button>
+                    <div class="nav-dropdown-menu">
+                        <button id="copy-prompt-btn" onclick="copyRiffusionPrompt(); closeNavDropdowns()">&#128203; Copy AI Prompt</button>
+                        <button onclick="openReportDialog(); closeNavDropdowns()">&#128196; Generate Reports</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analyze button — always visible, right side -->
+            <div class="nav-group">
+                <button id="analyze-track-btn" class="nav-btn nav-btn-analyze" onclick="openAnalyzeModal()">&#128270; Analyze</button>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <!-- Mini Progress Tracker / Timebar -->
+        <div id="mini-progress-container">
+            <div id="mini-progress-bar"></div>
+            <div id="mini-progress-marker"></div>
+            <div id="mini-progress-markers"></div>
+        </div>
+
+        <div class="form-container">
+            <button id="toggle-form-btn" onclick="toggleForm()">Show Parameters</button>
+            <div id="form-content" class="collapsed">
+                <label>
+                    Song Title:
+                    <input type="text" id="song-title-input" value="(I Can’t Get No) Satisfaction" placeholder="Enter song title">
+                </label>
+                <label>
+                    Part Type:
+                    <select id="part-type">
+                        <option value="intro">Intro</option>
+                        <option value="verse">Verse</option>
+                        <option value="refrain">Refrain</option>
+                        <option value="pre-chorus">Pre-Chorus</option>
+                        <option value="chorus">Chorus</option>
+                        <option value="post-chorus">Post-Chorus</option>
+                        <option value="bridge">Bridge</option>
+                        <option value="outro">Outro</option>
+                        <option value="elision">Elision</option>
+                        <option value="solo">Solo</option>
+                        <option value="ad-lib">Ad-Lib</option>
+                        <option value="hook">Hook</option>
+                        <option value="interlude">Interlude</option>
+                        <option value="breakdown">Breakdown</option>
+                        <option value="drop">Drop</option>
+                        <option value="coda">Coda</option>
+                        <option value="modulation">Modulation</option>
+                        <option value="tag">Tag</option>
+                        <option value="chorus-reprise">Chorus Reprise</option>
+                        <option value="countermelody">Countermelody</option>
+                        <option value="instrumental-verse-chorus">Instrumental Verse-Chorus</option>
+                        <option value="false-ending">False Ending</option>
+                    </select>
+                </label>
+                <label>
+                    Measures:
+                    <input type="number" id="measures" min="1" value="4">
+                </label>
+                <label>
+                    Root Note:
+                    <select id="root-note">
+                        <option value="C">C</option>
+                        <option value="C#">C#</option>
+                        <option value="D">D</option>
+                        <option value="D#">D#</option>
+                        <option value="E">E</option>
+                        <option value="F">F</option>
+                        <option value="F#">F#</option>
+                        <option value="G">G</option>
+                        <option value="G#">G#</option>
+                        <option value="A">A</option>
+                        <option value="A#">A#</option>
+                        <option value="B">B</option>
+                    </select>
+                </label>
+                <label>
+                    Mode:
+                    <select id="mode">
+                        <option value="Ionian">Ionian</option>
+                        <option value="Dorian">Dorian</option>
+                        <option value="Phrygian">Phrygian</option>
+                        <option value="Lydian">Lydian</option>
+                        <option value="Mixolydian">Mixolydian</option>
+                        <option value="Aeolian">Aeolian</option>
+                        <option value="Locrian">Locrian</option>
+                        <option value="Harmonic Minor">Harmonic Minor</option>
+                        <option value="Melodic Minor">Melodic Minor</option>
+                        <option value="Blues Scale">Blues Scale</option>
+                        <option value="Pentatonic Major">Pentatonic Major</option>
+                        <option value="Pentatonic Minor">Pentatonic Minor</option>
+                        <option value="Whole Tone">Whole Tone</option>
+                    </select>
+                </label>
+                <label>
+                    Tempo (BPM):
+                    <input type="number" id="tempo" min="1" value="120">
+                </label>
+                <label>
+                    Time Signature:
+                    <select id="time-signature">
+                        <option value="4/4">4/4</option>
+                        <option value="3/4">3/4</option>
+                        <option value="6/8">6/8</option>
+                        <option value="2/4">2/4</option>
+                        <option value="5/4">5/4</option>
+                        <option value="7/8">7/8</option>
+                        <option value="12/8">12/8</option>
+                        <option value="9/8">9/8</option>
+                        <option value="11/8">11/8</option>
+                        <option value="15/8">15/8</option>
+                        <option value="13/8">13/8</option>
+                        <option value="10/4">10/4</option>
+                        <option value="8/8">8/8</option>
+                        <option value="14/8">14/8</option>
+                        <option value="16/8">16/8</option>
+                        <option value="7/4">7/4</option>
+                        <option value="6/4">6/4</option>
+                        <option value="5/8">6/4</option>
+                    </select>
+                </label>
+                <label>
+                    Feel:
+                    <select id="feel">
+                        <option value="Happiness">Happiness</option>
+                        <option value="Sadness">Sadness</option>
+                        <option value="Tension">Tension</option>
+                        <option value="Euphoria">Euphoria</option>
+                        <option value="Calmness">Calmness</option>
+                        <option value="Anger">Anger</option>
+                        <option value="Mystical">Mystical</option>
+                        <option value="Rebellion">Rebellion</option>
+                        <option value="Triumph">Triumph</option>
+                        <option value="Bliss">Bliss</option>
+                        <option value="Frustration">Frustration</option>
+                        <option value="Atmospheric">Atmospheric</option>
+                        <option value="Trippy">Trippy</option>
+                        <option value="Awakening">Awakening</option>
+                        <option value="Intense">Intense</option>
+                        <option value="Climactic">Climactic</option>
+                    </select>
+                </label>
+                <label>
+                    Lyrics:
+                    <textarea id="lyrics" rows="3" placeholder="Enter lyrics here..."></textarea>
+                </label>
+                <div class="energy-grid-label">
+                    <span class="energy-grid-title">Energy per Role (1–10)</span>
+                    <div class="energy-grid">
+                      <div class="energy-row">
+                        <span class="energy-role drums">&#9670; Drums</span>
+                        <input type="number" id="energy-drummer" min="1" max="10" value="5" class="energy-input">
+                      </div>
+                      <div class="energy-row">
+                        <span class="energy-role bass">&#9670; Bass</span>
+                        <input type="number" id="energy-bassist" min="1" max="10" value="5" class="energy-input">
+                      </div>
+                      <div class="energy-row">
+                        <span class="energy-role guitar">&#9670; Guitar</span>
+                        <input type="number" id="energy-guitarist" min="1" max="10" value="5" class="energy-input">
+                      </div>
+                      <div class="energy-row">
+                        <span class="energy-role keys">&#9670; Keys</span>
+                        <input type="number" id="energy-keyboardist" min="1" max="10" value="5" class="energy-input">
+                      </div>
+                      <div class="energy-row">
+                        <span class="energy-role vocals">&#9670; Vocals</span>
+                        <input type="number" id="energy-vocalist" min="1" max="10" value="5" class="energy-input">
+                      </div>
+                    </div>
+                </div>
+                <button onclick="addBlock()">Add Block</button>
+                <button onclick="updateBlock()">Update Block</button>
+            </div>
+        </div>
+
+        <div id="current-block-display">
+            <span class="label">No block playing</span>
+        </div>
+
+        <div id="timeline">
+            <!-- Song blocks will be dynamically added here -->
+        </div>
+    </main>
+
+    <footer>
+        <span id="time-calculator">Current Time: 0:00 / Total Duration: 0:00 | Song Beat: 0 of 0 | Block: 0 of 0 (Measure: 0 of 0)</span>
+    </footer>
+
+    <!-- Report Dialog Modal -->
+    <div id="report-dialog" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; align-items:center; justify-content:center;">
+      <div style="background:var(--background); border:1px solid var(--border-color); border-radius:8px; padding:24px; min-width:320px; max-width:480px; color:var(--text-color);">
+        <h3 style="margin:0 0 16px; font-size:1.1em;">Generate Reports</h3>
+        <p style="font-size:0.85em; margin:0 0 12px; opacity:0.7;">Select roles to generate PDF sheets for:</p>
+        <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
+          <label style="display:flex; align-items:center; gap:8px;"><input type="checkbox" class="role-checkbox" value="drummer" checked> Drummer</label>
+          <label style="display:flex; align-items:center; gap:8px;"><input type="checkbox" class="role-checkbox" value="bassist" checked> Bassist</label>
+          <label style="display:flex; align-items:center; gap:8px;"><input type="checkbox" class="role-checkbox" value="guitarist" checked> Guitarist</label>
+          <label style="display:flex; align-items:center; gap:8px;"><input type="checkbox" class="role-checkbox" value="keyboardist" checked> Keyboardist</label>
+          <label style="display:flex; align-items:center; gap:8px;"><input type="checkbox" class="role-checkbox" value="vocalist" checked> Vocalist</label>
+        </div>
+        <div style="display:flex; gap:8px; justify-content:flex-end;">
+          <button onclick="toggleAllRoles(true)" style="font-size:0.8em;">All</button>
+          <button onclick="toggleAllRoles(false)" style="font-size:0.8em;">None</button>
+          <button onclick="closeReportDialog()" style="font-size:0.8em;">Cancel</button>
+          <button onclick="generateReports()" style="font-size:0.8em; background:var(--primary); color:white;">Generate PDFs</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Analyze Modal -->
+    <div id="analyze-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:2000; overflow-y:auto;">
+      <div style="max-width:900px; margin:32px auto; background:var(--background); border:1px solid var(--border-color); border-radius:12px; padding:28px; color:var(--text-color); position:relative;">
+        <button onclick="closeAnalyzeModal()" style="position:absolute; top:14px; right:16px; background:transparent; border:none; color:var(--text-color); font-size:1.4em; cursor:pointer; line-height:1;">&#10005;</button>
+        <h2 style="margin:0 0 6px; font-size:1.3em; letter-spacing:0.02em;">&#9881; Track Analyzer</h2>
+        <p style="margin:0 0 20px; font-size:0.82em; opacity:0.6;">Upload an MP3, WAV, or MIDI file to extract tempo, key, mode, energy arc, beat grid, and chromagram.</p>
+
+        <!-- Drop Zone -->
+        <div id="analyze-dropzone" onclick="document.getElementById('analyze-file-input').click()" style="border:2px dashed var(--border-color); border-radius:8px; padding:36px 20px; text-align:center; cursor:pointer; transition:border-color 0.2s, background 0.2s; margin-bottom:20px;">
+          <div style="font-size:2.5em; margin-bottom:8px;">&#127925;</div>
+          <div style="font-size:1em; font-weight:600; margin-bottom:4px;">Drop audio or MIDI file here</div>
+          <div style="font-size:0.8em; opacity:0.55;">MP3 &bull; WAV &bull; MIDI (.mid / .midi)</div>
+          <input type="file" id="analyze-file-input" accept=".mp3,.wav,.mid,.midi,audio/*" style="display:none;" onchange="handleAnalyzeFile(event)">
+        </div>
+
+        <!-- Progress -->
+        <div id="analyze-progress" style="display:none; margin-bottom:16px;">
+          <div style="font-size:0.85em; margin-bottom:6px; opacity:0.7;" id="analyze-status">Analyzing...</div>
+          <div style="background:var(--border-color); border-radius:4px; height:6px; overflow:hidden;">
+            <div id="analyze-progress-bar" style="height:100%; width:0%; background:var(--primary); transition:width 0.3s;"></div>
+          </div>
+        </div>
+
+        <!-- Results -->
+        <div id="analyze-results" style="display:none;">
+          <!-- Metadata row -->
+          <div id="analyze-meta" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:20px;"></div>
+
+          <!-- Waveform + Beat Grid -->
+          <div style="margin-bottom:20px;">
+            <div style="font-size:0.78em; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; opacity:0.5; margin-bottom:6px;">Waveform &amp; Beat Grid</div>
+            <canvas id="analyze-waveform" style="width:100%; height:90px; border-radius:6px; background:#111;"></canvas>
+          </div>
+
+          <!-- Energy Arc -->
+          <div style="margin-bottom:20px;">
+            <div style="font-size:0.78em; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; opacity:0.5; margin-bottom:6px;">Energy Arc (RMS Amplitude)</div>
+            <canvas id="analyze-energy" style="width:100%; height:80px; border-radius:6px; background:#111;"></canvas>
+          </div>
+
+          <!-- Chromagram -->
+          <div style="margin-bottom:20px;">
+            <div style="font-size:0.78em; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; opacity:0.5; margin-bottom:6px;">Chromagram (Pitch Class Energy over Time)</div>
+            <canvas id="analyze-chroma" style="width:100%; height:130px; border-radius:6px; background:#111;"></canvas>
+          </div>
+
+          <!-- Section Novelty -->
+          <div style="margin-bottom:20px;">
+            <div style="font-size:0.78em; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; opacity:0.5; margin-bottom:6px;">Section Novelty (Structural Change Points)</div>
+            <canvas id="analyze-novelty" style="width:100%; height:60px; border-radius:6px; background:#111;"></canvas>
+          </div>
+
+          <!-- MIDI-specific: Note density -->
+          <div id="analyze-midi-section" style="display:none; margin-bottom:20px;">
+            <div style="font-size:0.78em; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; opacity:0.5; margin-bottom:6px;">MIDI Note Density per Track</div>
+            <canvas id="analyze-midi-density" style="width:100%; height:80px; border-radius:6px; background:#111;"></canvas>
+          </div>
+
+          <!-- Import button -->
+          <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:8px;">
+            <button id="analyze-import-btn" onclick="importAnalyzedSong()" style="background:var(--primary); color:#fff; font-weight:600; display:none;">&#43; Import as Song Blocks</button>
+            <button onclick="closeAnalyzeModal()" style="opacity:0.7;">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="jspdf.min.js?v=20260328"></script>
+    <script src="midi-writer-js.min.js?v=20260328"></script>
+    <script src="tonejs-midi.min.js?v=20260328"></script>
+    <script src="meyda.min.js?v=20260328"></script>
+    <script src="script.js?v=20260328"></script>
+    <script src="analyzer.js?v=20260328"></script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9326be6478ebbfb8',t:'MTc0NTAwNjM3Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

@@ -2,6 +2,8 @@ const timeline = document.getElementById('timeline');
 const timeCalculator = document.getElementById('time-calculator');
 const currentBlockDisplay = document.getElementById('current-block-display');
 const playBtn = document.getElementById('play-btn');
+const pauseBtn = document.getElementById('pause-btn');
+const stopBtn = document.getElementById('stop-btn');
 const soundBtn = document.getElementById('sound-btn');
 const themeBtn = document.getElementById('theme-btn');
 const songDropdown = document.getElementById('song-dropdown');
@@ -11,8 +13,7 @@ const printSongName = document.getElementById('print-song-name');
 const songTitleInput = document.getElementById('song-title-input'); // Reference to parameters input
 let draggedBlock = null;
 let selectedBlock = null;
-let currentSongName = '(I Can’t Get No) Satisfaction';
-let isPlaying = false;
+let currentSongName = "(I Can't Get No) Satisfaction";
 let currentTime = 0;
 let currentBeat = 0;
 let blockBeat = 0;
@@ -20,9 +21,61 @@ let blockMeasure = 0;
 let soundEnabled = true;
 let isDarkMode = true;
 let isFormCollapsed = true;
-let activeTimeManager = null;
-let scheduledSources = [];
-let audioContext = new AudioContext();
+
+// ── Audio engine state ──────────────────────────────────────────────────────
+let audioContext = null;
+let tickBuffer = null, tockBuffer = null, tickShortBuffer = null, tockShortBuffer = null;
+let audioBufferPromise = null;
+
+// ── Playback state ───────────────────────────────────────────────────────────
+// All timing is driven by audioContext.currentTime (the Web Audio clock).
+// We NEVER use setTimeout/setInterval to advance blocks — only to look ahead
+// and schedule audio. The rAF loop reads the audio clock for UI updates.
+let isPlaying = false;
+let isPaused = false;
+
+// The audioContext.currentTime value at which beat 0 of the song started.
+// Set once when playback begins; never changes until stop.
+let songStartAudioTime = 0;
+
+// Total pre-computed beat schedule for the whole song (including lead-in).
+// Each entry: { audioTime, isFirstBeatOfMeasure, blockIndex }
+let beatSchedule = [];
+
+// Index into beatSchedule of the next beat we haven't scheduled audio for yet.
+let scheduleHead = 0;
+
+// Index into beatSchedule of the last beat we reported to the UI.
+let uiHead = 0;
+
+// Pre-computed per-block timing info (same shape as old timings array).
+let songTimings = [];
+let songTotalSeconds = 0;
+let songTotalBeats = 0;
+
+// rAF handle so we can cancel it.
+let rafHandle = null;
+
+// How far ahead (in seconds) to pre-schedule audio beats.
+const SCHEDULE_AHEAD = 0.3; // increased so beats are always pre-scheduled before playback
+
+// ── AudioContext lifecycle ───────────────────────────────────────────────────
+// We create the context ONCE on first play and keep it alive forever.
+// iOS requires creation inside a user-gesture handler.
+function ensureAudioContext() {
+  if (!audioContext) {
+    try {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    } catch (e) {
+      console.error('Failed to create AudioContext:', e);
+      return Promise.reject(e);
+    }
+  }
+  if (audioContext.state === 'suspended') {
+    return audioContext.resume();
+  }
+  return Promise.resolve();
+}
 
 const validTimeSignatures = [
   '4/4', '3/4', '6/8', '2/4', '5/4', '7/8', '12/8', '9/8', '11/8', '15/8', '13/8', '10/4', '8/8', '14/8', '16/8', '7/4', '6/4'
@@ -114,119 +167,57 @@ function copyRiffusionPrompt() {
     .catch(err => console.error("Failed to copy: ", err));
 }
 
-function loadAudioBuffers() {
-  let tickBuffer, tockBuffer, tickShortBuffer, tockShortBuffer;
-  
-  return Promise.all([
-    fetch('tick.wav')
-      .then(response => {
-        if (!response.ok) throw new Error('Failed to load tick.wav');
-        return response.arrayBuffer();
-      })
-      .then(buffer => audioContext.decodeAudioData(buffer))
-      .then(decoded => tickBuffer = decoded),
-      
-    fetch('tock.wav')
-      .then(response => {
-        if (!response.ok) throw new Error('Failed to load tock.wav');
-        return response.arrayBuffer();
-      })
-      .then(buffer => audioContext.decodeAudioData(buffer))
-      .then(decoded => tockBuffer = decoded),
-      
-    fetch('tick_short.wav')
-      .then(response => {
-        if (!response.ok) throw new Error('Failed to load tick_short.wav');
-        return response.arrayBuffer();
-      })
-      .then(buffer => audioContext.decodeAudioData(buffer))
-      .then(decoded => tickShortBuffer = decoded),
-      
-    fetch('tock_short.wav')
-      .then(response => {
-        if (!response.ok) throw new Error('Failed to load tock_short.wav');
-        return response.arrayBuffer();
-      })
-      .then(buffer => audioContext.decodeAudioData(buffer))
-      .then(decoded => tockShortBuffer = decoded)
-  ])
-  .then(() => {
-    // Return all buffers as an object
-    return { tickBuffer, tockBuffer, tickShortBuffer, tockShortBuffer };
-  })
-  .catch(error => {
-    console.error('Failed to load audio files:', error);
-    throw error;
+// iOS Safari does not support the Promise-based decodeAudioData API reliably.
+// IMPORTANT: Use ONLY the callback form. On Chrome mobile, decodeAudioData
+// both calls the success callback AND returns a Promise — if we attach both,
+// resolve() fires twice (second time with undefined), corrupting the buffer.
+// Using only the callback form works on all platforms: iOS Safari, Chrome, Firefox.
+function decodeAudioDataCompat(arrayBuffer) {
+  return new Promise((resolve, reject) => {
+    try {
+      audioContext.decodeAudioData(
+        arrayBuffer,
+        (buffer) => resolve(buffer),  // success — works on ALL browsers
+        (err)    => reject(err || new Error('decodeAudioData failed'))
+      );
+      // Do NOT also attach .then() — that causes double-resolve on Chrome mobile
+    } catch (e) {
+      reject(e);
+    }
   });
 }
 
+function loadAudioBuffers() {
+  const loadOne = (url, setter) =>
+    fetch(url)
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status} for ${url}`);
+        return r.arrayBuffer();
+      })
+      .then(b => decodeAudioDataCompat(b))
+      .then(d => setter(d))
+      .catch(err => {
+        console.warn(`Audio file ${url} failed to load:`, err);
+        // Non-fatal: metronome will run silently if sounds fail
+      });
 
-const audioBufferPromise = loadAudioBuffers(); // Single call, stored as promise
+  return Promise.all([
+    loadOne('tick.wav',       d => { tickBuffer = d; }),
+    loadOne('tock.wav',       d => { tockBuffer = d; }),
+    loadOne('tick_short.wav', d => { tickShortBuffer = d; }),
+    loadOne('tock_short.wav', d => { tockShortBuffer = d; })
+  ]);
+}
 
-function playSound(buffer, time) {
-  if (!buffer || !soundEnabled) return null;
+function scheduleSound(buffer, audioTime) {
+  if (!buffer || !soundEnabled || !audioContext) return;
   const source = audioContext.createBufferSource();
   source.buffer = buffer;
   source.connect(audioContext.destination);
-  source.start(time);
-  return source;
+  source.start(audioTime);
 }
 
 const TEMPO_THRESHOLD = 150;
-
-// Replace the TimeManager class with this improved version
-class TimeManager {
-  constructor(tempo, beatsPerMeasure, totalBeats, callback) {
-    this.tempo = tempo;
-    this.beatsPerMeasure = beatsPerMeasure;
-    this.totalBeats = totalBeats;
-    this.callback = callback;
-    this.startTime = null;
-    this.lastBeat = -1;
-    this.beatDuration = 60 / tempo;
-    this.running = false;
-    this.animationFrameId = null;
-  }
-
-  start() {
-    this.running = true;
-    this.startTime = audioContext.currentTime; // Use the audio context time for precise timing
-    this.lastBeat = -1;
-    this.tick();
-  }
-
-  stop() {
-    this.running = false;
-    if (this.animationFrameId) {
-      cancelAnimationFrame(this.animationFrameId);
-      this.animationFrameId = null;
-    }
-  }
-
-  tick() {
-    if (!this.running) return;
-
-    const elapsed = audioContext.currentTime - this.startTime;
-    const currentBeat = Math.floor(elapsed / this.beatDuration);
-
-    if (currentBeat <= this.totalBeats && currentBeat !== this.lastBeat) {
-      this.lastBeat = currentBeat;
-      const isFirstBeatOfMeasure = currentBeat % this.beatsPerMeasure === 0;
-      this.callback({
-        elapsedTime: elapsed,
-        beat: currentBeat,
-        measure: Math.floor(currentBeat / this.beatsPerMeasure) + 1,
-        isFirstBeat: isFirstBeatOfMeasure
-      });
-    }
-
-    if (currentBeat < this.totalBeats) {
-      this.animationFrameId = requestAnimationFrame(() => this.tick());
-    } else {
-      this.stop();
-    }
-  }
-}
 
 function toggleSound() {
   soundEnabled = !soundEnabled;
@@ -298,7 +289,50 @@ function randomizeSong() {
   // Song structure algorithm
   const songStructure = [];
   
+  // Per-role energy helper: each role has different energy characteristics per section type
+  function getRoleEnergy(role, type) {
+    const jitter = () => Math.floor(Math.random() * 2); // 0 or 1 variation
+    const profiles = {
+      drummer: {
+        'intro': 3 + jitter(), 'verse': 5 + jitter(), 'pre-chorus': 7, 'chorus': 9 + jitter(),
+        'post-chorus': 8, 'bridge': 5 + jitter(), 'breakdown': 2, 'drop': 10,
+        'solo': 6 + jitter(), 'hook': 8 + jitter(), 'interlude': 3, 'ad-lib': 5 + jitter(),
+        'outro': 3 + jitter(), 'coda': 3
+      },
+      bassist: {
+        'intro': 4 + jitter(), 'verse': 5 + jitter(), 'pre-chorus': 6, 'chorus': 8 + jitter(),
+        'post-chorus': 7, 'bridge': 6 + jitter(), 'breakdown': 3 + jitter(), 'drop': 9,
+        'solo': 5 + jitter(), 'hook': 7 + jitter(), 'interlude': 4, 'ad-lib': 4 + jitter(),
+        'outro': 4 + jitter(), 'coda': 3
+      },
+      guitarist: {
+        'intro': 3 + jitter(), 'verse': 4 + jitter(), 'pre-chorus': 6 + jitter(), 'chorus': 9,
+        'post-chorus': 7 + jitter(), 'bridge': 5 + jitter(), 'breakdown': 2 + jitter(), 'drop': 10,
+        'solo': 10, 'hook': 8 + jitter(), 'interlude': 3 + jitter(), 'ad-lib': 6 + jitter(),
+        'outro': 3, 'coda': 4
+      },
+      keyboardist: {
+        'intro': 5 + jitter(), 'verse': 4 + jitter(), 'pre-chorus': 5 + jitter(), 'chorus': 7 + jitter(),
+        'post-chorus': 6, 'bridge': 7 + jitter(), 'breakdown': 4 + jitter(), 'drop': 8,
+        'solo': 5 + jitter(), 'hook': 6 + jitter(), 'interlude': 6 + jitter(), 'ad-lib': 5 + jitter(),
+        'outro': 5 + jitter(), 'coda': 5
+      },
+      vocalist: {
+        'intro': 2 + jitter(), 'verse': 5 + jitter(), 'pre-chorus': 6 + jitter(), 'chorus': 9 + jitter(),
+        'post-chorus': 7, 'bridge': 6 + jitter(), 'breakdown': 1 + jitter(), 'drop': 8,
+        'solo': 2, 'hook': 9, 'interlude': 1, 'ad-lib': 8 + jitter(),
+        'outro': 4 + jitter(), 'coda': 3
+      }
+    };
+    const val = (profiles[role] || {})[type];
+    return Math.min(10, Math.max(1, val !== undefined ? val : 5 + jitter()));
+  }
+
+  const randRoles = ['drummer', 'bassist', 'guitarist', 'keyboardist', 'vocalist'];
+
   // 1. Always start with an intro
+  const introEnergies = {};
+  randRoles.forEach(r => { introEnergies[`energy_${r}`] = getRoleEnergy(r, 'intro'); });
   songStructure.push({
     type: 'intro',
     measures: Math.floor(Math.random() * (8 - 4 + 1)) + 4,
@@ -307,7 +341,8 @@ function randomizeSong() {
     tempo: songTempo,
     timeSignature: songTimeSignature,
     feel: 'Atmospheric',
-    lyrics: ''
+    lyrics: '',
+    ...introEnergies
   });
 
   // 2. Generate middle sections (6-10 blocks total, including intro/outro)
@@ -339,6 +374,8 @@ function randomizeSong() {
       } else type = partTypes[Math.floor(Math.random() * partTypes.length)];
     }
 
+    const midEnergies = {};
+    randRoles.forEach(r => { midEnergies[`energy_${r}`] = getRoleEnergy(r, type); });
     songStructure.push({
       type,
       measures,
@@ -347,11 +384,14 @@ function randomizeSong() {
       tempo: songTempo,
       timeSignature: songTimeSignature,
       feel: feels[Math.floor(Math.random() * feels.length)],
-      lyrics: possibleLyrics[Math.floor(Math.random() * possibleLyrics.length)]
+      lyrics: possibleLyrics[Math.floor(Math.random() * possibleLyrics.length)],
+      ...midEnergies
     });
   }
 
   // 3. Always end with an outro
+  const outroEnergies = {};
+  randRoles.forEach(r => { outroEnergies[`energy_${r}`] = getRoleEnergy(r, 'outro'); });
   songStructure.push({
     type: 'outro',
     measures: Math.floor(Math.random() * (8 - 4 + 1)) + 4,
@@ -360,7 +400,8 @@ function randomizeSong() {
     tempo: songTempo,
     timeSignature: songTimeSignature,
     feel: 'Resolution',
-    lyrics: ''
+    lyrics: '',
+    ...outroEnergies
   });
 
   // Build blocks in the timeline
@@ -373,6 +414,7 @@ function randomizeSong() {
 
     const block = document.createElement('div');
     block.classList.add('song-block', blockData.type);
+    block.setAttribute('data-part-type', blockData.type);
     block.setAttribute('data-measures', blockData.measures);
     block.setAttribute('data-tempo', blockData.tempo);
     block.setAttribute('data-time-signature', blockData.timeSignature);
@@ -380,6 +422,9 @@ function randomizeSong() {
     block.setAttribute('data-lyrics', blockData.lyrics);
     block.setAttribute('data-root-note', blockData.rootNote);
     block.setAttribute('data-mode', blockData.mode);
+    ['drummer','bassist','guitarist','keyboardist','vocalist'].forEach(r => {
+      block.setAttribute(`data-energy-${r}`, blockData[`energy_${r}`] || 5);
+    });
     block.innerHTML = `<span class="label">${formatPart(blockData.type)}: ${blockData.timeSignature} ${blockData.measures}m<br>${abbreviateKey(blockData.rootNote)} ${blockData.mode} ${blockData.tempo}b ${blockData.feel}${blockData.lyrics ? '<br>-<br>' + truncateLyrics(blockData.lyrics) : ''}</span><span class="tooltip">${blockData.lyrics || 'No lyrics'}</span>`;
     updateBlockSize(block);
     setupBlock(block);
@@ -486,6 +531,11 @@ function setupBlock(block) {
     document.getElementById('time-signature').value = block.getAttribute('data-time-signature');
     document.getElementById('feel').value = block.getAttribute('data-feel') || '';
     document.getElementById('lyrics').value = block.getAttribute('data-lyrics') || '';
+    document.getElementById('energy-drummer').value = parseInt(block.getAttribute('data-energy-drummer')) || 5;
+    document.getElementById('energy-bassist').value = parseInt(block.getAttribute('data-energy-bassist')) || 5;
+    document.getElementById('energy-guitarist').value = parseInt(block.getAttribute('data-energy-guitarist')) || 5;
+    document.getElementById('energy-keyboardist').value = parseInt(block.getAttribute('data-energy-keyboardist')) || 5;
+    document.getElementById('energy-vocalist').value = parseInt(block.getAttribute('data-energy-vocalist')) || 5;
   });
 
   const deleteBtn = document.createElement('button');
@@ -545,6 +595,11 @@ function addBlock() {
   const timeSignature = document.getElementById('time-signature').value;
   const feel = document.getElementById('feel').value;
   const lyrics = document.getElementById('lyrics').value;
+  const energyDrummer = Math.min(10, Math.max(1, parseInt(document.getElementById('energy-drummer').value) || 5));
+  const energyBassist = Math.min(10, Math.max(1, parseInt(document.getElementById('energy-bassist').value) || 5));
+  const energyGuitarist = Math.min(10, Math.max(1, parseInt(document.getElementById('energy-guitarist').value) || 5));
+  const energyKeyboardist = Math.min(10, Math.max(1, parseInt(document.getElementById('energy-keyboardist').value) || 5));
+  const energyVocalist = Math.min(10, Math.max(1, parseInt(document.getElementById('energy-vocalist').value) || 5));
 
   const blockData = { type, measures, rootNote, mode, tempo, timeSignature, feel, lyrics };
   const error = validateBlock(blockData);
@@ -555,6 +610,7 @@ function addBlock() {
 
   const block = document.createElement('div');
   block.classList.add('song-block', type);
+  block.setAttribute('data-part-type', type);
   block.setAttribute('data-measures', measures);
   block.setAttribute('data-tempo', tempo);
   block.setAttribute('data-time-signature', timeSignature);
@@ -562,6 +618,11 @@ function addBlock() {
   block.setAttribute('data-lyrics', lyrics);
   block.setAttribute('data-root-note', rootNote);
   block.setAttribute('data-mode', mode);
+  block.setAttribute('data-energy-drummer', energyDrummer);
+  block.setAttribute('data-energy-bassist', energyBassist);
+  block.setAttribute('data-energy-guitarist', energyGuitarist);
+  block.setAttribute('data-energy-keyboardist', energyKeyboardist);
+  block.setAttribute('data-energy-vocalist', energyVocalist);
   block.innerHTML = `<span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote)} ${mode} ${tempo}b ${feel}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span><span class="tooltip">${lyrics || 'No lyrics'}</span>`;
   updateBlockSize(block);
   setupBlock(block);
@@ -587,6 +648,11 @@ function updateBlock() {
   const timeSignature = document.getElementById('time-signature').value;
   const feel = document.getElementById('feel').value;
   const lyrics = document.getElementById('lyrics').value;
+  const energyDrummer = Math.min(10, Math.max(1, parseInt(document.getElementById('energy-drummer').value) || 5));
+  const energyBassist = Math.min(10, Math.max(1, parseInt(document.getElementById('energy-bassist').value) || 5));
+  const energyGuitarist = Math.min(10, Math.max(1, parseInt(document.getElementById('energy-guitarist').value) || 5));
+  const energyKeyboardist = Math.min(10, Math.max(1, parseInt(document.getElementById('energy-keyboardist').value) || 5));
+  const energyVocalist = Math.min(10, Math.max(1, parseInt(document.getElementById('energy-vocalist').value) || 5));
 
   const blockData = { type, measures, rootNote, mode, tempo, timeSignature, feel, lyrics };
   const error = validateBlock(blockData);
@@ -596,6 +662,7 @@ function updateBlock() {
   }
 
   selectedBlock.className = `song-block ${type}`;
+  selectedBlock.setAttribute('data-part-type', type);
   selectedBlock.setAttribute('data-measures', measures);
   selectedBlock.setAttribute('data-tempo', tempo);
   selectedBlock.setAttribute('data-time-signature', timeSignature);
@@ -603,26 +670,25 @@ function updateBlock() {
   selectedBlock.setAttribute('data-lyrics', lyrics);
   selectedBlock.setAttribute('data-root-note', rootNote);
   selectedBlock.setAttribute('data-mode', mode);
+  selectedBlock.setAttribute('data-energy-drummer', energyDrummer);
+  selectedBlock.setAttribute('data-energy-bassist', energyBassist);
+  selectedBlock.setAttribute('data-energy-guitarist', energyGuitarist);
+  selectedBlock.setAttribute('data-energy-keyboardist', energyKeyboardist);
+  selectedBlock.setAttribute('data-energy-vocalist', energyVocalist);
   selectedBlock.innerHTML = `<span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote)} ${mode} ${tempo}b ${feel}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span><span class="tooltip">${lyrics || 'No lyrics'}</span>`;
   updateBlockSize(selectedBlock);
 
-  const deleteBtn = document.createElement('button');
-  deleteBtn.classList.add('delete-btn');
-  deleteBtn.textContent = 'X';
-  deleteBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    selectedBlock.remove();
-    if (selectedBlock === selectedBlock) clearSelection();
-    calculateTimings();
-  });
-  selectedBlock.appendChild(deleteBtn);
+  // Re-attach all event listeners (click, delete, resize) via setupBlock
+  const blockRef = selectedBlock;
+  setupBlock(blockRef);
 
-  const resizeHandle = document.createElement('div');
-  resizeHandle.classList.add('resize-handle');
-  selectedBlock.appendChild(resizeHandle);
-
+  // Re-apply current style
   const styleDropdown = document.getElementById('style-dropdown');
-  if (styleDropdown.value) selectedBlock.classList.add(styleDropdown.value);
+  if (styleDropdown.value) blockRef.classList.add(styleDropdown.value);
+
+  // Keep the block selected after update
+  blockRef.classList.add('selected');
+  selectedBlock = blockRef;
 
   calculateTimings();
 }
@@ -640,14 +706,36 @@ function clearSelection() {
   document.getElementById('time-signature').value = '4/4';
   document.getElementById('feel').value = 'Happiness';
   document.getElementById('lyrics').value = '';
+  document.getElementById('energy-drummer').value = 5;
+  document.getElementById('energy-bassist').value = 5;
+  document.getElementById('energy-guitarist').value = 5;
+  document.getElementById('energy-keyboardist').value = 5;
+  document.getElementById('energy-vocalist').value = 5;
 }
 
 function getBeatsPerMeasure(timeSignature) {
   const [numerator, denominator] = timeSignature.split('/').map(Number);
-  if (timeSignature === '6/4') {
-    return 6; // Special case for 6/4
+  
+  // Compound time signatures (denominator = 8, numerator divisible by 3)
+  // These use dotted quarter notes as the beat unit
+  if (denominator === 8 && numerator % 3 === 0) {
+    return numerator / 3;
   }
-  return numerator; // 9/8 returns 9, 4/4 returns 4, etc.
+  
+  // Simple time signatures (denominator = 4 or 2)
+  // The numerator directly represents the number of beats
+  if (denominator === 4 || denominator === 2) {
+    return numerator;
+  }
+  
+  // Irregular time signatures (e.g., 5/8, 7/8, 11/8)
+  // These are typically counted as written
+  if (denominator === 8) {
+    return numerator;
+  }
+  
+  // Default fallback for any other time signatures
+  return numerator;
 }
 
 function calculateTimings() {
@@ -680,6 +768,10 @@ function calculateTimings() {
   });
 
   timeCalculator.textContent = `Current Time: ${formatDuration(currentTime)} / Total Duration: ${formatDuration(totalSeconds)} | Song Beat: ${currentBeat} of ${totalBeats} | Block: ${blockBeat} of ${timings.length} (Measure: ${blockMeasure} of ${totalMeasures})`;
+  
+  // Update mini progress bar
+  updateMiniProgressBar(timings, totalSeconds);
+  
   return { timings, totalSeconds, totalBeats };
 }
 
@@ -689,220 +781,346 @@ function formatDuration(seconds) {
   return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
 }
 
-function togglePlay() {
-  if (isPlaying) {
-    isPlaying = false;
-    playBtn.textContent = 'Play';
-    resetPlayback();
-  } else {
-    const { timings, totalSeconds, totalBeats } = calculateTimings();
-    if (timings.length === 0) return;
-    
-    playBtn.textContent = 'Reset';
-    isPlaying = true;
-    currentTime = 0;
-    currentBeat = 0;
-    blockBeat = 0;
-    blockMeasure = 0;
-    
-    // Make sure audio context is in running state
-    if (audioContext.state === 'suspended') {
-      audioContext.resume().then(() => {
-        audioBufferPromise.then(() => playLeadIn(timings, totalSeconds, totalBeats));
+// ── Beat schedule builder ─────────────────────────────────────────────────────
+// Builds a flat array of every beat in the song (lead-in + all blocks).
+// Each entry records the exact audioContext time it should fire and
+// enough metadata for the UI to know what to display.
+function buildBeatSchedule(timings, startAudioTime) {
+  const schedule = [];
+  const firstBlock = timings[0];
+  const leadInBeats = firstBlock.beatsPerMeasure;
+  const leadInBeatDuration = 60 / firstBlock.tempo;
+
+  // Lead-in beats (negative song-time, before beat 0)
+  for (let b = 0; b < leadInBeats; b++) {
+    schedule.push({
+      audioTime: startAudioTime + b * leadInBeatDuration,
+      songTime: -(leadInBeats - b) * leadInBeatDuration,
+      isLeadIn: true,
+      leadInBeat: b,          // 0-indexed within lead-in
+      leadInTotal: leadInBeats,
+      isFirstBeatOfMeasure: b === 0,
+      blockIndex: 0
+    });
+  }
+
+  // Song beats
+  let offset = leadInBeats * leadInBeatDuration; // audio offset from startAudioTime
+  let cumulativeSongBeats = 0;
+
+  timings.forEach((timing, blockIndex) => {
+    const beatDuration = 60 / timing.tempo;
+    for (let b = 0; b < timing.totalBeats; b++) {
+      const isFirstBeatOfMeasure = b % timing.beatsPerMeasure === 0;
+      schedule.push({
+        audioTime: startAudioTime + offset + b * beatDuration,
+        songTime: offset + b * beatDuration - leadInBeats * leadInBeatDuration,
+        isLeadIn: false,
+        blockIndex,
+        beatInBlock: b,       // 0-indexed within block
+        measureInBlock: Math.floor(b / timing.beatsPerMeasure) + 1,
+        cumulativeSongBeat: cumulativeSongBeats + b + 1,
+        isFirstBeatOfMeasure
       });
-    } else {
-      audioBufferPromise.then(() => playLeadIn(timings, totalSeconds, totalBeats));
     }
+    offset += timing.totalBeats * beatDuration;
+    cumulativeSongBeats += timing.totalBeats;
+  });
+
+  return schedule;
+}
+
+// ── Look-ahead audio scheduler (called every rAF) ─────────────────────────
+// Schedules any beats whose audioTime falls within the next SCHEDULE_AHEAD
+// seconds. This is the ONLY place audio nodes are created.
+function flushAudioSchedule() {
+  if (!audioContext || !isPlaying) return;
+  const horizon = audioContext.currentTime + SCHEDULE_AHEAD;
+  while (scheduleHead < beatSchedule.length && beatSchedule[scheduleHead].audioTime <= horizon) {
+    const entry = beatSchedule[scheduleHead];
+    const timing = songTimings[entry.blockIndex];
+    const useShort = timing.tempo > TEMPO_THRESHOLD;
+    const tickBuf = useShort ? tickShortBuffer : tickBuffer;
+    const tockBuf = useShort ? tockShortBuffer : tockBuffer;
+    scheduleSound(entry.isFirstBeatOfMeasure ? tickBuf : tockBuf, entry.audioTime);
+    scheduleHead++;
   }
 }
 
-function playLeadIn(timings, totalSeconds, totalBeats) {
-  const firstBlock = timings[0];
-  const beatDuration = 60 / firstBlock.tempo;
-  const leadInBeats = firstBlock.beatsPerMeasure;
+// ── UI update loop (rAF) ────────────────────────────────────────────────────────
+function rafLoop() {
+  if (!isPlaying) return;
 
-  const useShortSounds = firstBlock.tempo > TEMPO_THRESHOLD;
-  const currentTickBuffer = useShortSounds ? tickShortBuffer : tickBuffer;
-  const currentTockBuffer = useShortSounds ? tockShortBuffer : tockBuffer;
-
-  currentBlockDisplay.classList.add('pulse');
-  currentBlockDisplay.style.animation = `pulse ${beatDuration}s infinite`;
-  currentBlockDisplay.innerHTML = `
-    <span class="label">Lead-In (${firstBlock.block.getAttribute('data-time-signature')})</span>
-    <span class="info">Beat: 0 of ${leadInBeats}</span>
-  `;
-
-  const startTime = audioContext.currentTime;
-  for (let beat = 0; beat < leadInBeats; beat++) {
-    const soundTime = startTime + (beat * beatDuration);
-    const isFirstBeat = beat === 0; // First beat of the lead-in measure
-    const source = playSound(isFirstBeat ? currentTickBuffer : currentTockBuffer, soundTime);
-    if (source) scheduledSources.push(source);
+  // If AudioContext isn't ready yet (Safari unlock pending), keep looping
+  // so the animation doesn't stall — audio will join once context is running.
+  if (!audioContext || audioContext.state === 'suspended') {
+    // Try to resume the context
+    if (audioContext && audioContext.state === 'suspended') {
+      audioContext.resume().then(() => {
+        // Context just became running — rebuild beat schedule from NOW
+        if (!isPlaying) return;
+        // Ensure buffers are loaded before scheduling
+        const doRebuild = () => {
+          if (!isPlaying) return;
+          songStartAudioTime = audioContext.currentTime + 0.5;
+          beatSchedule = buildBeatSchedule(songTimings, songStartAudioTime);
+          scheduleHead = 0;
+          uiHead = 0;
+        };
+        if (tickBuffer) {
+          doRebuild();
+        } else {
+          if (!audioBufferPromise) {
+            audioBufferPromise = loadAudioBuffers().catch(err => console.warn('Audio load:', err));
+          }
+          audioBufferPromise.then(doRebuild);
+        }
+      }).catch(() => {});
+    }
+    rafHandle = requestAnimationFrame(rafLoop);
+    return;
   }
 
-  activeTimeManager = new TimeManager(firstBlock.tempo, leadInBeats, leadInBeats, ({ elapsedTime, beat, isFirstBeat }) => {
-    currentBlockDisplay.innerHTML = `
-      <span class="label">Lead-In (${firstBlock.block.getAttribute('data-time-signature')})</span>
-      <span class="info">Beat: ${beat + 1} of ${leadInBeats}</span>
-    `;
-    currentTime = elapsedTime;
-    timeCalculator.textContent = `Current Time: ${formatDuration(currentTime)} / Total Duration: ${formatDuration(totalSeconds)} | Song Beat: ${currentBeat} of ${totalBeats} | Block: ${blockBeat} of ${timings.length} (Measure: ${blockMeasure} of 0)`;
+  flushAudioSchedule();
 
-    if (isFirstBeat) {
+  const now = audioContext.currentTime;
+  // Find the beat that is currently sounding (the last one whose audioTime <= now)
+  // We walk forward from uiHead to avoid O(n) scan every frame.
+  while (uiHead + 1 < beatSchedule.length && beatSchedule[uiHead + 1].audioTime <= now) {
+    uiHead++;
+  }
+
+  const entry = beatSchedule[uiHead];
+  if (!entry) {
+    rafHandle = requestAnimationFrame(rafLoop);
+    return;
+  }
+
+  const timing = songTimings[entry.blockIndex];
+  const songTimeSec = Math.max(0, now - songStartAudioTime - (timing ? (60 / songTimings[0].tempo) * songTimings[0].beatsPerMeasure : 0));
+
+  if (entry.isLeadIn) {
+    // Lead-in UI
+    const beatDuration = 60 / timing.tempo;
+    currentBlockDisplay.classList.add('pulse');
+    currentBlockDisplay.style.animation = `pulse ${beatDuration}s infinite`;
+    currentBlockDisplay.innerHTML = `
+      <span class="label">Lead-In (${timing.block.getAttribute('data-time-signature')})</span>
+      <span class="info">Beat: ${entry.leadInBeat + 1} of ${entry.leadInTotal}</span>
+    `;
+    if (entry.isFirstBeatOfMeasure) {
       currentBlockDisplay.classList.add('one-count');
     } else {
       currentBlockDisplay.classList.remove('one-count');
     }
-  });
+    timeCalculator.textContent = `Lead-In | Total Duration: ${formatDuration(songTotalSeconds)} | Song Beat: 0 of ${songTotalBeats}`;
+  } else {
+    // Song beat UI
+    const beatDuration = 60 / timing.tempo;
+    const blockNum = entry.blockIndex + 1;
+    const totalBlocks = songTimings.length;
+    const rootNote = timing.block.getAttribute('data-root-note');
+    const mode = timing.block.getAttribute('data-mode');
 
-  activeTimeManager.start();
+    // Highlight the playing block in the timeline
+    const prevPlaying = timeline.querySelector('.playing');
+    if (prevPlaying && prevPlaying !== timing.block) prevPlaying.classList.remove('playing');
+    if (!timing.block.classList.contains('playing')) timing.block.classList.add('playing');
 
-  // Calculate precise timing for the lead-in
-  const leadInDuration = leadInBeats * beatDuration;
-  const leadInEndTime = startTime + leadInDuration;
-  const currentTime = audioContext.currentTime;
-  const waitTime = (leadInEndTime - currentTime) * 1000;
-
-  setTimeout(() => {
-    if (!isPlaying) return;
-    
-    if (activeTimeManager) {
-      activeTimeManager.stop();
-      activeTimeManager = null;
-    }
-    
-    currentTime = 0;
-    playSong(timings, totalSeconds, totalBeats);
-  }, Math.max(0, waitTime)); // Ensure waitTime is not negative
-}
-
-
-function playSong(timings, totalSeconds, totalBeats) {
-  let currentIndex = 0;
-  let cumulativeBeats = 0;
-  let cumulativeDuration = 0;
-
-  function playNextBlock() {
-    if (!isPlaying || currentIndex >= timings.length) {
-      resetPlayback();
-      return;
+    currentBlockDisplay.classList.add('pulse');
+    currentBlockDisplay.style.animation = `pulse ${beatDuration}s infinite`;
+    currentBlockDisplay.innerHTML = `
+      <span class="label">${formatPart(timing.block.classList[1])}: ${timing.block.getAttribute('data-time-signature')} ${timing.totalMeasures}m<br>${abbreviateKey(rootNote)} ${mode} ${timing.tempo}b ${timing.block.getAttribute('data-feel')}</span>
+      <span class="info">Beat: ${entry.beatInBlock + 1} of ${timing.totalBeats} | Measure: ${entry.measureInBlock} of ${timing.totalMeasures} | Block: ${blockNum} of ${totalBlocks}</span>
+    `;
+    if (entry.isFirstBeatOfMeasure) {
+      currentBlockDisplay.classList.add('one-count');
+      pulseMiniProgressMarker();
+    } else {
+      currentBlockDisplay.classList.remove('one-count');
     }
 
-    const currentTiming = timings[currentIndex];
-    const beatDuration = 60 / currentTiming.tempo;
-    const totalBlockBeats = currentTiming.totalBeats;
-    const blockDuration = currentTiming.duration;
+    // Compute song elapsed time from audio clock (perfectly accurate)
+    const leadInDuration = (60 / songTimings[0].tempo) * songTimings[0].beatsPerMeasure;
+    const elapsed = Math.max(0, now - songStartAudioTime - leadInDuration);
+    currentTime = elapsed;
+    currentBeat = entry.cumulativeSongBeat;
+    blockBeat = entry.beatInBlock + 1;
+    blockMeasure = entry.measureInBlock;
 
-    const useShortSounds = currentTiming.tempo > TEMPO_THRESHOLD;
-    const currentTickBuffer = useShortSounds ? tickShortBuffer : tickBuffer;
-    const currentTockBuffer = useShortSounds ? tockShortBuffer : tockBuffer;
-
-    // Current base time from the audio context
-    const blockStartTime = audioContext.currentTime;
-
-    // Schedule all the metronome sounds for this block at once
-    for (let beat = 0; beat < totalBlockBeats; beat++) {
-      const soundTime = blockStartTime + (beat * beatDuration);
-      const isFirstBeatOfMeasure = beat % currentTiming.beatsPerMeasure === 0;
-      const source = playSound(isFirstBeatOfMeasure ? currentTickBuffer : currentTockBuffer, soundTime);
-      if (source) scheduledSources.push(source);
-    }
-
-    updateCurrentBlock(currentTiming);
-
-    activeTimeManager = new TimeManager(
-      currentTiming.tempo,
-      currentTiming.beatsPerMeasure,
-      totalBlockBeats,
-      ({ elapsedTime, beat, measure, isFirstBeat }) => {
-        blockBeat = beat + 1;
-        blockMeasure = measure;
-        currentTime = cumulativeDuration + elapsedTime;
-        currentBeat = cumulativeBeats + beat + 1;
-
-        const totalBlocks = timings.length;
-        const blockNum = currentIndex + 1;
-        const rootNote = currentTiming.block.getAttribute('data-root-note');
-        const mode = currentTiming.block.getAttribute('data-mode');
-
-        currentBlockDisplay.innerHTML = `
-          <span class="label">${formatPart(currentTiming.block.classList[1])}: ${currentTiming.block.getAttribute('data-time-signature')} ${currentTiming.totalMeasures}m<br>${abbreviateKey(rootNote)} ${mode} ${currentTiming.tempo}b ${currentTiming.block.getAttribute('data-feel')}</span>
-          <span class="info">Beat: ${blockBeat} of ${currentTiming.totalBeats} | Measure: ${blockMeasure} of ${currentTiming.totalMeasures} | Block: ${blockNum} of ${totalBlocks}</span>
-        `;
-
-        timeCalculator.textContent = `Current Time: ${formatDuration(currentTime)} / Total Duration: ${formatDuration(totalSeconds)} | Song Beat: ${currentBeat} of ${totalBeats} | Block: ${blockNum} of ${totalBlocks} (Measure: ${blockMeasure} of ${currentTiming.totalMeasures})`;
-
-        currentBlockDisplay.classList.add('pulse');
-        currentBlockDisplay.style.animation = `pulse ${beatDuration}s infinite`;
-
-        if (isFirstBeat) {
-          currentBlockDisplay.classList.add('one-count');
-        } else {
-          currentBlockDisplay.classList.remove('one-count');
-        }
-      }
-    );
-
-    activeTimeManager.start();
-
-    // Instead of using setTimeout, schedule the next block precisely with the Web Audio API's timing
-    const nextBlockStartTime = blockStartTime + blockDuration;
-    const currentTime = audioContext.currentTime;
-    const waitTime = (nextBlockStartTime - currentTime) * 1000;
-
-    setTimeout(() => {
-      if (!isPlaying) return;
-      
-      if (activeTimeManager) {
-        activeTimeManager.stop();
-        activeTimeManager = null;
-      }
-      
-      cumulativeBeats += totalBlockBeats;
-      cumulativeDuration += blockDuration;
-      currentIndex++;
-      playNextBlock();
-    }, Math.max(0, waitTime)); // Ensure waitTime is not negative
+    timeCalculator.textContent = `Current Time: ${formatDuration(elapsed)} / Total Duration: ${formatDuration(songTotalSeconds)} | Song Beat: ${currentBeat} of ${songTotalBeats} | Block: ${blockNum} of ${totalBlocks} (Measure: ${blockMeasure} of ${timing.totalMeasures})`;
+    updateMiniProgressMarker(elapsed, songTotalSeconds);
   }
 
-  playNextBlock();
+  // Check if song has ended
+  if (uiHead >= beatSchedule.length - 1 && now >= beatSchedule[beatSchedule.length - 1].audioTime + 0.1) {
+    resetPlayback();
+    return;
+  }
+
+  rafHandle = requestAnimationFrame(rafLoop);
 }
 
+// ── Public playback controls ─────────────────────────────────────────────────────
+function togglePlay() {
+  if (isPlaying) stopMusic();
+  else playMusic();
+}
 
-function updateCurrentBlock(timing) {
-  const previousBlock = timeline.querySelector('.playing');
-  if (previousBlock) previousBlock.classList.remove('playing');
-  timing.block.classList.add('playing');
+function playMusic() {
+  if (isPlaying && !isPaused) return;
+
+  const { timings, totalSeconds, totalBeats } = calculateTimings();
+  if (timings.length === 0) return;
+
+  // ── Step 1: Update UI state synchronously (no async needed for this) ────────
+  playBtn.style.display = 'none';
+  pauseBtn.style.display = 'inline-block';
+  stopBtn.style.display = 'inline-block';
+
+  if (isPaused) {
+    // Resume from pause — adjust the audio clock reference for the pause gap
+    isPaused = false;
+    isPlaying = true;
+    // If AudioContext is running, adjust immediately
+    if (audioContext && audioContext.state === 'running') {
+      const pauseDuration = audioContext.currentTime - pausedAtAudioTime;
+      songStartAudioTime += pauseDuration;
+      // Shift all remaining beat schedule entries forward by pause duration
+      for (let i = scheduleHead; i < beatSchedule.length; i++) {
+        beatSchedule[i].audioTime += pauseDuration;
+      }
+    }
+    // If AudioContext is suspended, rafLoop will rebuild schedule when it resumes
+    if (rafHandle) cancelAnimationFrame(rafHandle);
+    rafHandle = requestAnimationFrame(rafLoop);
+  } else {
+    // ── Step 2: Set up song state synchronously ──────────────────────────────
+    isPlaying = true;
+    isPaused = false;
+    scheduleHead = 0;
+    uiHead = 0;
+    currentTime = 0;
+    currentBeat = 0;
+    blockBeat = 0;
+    blockMeasure = 0;
+    songTimings = timings;
+    songTotalSeconds = totalSeconds;
+    songTotalBeats = totalBeats;
+
+    // ── Step 3: Start RAF loop immediately (no async blocking) ───────────────
+    // songStartAudioTime will be set properly once AudioContext is confirmed
+    // running (either now if already running, or in rafLoop's resume branch).
+    songStartAudioTime = 0; // placeholder until AudioContext confirms
+    beatSchedule = [];
+
+    if (rafHandle) cancelAnimationFrame(rafHandle);
+    rafHandle = requestAnimationFrame(rafLoop);
+  }
+
+  // ── Step 4: Initialise AudioContext, load buffers, THEN build schedule ──────
+  // Key fix: we wait for audio buffers to load before setting songStartAudioTime
+  // so the first beat is never scheduled before its sound is ready.
+  (function initAudio() {
+    try {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    } catch(e) {
+      console.warn('AudioContext creation failed:', e);
+      return; // Will run silently (visual only)
+    }
+
+    const buildScheduleWhenReady = () => {
+      if (!isPlaying) return;
+      if (beatSchedule.length > 0) return; // already built (e.g. resume path)
+
+      // Buffers already loaded (second play onwards) — start immediately
+      if (tickBuffer) {
+        songStartAudioTime = audioContext.currentTime + 0.15;
+        beatSchedule = buildBeatSchedule(songTimings, songStartAudioTime);
+        scheduleHead = 0;
+        uiHead = 0;
+        return;
+      }
+
+      // First play — load buffers first, then schedule with enough lead time
+      if (!audioBufferPromise) {
+        audioBufferPromise = loadAudioBuffers().catch(err => console.warn('Audio load:', err));
+      }
+      audioBufferPromise.then(() => {
+        if (!isPlaying) return;
+        if (beatSchedule.length > 0) return;
+        // Give 0.5s of lead time so first beat is guaranteed to have its buffer
+        songStartAudioTime = audioContext.currentTime + 0.5;
+        beatSchedule = buildBeatSchedule(songTimings, songStartAudioTime);
+        scheduleHead = 0;
+        uiHead = 0;
+      });
+    };
+
+    const tryResume = () => {
+      if (audioContext.state !== 'suspended') {
+        buildScheduleWhenReady();
+        return;
+      }
+      audioContext.resume().then(tryResume).catch(err => {
+        console.warn('AudioContext resume failed:', err);
+        // rafLoop will retry
+      });
+    };
+
+    tryResume();
+  })();
+}
+
+let pausedAtAudioTime = 0;
+
+function pauseMusic() {
+  if (!isPlaying || isPaused) return;
+
+  isPaused = true;
+  isPlaying = false;
+  pausedAtAudioTime = audioContext.currentTime;
+
+  if (rafHandle) { cancelAnimationFrame(rafHandle); rafHandle = null; }
+
+  pauseBtn.style.display = 'none';
+  playBtn.style.display = 'inline-block';
+  playBtn.textContent = 'Resume';
+}
+
+function stopMusic() {
+  isPlaying = false;
+  isPaused = false;
+
+  if (rafHandle) { cancelAnimationFrame(rafHandle); rafHandle = null; }
+
+  playBtn.style.display = 'inline-block';
+  playBtn.textContent = 'Play';
+  pauseBtn.style.display = 'none';
+  stopBtn.style.display = 'none';
+
+  resetPlayback();
 }
 
 function resetPlayback() {
-  if (activeTimeManager) {
-    activeTimeManager.stop();
-    activeTimeManager = null;
-  }
+  if (rafHandle) { cancelAnimationFrame(rafHandle); rafHandle = null; }
 
-  scheduledSources.forEach(source => {
-    try {
-      source.stop();
-    } catch (e) {
-      // Ignore if already stopped
-    }
-  });
-  scheduledSources = [];
-
-  // Instead of closing and reopening the audio context (which can cause issues),
-  // just suspend it
-  audioContext.suspend().then(() => {
-    audioContext.resume(); // Resume immediately but in suspended state (ready for next play)
-  });
-
+  isPlaying = false;
+  isPaused = false;
+  beatSchedule = [];
+  scheduleHead = 0;
+  uiHead = 0;
   currentTime = 0;
   currentBeat = 0;
   blockBeat = 0;
   blockMeasure = 0;
 
-  isPlaying = false;
   playBtn.textContent = 'Play';
+  playBtn.style.display = 'inline-block';
+  pauseBtn.style.display = 'none';
+  stopBtn.style.display = 'none';
 
   const previousBlock = timeline.querySelector('.playing');
   if (previousBlock) previousBlock.classList.remove('playing');
@@ -911,21 +1129,26 @@ function resetPlayback() {
   currentBlockDisplay.style.animation = 'none';
   currentBlockDisplay.innerHTML = '<span class="label">No block playing</span>';
 
+  hideMiniProgressMarker();
   calculateTimings();
 }
 
-
 function exportSong() {
-  const blocks = Array.from(timeline.children).map(block => ({
-    type: block.classList[1],
-    measures: parseInt(block.getAttribute('data-measures')),
-    rootNote: block.getAttribute('data-root-note'),
-    mode: block.getAttribute('data-mode'),
-    tempo: parseInt(block.getAttribute('data-tempo')),
-    timeSignature: block.getAttribute('data-time-signature'),
-    feel: block.getAttribute('data-feel'),
-    lyrics: block.getAttribute('data-lyrics')
-  }));
+  const roles = ['drummer', 'bassist', 'guitarist', 'keyboardist', 'vocalist'];
+  const blocks = Array.from(timeline.children).map(block => {
+    const obj = {
+      type: block.classList[1],
+      measures: parseInt(block.getAttribute('data-measures')),
+      rootNote: block.getAttribute('data-root-note'),
+      mode: block.getAttribute('data-mode'),
+      tempo: parseInt(block.getAttribute('data-tempo')),
+      timeSignature: block.getAttribute('data-time-signature'),
+      feel: block.getAttribute('data-feel'),
+      lyrics: block.getAttribute('data-lyrics')
+    };
+    roles.forEach(r => { obj[`energy_${r}`] = parseInt(block.getAttribute(`data-energy-${r}`)) || 5; });
+    return obj;
+  });
 
   const songData = { songName: currentSongName, blocks };
   const blob = new Blob([JSON.stringify(songData, null, 2)], { type: 'application/json' });
@@ -970,9 +1193,12 @@ function loadSongData(songData) {
 
   updateTitle(songData.songName);
 
-  songData.blocks.forEach(({ type, measures, rootNote, mode, tempo, timeSignature, feel, lyrics }) => {
+  const loadRoles = ['drummer', 'bassist', 'guitarist', 'keyboardist', 'vocalist'];
+  songData.blocks.forEach((blockData) => {
+    const { type, measures, rootNote, mode, tempo, timeSignature, feel, lyrics } = blockData;
     const block = document.createElement('div');
     block.classList.add('song-block', type);
+    block.setAttribute('data-part-type', type);
     block.setAttribute('data-measures', measures);
     block.setAttribute('data-tempo', tempo);
     block.setAttribute('data-time-signature', timeSignature);
@@ -980,6 +1206,11 @@ function loadSongData(songData) {
     block.setAttribute('data-lyrics', lyrics || '');
     block.setAttribute('data-root-note', rootNote);
     block.setAttribute('data-mode', mode);
+    loadRoles.forEach(r => {
+      // Support both new (energy_drummer) and legacy (energy) format
+      const val = blockData[`energy_${r}`] || blockData.energy || 5;
+      block.setAttribute(`data-energy-${r}`, val);
+    });
     block.innerHTML = `<span class="label">${formatPart(type)}: ${timeSignature} ${measures}m<br>${abbreviateKey(rootNote)} ${mode} ${tempo}b ${feel || ''}${lyrics ? '<br>-<br>' + truncateLyrics(lyrics) : ''}</span><span class="tooltip">${lyrics || 'No lyrics'}</span>`;
     updateBlockSize(block);
     setupBlock(block);
@@ -1111,7 +1342,981 @@ function printSong() {
   currentBlockDisplay.innerHTML = originalContent;
 }
 
+// ── Nav dropdown helpers ──────────────────────────────────────────────────────
+function toggleNavDropdown(id) {
+  const el = document.getElementById(id);
+  const isOpen = el.classList.contains('open');
+  // Close all first
+  document.querySelectorAll('.nav-dropdown').forEach(d => d.classList.remove('open'));
+  if (!isOpen) el.classList.add('open');
+}
+
+function closeNavDropdowns() {
+  document.querySelectorAll('.nav-dropdown').forEach(d => d.classList.remove('open'));
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.nav-dropdown')) closeNavDropdowns();
+});
+
 // Initial setup
 populateSongDropdown();
 loadSongFromDropdown('songs/satisfaction.js');
 updateTitle(currentSongName); // Sync input on load
+
+// ── iOS / Mobile compatibility ────────────────────────────────────────────────
+// iOS Safari requires AudioContext to be created AND resumed inside a
+// synchronous user-gesture handler. We add touchstart listeners (in addition
+// to onclick) so the gesture is captured on the first tap on mobile.
+(function setupMobilePlayback() {
+  // Helper: ensure buttons respond to both click and touchend on mobile
+  function addTouchHandler(btn, handler) {
+    if (!btn) return;
+    btn.addEventListener('touchend', function(e) {
+      e.preventDefault(); // prevent ghost click
+      handler();
+    }, { passive: false });
+  }
+
+  addTouchHandler(playBtn, function() {
+    if (isPlaying && !isPaused) pauseMusic();
+    else if (isPaused) playMusic();
+    else playMusic();
+  });
+  addTouchHandler(pauseBtn, pauseMusic);
+  addTouchHandler(stopBtn, stopMusic);
+
+  // Pre-unlock AudioContext on very first touch anywhere on the page.
+  // This is the most reliable way to unblock iOS audio.
+  function unlockAudio() {
+    if (audioContext) {
+      if (audioContext.state === 'suspended') audioContext.resume();
+      return;
+    }
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      // Assign synchronously so ensureAudioContext() reuses it immediately
+      audioContext = ctx;
+      // Play a silent buffer to fully unlock the audio system on iOS
+      const buf = ctx.createBuffer(1, 1, 22050);
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(ctx.destination);
+      src.start(0);
+      ctx.resume().catch(() => {});
+    } catch(e) {}
+  }
+
+  document.addEventListener('touchstart', unlockAudio, { once: true, passive: true });
+  document.addEventListener('touchend', unlockAudio, { once: true, passive: true });
+})();
+
+// MIDI Export Functionality
+function exportMIDI() {
+  const blocks = Array.from(timeline.children);
+  
+  if (blocks.length === 0) {
+    alert('No blocks to export. Please add some song blocks first.');
+    return;
+  }
+
+  try {
+    const noteMap = {
+      'C': 60, 'C#': 61, 'D': 62, 'D#': 63, 'E': 64, 'F': 65,
+      'F#': 66, 'G': 67, 'G#': 68, 'A': 69, 'A#': 70, 'B': 71
+    };
+    const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+    function midiNoteToName(midiNote) {
+      const octave = Math.floor(midiNote / 12) - 1;
+      const name = noteNames[midiNote % 12];
+      return `${name}${octave}`;
+    }
+
+    const TICKS_PER_BEAT = 128;
+
+    // ── Track 0: SongMaker Metadata (lossless round-trip data) ──────────────
+    // Encodes every block field as a JSON marker event so the analyzer can
+    // restore the song exactly without guessing.
+    const metaTrack = new MidiWriter.Track();
+    metaTrack.addTrackName('SongMaker_Metadata_v1');
+
+    // Song-level header at tick 0
+    const songHeader = {
+      songmakerVersion: 1,
+      songTitle: currentSongName || 'Untitled Song',
+      blockCount: blocks.length
+    };
+    metaTrack.addEvent(new MidiWriter.TextEvent({
+      text: 'SM_HEADER:' + JSON.stringify(songHeader),
+      tick: 0
+    }));
+
+    // ── Track 1: Musical content (root notes + tempo/timesig events) ────────
+    const track = new MidiWriter.Track();
+    track.addTrackName(currentSongName || 'Untitled Song');
+
+    const firstBlock = blocks[0];
+    const firstTempo = parseInt(firstBlock.getAttribute('data-tempo')) || 120;
+    const firstTS = firstBlock.getAttribute('data-time-signature') || '4/4';
+    const [firstNum, firstDen] = firstTS.split('/').map(Number);
+    track.setTempo(firstTempo);
+    track.setTimeSignature(firstNum, firstDen);
+
+    let currentTick = 0;
+
+    blocks.forEach((block, index) => {
+      const partType    = block.getAttribute('data-part-type')     || 'section';
+      const measures    = parseInt(block.getAttribute('data-measures')) || 4;
+      const rootNote    = block.getAttribute('data-root-note')     || 'C';
+      const blockTempo  = parseInt(block.getAttribute('data-tempo'))    || 120;
+      const blockTS     = block.getAttribute('data-time-signature') || '4/4';
+      const mode        = block.getAttribute('data-mode')          || 'Ionian';
+      const feel        = block.getAttribute('data-feel')          || '';
+      const lyrics      = block.getAttribute('data-lyrics')        || '';
+      const energyDrummer    = parseInt(block.getAttribute('data-energy-drummer'))    || 5;
+      const energyBassist    = parseInt(block.getAttribute('data-energy-bassist'))    || 5;
+      const energyGuitarist  = parseInt(block.getAttribute('data-energy-guitarist'))  || 5;
+      const energyKeyboardist= parseInt(block.getAttribute('data-energy-keyboardist'))|| 5;
+      const energyVocalist   = parseInt(block.getAttribute('data-energy-vocalist'))   || 5;
+      const [tsNum, tsDen] = blockTS.split('/').map(Number);
+
+      // Embed full block data as a JSON marker on the metadata track
+      const blockMeta = {
+        idx: index,
+        partType, rootNote, mode, tempo: blockTempo,
+        timeSig: blockTS, measures, feel, lyrics,
+        energy: {
+          drummer: energyDrummer, bassist: energyBassist,
+          guitarist: energyGuitarist, keyboardist: energyKeyboardist,
+          vocalist: energyVocalist
+        },
+        tick: currentTick
+      };
+      metaTrack.addEvent(new MidiWriter.TextEvent({
+        text: 'SM_BLOCK:' + JSON.stringify(blockMeta),
+        tick: currentTick
+      }));
+
+      // Human-readable marker on the music track too
+      track.addEvent(new MidiWriter.TextEvent({
+        text: `${index + 1}. ${partType} (${measures}m) - ${rootNote} ${mode}`,
+        tick: currentTick
+      }));
+
+      if (index === 0 || blockTempo !== parseInt(blocks[index - 1].getAttribute('data-tempo'))) {
+        track.setTempo(blockTempo, currentTick);
+      }
+      if (index === 0 || blockTS !== blocks[index - 1].getAttribute('data-time-signature')) {
+        track.setTimeSignature(tsNum, tsDen, currentTick);
+      }
+
+      const rootMidi = noteMap[rootNote] || 60;
+      const rootNoteName = midiNoteToName(rootMidi);
+      const beatsPerMeasure = getBeatsPerMeasure(blockTS);
+      const totalBeats = measures * beatsPerMeasure;
+      const isCompound = tsDen === 8 && tsNum % 3 === 0;
+      const noteDuration = isCompound ? 'd4' : '4';
+      const ticksPerBeat = isCompound ? Math.round(TICKS_PER_BEAT * 1.5) : TICKS_PER_BEAT;
+
+      for (let beat = 0; beat < totalBeats; beat++) {
+        const isDownbeat = beat % beatsPerMeasure === 0;
+        const velocity = isDownbeat ? 90 : 65;
+        track.addEvent(new MidiWriter.NoteEvent({
+          pitch: [rootNoteName],
+          duration: noteDuration,
+          velocity,
+          tick: currentTick
+        }));
+        currentTick += ticksPerBeat;
+      }
+    });
+
+    // Write both tracks: metadata first, then music
+    const writer = new MidiWriter.Writer([metaTrack, track]);
+    const dataUri = writer.dataUri();
+    const link = document.createElement('a');
+    link.href = dataUri;
+    link.download = `${(currentSongName || 'song').replace(/[^a-z0-9]/gi, '_')}.mid`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    console.log('MIDI exported with SongMaker metadata track for lossless round-trip.');
+    alert(`MIDI file "${link.download}" downloaded!\n\nAll block data is embedded for lossless re-import. Each beat plays the section root note at the correct tempo.`);
+
+  } catch (error) {
+    console.error('Error exporting MIDI:', error);
+    alert('Error exporting MIDI. Check console for details.');
+  }
+}
+
+// ========== REPORT GENERATION FUNCTIONS ==========
+
+function openReportDialog() {
+  document.getElementById('report-dialog').style.display = 'flex';
+}
+
+function closeReportDialog() {
+  document.getElementById('report-dialog').style.display = 'none';
+}
+
+function toggleAllRoles(checked) {
+  const checkboxes = document.querySelectorAll('.role-checkbox');
+  checkboxes.forEach(cb => cb.checked = checked);
+}
+
+function generateReports() {
+  const selectedRoles = Array.from(document.querySelectorAll('.role-checkbox:checked'))
+    .map(cb => cb.value);
+  
+  if (selectedRoles.length === 0) {
+    alert('Please select at least one role');
+    return;
+  }
+  
+  const blocks = Array.from(timeline.children);
+  if (blocks.length === 0) {
+    alert('No blocks in timeline to generate reports from');
+    return;
+  }
+  
+  selectedRoles.forEach(role => {
+    generateRoleSheet(role, blocks);
+  });
+  
+  closeReportDialog();
+}
+
+function generateRoleSheet(role, blocks) {
+  try {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  
+  const roleNames = {
+    drummer: 'Drummer',
+    bassist: 'Bassist',
+    guitarist: 'Guitarist',
+    keyboardist: 'Keyboardist',
+    vocalist: 'Vocalist'
+  };
+  
+  const roleName = roleNames[role];
+  const songTitle = currentSongName || 'Untitled Song';
+  
+  // Header
+  doc.setFontSize(20);
+  doc.setFont(undefined, 'bold');
+  doc.text(songTitle, 105, 20, { align: 'center' });
+  
+  doc.setFontSize(14);
+  doc.setFont(undefined, 'normal');
+  doc.text(`${roleName} Sheet`, 105, 30, { align: 'center' });
+  
+  // Song Info
+  const firstBlock = blocks[0];
+  const tempo = firstBlock.getAttribute('data-tempo') || '120';
+  const timeSignature = firstBlock.getAttribute('data-time-signature') || '4/4';
+  const key = firstBlock.getAttribute('data-root-note') || 'C';
+  const mode = firstBlock.getAttribute('data-mode') || 'Ionian';
+  
+  doc.setFontSize(10);
+  let yPos = 45;
+  doc.text(`Tempo: ${tempo} BPM`, 20, yPos);
+  doc.text(`Time: ${timeSignature}`, 80, yPos);
+  doc.text(`Key: ${key} ${mode}`, 130, yPos);
+  
+  // Draw line
+  yPos += 5;
+  doc.setLineWidth(0.5);
+  doc.line(20, yPos, 190, yPos);
+  
+  // Visual Song Structure Diagram
+  yPos += 10;
+  doc.setFontSize(12);
+  doc.setFont(undefined, 'bold');
+  doc.text('Song Structure', 20, yPos);
+  
+  yPos += 8;
+  const diagramStartY = yPos;
+  const diagramHeight = 15;
+  const diagramWidth = 170;
+  const totalMeasures = blocks.reduce((sum, b) => sum + parseInt(b.getAttribute('data-measures') || 4), 0);
+  // Compute total duration in seconds
+  const totalDuration = blocks.reduce((sum, b) => {
+    const bm = parseInt(b.getAttribute('data-measures') || 4);
+    const bt = parseInt(b.getAttribute('data-tempo') || 120);
+    const ts = b.getAttribute('data-time-signature') || '4/4';
+    const [num] = ts.split('/').map(Number);
+    return sum + (bm * num * 60 / bt);
+  }, 0);
+  
+  // Color mapping for part types
+  const partColors = {
+    'intro': [100, 150, 100],
+    'verse': [100, 120, 180],
+    'chorus': [200, 100, 100],
+    'bridge': [180, 140, 100],
+    'solo': [150, 100, 180],
+    'outro': [120, 120, 120],
+    'interlude': [140, 160, 140],
+    'pre-chorus': [160, 130, 160],
+    'breakdown': [100, 100, 150],
+    'hook': [190, 120, 120]
+  };
+  
+  let xOffset = 20;
+  blocks.forEach((block, index) => {
+    const partType = block.getAttribute('data-part-type') || 'verse';
+    const measures = parseInt(block.getAttribute('data-measures') || 4);
+    const blockWidth = (measures / totalMeasures) * diagramWidth;
+    
+    const color = partColors[partType] || [140, 140, 140];
+    doc.setFillColor(color[0], color[1], color[2]);
+    doc.rect(xOffset, diagramStartY, blockWidth, diagramHeight, 'F');
+    
+    // Add border
+    doc.setDrawColor(60, 60, 60);
+    doc.setLineWidth(0.3);
+    doc.rect(xOffset, diagramStartY, blockWidth, diagramHeight, 'S');
+    
+    // Add section number if wide enough
+    if (blockWidth > 8) {
+      doc.setFontSize(8);
+      doc.setTextColor(255, 255, 255);
+      doc.text(`${index + 1}`, xOffset + blockWidth/2, diagramStartY + diagramHeight/2 + 2, { align: 'center' });
+      doc.setTextColor(0, 0, 0);
+    }
+    
+    xOffset += blockWidth;
+  });
+  
+  yPos += diagramHeight + 5;
+  
+  // Legend
+  doc.setFontSize(7);
+  doc.setFont(undefined, 'normal');
+  const uniqueParts = [...new Set(blocks.map(b => b.getAttribute('data-part-type') || 'verse'))];
+  let legendX = 20;
+  uniqueParts.forEach(partType => {
+    const color = partColors[partType] || [140, 140, 140];
+    doc.setFillColor(color[0], color[1], color[2]);
+    doc.rect(legendX, yPos, 4, 3, 'F');
+    doc.setDrawColor(60, 60, 60);
+    doc.rect(legendX, yPos, 4, 3, 'S');
+    doc.text(formatPart(partType), legendX + 5, yPos + 2.5);
+    legendX += doc.getTextWidth(formatPart(partType)) + 12;
+  });
+  
+  yPos += 8;
+  doc.setLineWidth(0.3);
+  doc.line(20, yPos, 190, yPos);
+
+  // ===== MULTI-TRACK ENERGY WAVEFORM =====
+  yPos += 8;
+  doc.setFontSize(11);
+  doc.setFont(undefined, 'bold');
+  doc.setTextColor(0, 0, 0);
+  doc.text('Energy Map — All Parts', 20, yPos);
+  yPos += 5;
+
+  // Role definitions: name, data-attribute key, RGB color
+  const waveRoles = [
+    { label: 'Drums',  attr: 'data-energy-drummer',     r: 220, g: 60,  b: 60  },
+    { label: 'Bass',   attr: 'data-energy-bassist',     r: 60,  g: 120, b: 220 },
+    { label: 'Guitar', attr: 'data-energy-guitarist',   r: 230, g: 120, b: 30  },
+    { label: 'Keys',   attr: 'data-energy-keyboardist', r: 160, g: 60,  b: 210 },
+    { label: 'Vocals', attr: 'data-energy-vocalist',    r: 40,  g: 180, b: 100 }
+  ];
+
+  // Draw legend inline
+  let legendXw = 20;
+  doc.setFontSize(7);
+  doc.setFont(undefined, 'bold');
+  waveRoles.forEach(wr => {
+    doc.setFillColor(wr.r, wr.g, wr.b);
+    doc.rect(legendXw, yPos - 2.5, 8, 2.5, 'F');
+    doc.setTextColor(40, 40, 40);
+    doc.text(wr.label, legendXw + 9, yPos - 0.5);
+    legendXw += doc.getTextWidth(wr.label) + 18;
+  });
+  yPos += 5;
+
+  const wLeft = 20;
+  const wRight = 190;
+  const wWidth = wRight - wLeft;
+  const wTop = yPos;
+  const wBottom = yPos + 36;
+  const wHeight = wBottom - wTop;
+
+  // Background
+  doc.setFillColor(30, 30, 40);
+  doc.rect(wLeft, wTop, wWidth, wHeight, 'F');
+  doc.setDrawColor(70, 70, 90);
+  doc.setLineWidth(0.2);
+  doc.rect(wLeft, wTop, wWidth, wHeight, 'S');
+
+  // Horizontal grid lines
+  [0.25, 0.5, 0.75].forEach(frac => {
+    const gy = wTop + wHeight * (1 - frac);
+    doc.setDrawColor(60, 60, 80);
+    doc.setLineWidth(0.15);
+    doc.line(wLeft, gy, wRight, gy);
+  });
+
+  // Y-axis labels
+  doc.setFontSize(5.5);
+  doc.setFont(undefined, 'normal');
+  doc.setTextColor(140, 140, 160);
+  doc.text('10', wLeft - 5, wTop + 2, { align: 'right' });
+  doc.text('5',  wLeft - 5, wTop + wHeight / 2 + 1, { align: 'right' });
+  doc.text('1',  wLeft - 5, wBottom + 1, { align: 'right' });
+
+  // Compute x positions for each block (center of its proportional span)
+  const waveBlockX = [];
+  let wCumMeasures = 0;
+  blocks.forEach(block => {
+    const bm = parseInt(block.getAttribute('data-measures') || 4);
+    const startFrac = wCumMeasures / totalMeasures;
+    const endFrac   = (wCumMeasures + bm) / totalMeasures;
+    waveBlockX.push(wLeft + ((startFrac + endFrac) / 2) * wWidth);
+    wCumMeasures += bm;
+  });
+
+  // Draw vertical section dividers
+  let wDivX = 0;
+  blocks.forEach((block, bi) => {
+    const bm = parseInt(block.getAttribute('data-measures') || 4);
+    if (bi > 0) {
+      const divX = wLeft + (wDivX / totalMeasures) * wWidth;
+      doc.setDrawColor(80, 80, 100);
+      doc.setLineWidth(0.2);
+      doc.line(divX, wTop, divX, wBottom);
+    }
+    wDivX += bm;
+  });
+
+  // Draw each role's line (back to front so Vocals is on top)
+  waveRoles.forEach(wr => {
+    const pts = blocks.map((block, bi) => {
+      const val = Math.min(10, Math.max(1, parseInt(block.getAttribute(wr.attr) || 5)));
+      return { x: waveBlockX[bi], y: wTop + wHeight * (1 - (val - 1) / 9) };
+    });
+    if (pts.length < 2) return;
+    // Draw line segments
+    doc.setDrawColor(wr.r, wr.g, wr.b);
+    doc.setLineWidth(0.9);
+    for (let i = 0; i < pts.length - 1; i++) {
+      doc.line(pts[i].x, pts[i].y, pts[i+1].x, pts[i+1].y);
+    }
+    // Draw dots
+    doc.setFillColor(wr.r, wr.g, wr.b);
+    doc.setDrawColor(255, 255, 255);
+    doc.setLineWidth(0.3);
+    pts.forEach(p => doc.circle(p.x, p.y, 1.2, 'FD'));
+  });
+
+  // Section name labels below chart
+  doc.setFontSize(5.5);
+  doc.setFont(undefined, 'normal');
+  waveBlockX.forEach((px, i) => {
+    const partType = blocks[i].getAttribute('data-part-type') || '';
+    const label = `${i + 1}.${formatPart(partType).substring(0, 4)}`;
+    doc.setTextColor(80, 80, 100);
+    doc.text(label, px, wBottom + 4, { align: 'center' });
+  });
+
+  doc.setTextColor(0, 0, 0);
+  yPos = wBottom + 10;
+
+  doc.setLineWidth(0.3);
+  doc.line(20, yPos, 190, yPos);
+
+  // Section breakdown
+  yPos += 8;
+  doc.setFontSize(12);
+  doc.setFont(undefined, 'bold');
+  doc.text('Section Details', 20, yPos);
+  
+  yPos += 8;
+  doc.setFontSize(9);
+  doc.setFont(undefined, 'normal');
+  
+  const minBubbleWidth = 40;
+  const maxBubbleWidth = 170;
+  const bubbleMargin = 5;
+  const startX = 20;
+  const pageWidth = 190;
+  let currentX = startX;
+  let currentRow = 0;
+  const bubbleHeight = 52; // tall enough for all content
+  
+  blocks.forEach((block, index) => {
+    const partType = block.getAttribute('data-part-type') || 'Unknown';
+    const measures = parseInt(block.getAttribute('data-measures') || '4');
+    const rootNote = block.getAttribute('data-root-note') || 'C';
+    const mode = block.getAttribute('data-mode') || '';
+    const tempo = block.getAttribute('data-tempo') || '120';
+    const timeSig = block.getAttribute('data-time-signature') || '4/4';
+    const feel = block.getAttribute('data-feel') || 'Neutral';
+    const lyrics = block.getAttribute('data-lyrics') || '';
+    // Per-role energy for this block
+    const roleEnergyMap = {
+      drummer: parseInt(block.getAttribute('data-energy-drummer') || 5),
+      bassist: parseInt(block.getAttribute('data-energy-bassist') || 5),
+      guitarist: parseInt(block.getAttribute('data-energy-guitarist') || 5),
+      keyboardist: parseInt(block.getAttribute('data-energy-keyboardist') || 5),
+      vocalist: parseInt(block.getAttribute('data-energy-vocalist') || 5)
+    };
+    const thisRoleEnergy = roleEnergyMap[role] || 5;
+    
+    const proportionalWidth = (measures / totalMeasures) * pageWidth;
+    const bubbleWidth = Math.max(minBubbleWidth, Math.min(maxBubbleWidth, proportionalWidth));
+    
+    if (currentX + bubbleWidth > startX + pageWidth && currentX > startX) {
+      currentRow++;
+      currentX = startX;
+    }
+    
+    let sectionYPos = yPos + (currentRow * (bubbleHeight + 6));
+    
+    if (sectionYPos > 230) {
+      doc.addPage();
+      // Repeat song header on continuation pages
+      doc.setFontSize(7);
+      doc.setFont(undefined, 'italic');
+      doc.setTextColor(120, 120, 140);
+      doc.text(`${songTitle} — ${role.charAt(0).toUpperCase() + role.slice(1)} (cont.)`, 20, 12);
+      doc.setTextColor(0, 0, 0);
+      yPos = 20;
+      currentRow = 0;
+      currentX = startX;
+      sectionYPos = yPos;
+    }
+    
+    // Draw bubble background
+    const partColor = partColors[partType] || [140, 140, 140];
+    doc.setFillColor(partColor[0], partColor[1], partColor[2], 0.85);
+    doc.roundedRect(currentX, sectionYPos - 5, bubbleWidth, bubbleHeight, 2, 2, 'F');
+    
+    // Draw colored left border
+    doc.setFillColor(partColor[0], partColor[1], partColor[2]);
+    doc.rect(currentX, sectionYPos - 5, 3, bubbleHeight, 'F');
+    
+    // Section header: part name + measures
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor(255, 255, 255);
+    const sectionTitle = `${index + 1}. ${formatPart(partType)} (${measures}m)`;
+    doc.text(sectionTitle, currentX + 5, sectionYPos);
+    sectionYPos += 4.5;
+
+    // Sub-header: key, mode, tempo, time sig
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(6.5);
+    doc.setTextColor(220, 220, 240);
+    const subHeader = `${rootNote} ${mode} | ${tempo}bpm | ${timeSig} | ${feel}`;
+    const subLines = doc.splitTextToSize(subHeader, bubbleWidth - 8);
+    subLines.slice(0, 2).forEach(line => {
+      doc.text(line, currentX + 5, sectionYPos);
+      sectionYPos += 3.5;
+    });
+
+    // Energy indicator for this role
+    const energyColors = { 1:[60,120,220], 2:[60,120,220], 3:[60,160,200], 4:[60,190,160],
+      5:[120,190,80], 6:[190,190,60], 7:[220,150,40], 8:[220,100,40], 9:[210,60,60], 10:[200,30,30] };
+    const ec = energyColors[thisRoleEnergy] || [120,120,120];
+    doc.setFontSize(6);
+    doc.setTextColor(ec[0], ec[1], ec[2]);
+    doc.text(`Energy: ${thisRoleEnergy}/10`, currentX + 5, sectionYPos);
+    sectionYPos += 4;
+    
+    // Role-specific information
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(255, 255, 255);
+    
+    if (role === 'drummer') {
+      const safeFeelStr = String(feel || 'Neutral');
+      const safeDrumPattern = String(getDrumPattern(partType, safeFeelStr) || 'Standard groove');
+      const safeDynamics = String(getDynamics(partType) || 'mf');
+      doc.text(`Feel: ${safeFeelStr}`, currentX + 5, sectionYPos);
+      sectionYPos += 4;
+      const pattern = doc.splitTextToSize(`Pat: ${safeDrumPattern}`, bubbleWidth - 8);
+      pattern.slice(0, 2).forEach(line => {
+        doc.text(String(line), currentX + 5, sectionYPos);
+        sectionYPos += 3.5;
+      });
+      doc.text(`Dyn: ${safeDynamics}`, currentX + 5, sectionYPos);
+      
+    } else if (role === 'bassist') {
+      doc.text(`Feel: ${feel}`, currentX + 5, sectionYPos);
+      sectionYPos += 4;
+      doc.text(`Root: ${key}`, currentX + 5, sectionYPos);
+      sectionYPos += 4;
+      const pattern = doc.splitTextToSize(`Pat: ${getBassPattern(partType)}`, bubbleWidth - 8);
+      pattern.slice(0, 2).forEach(line => {
+        doc.text(line, currentX + 5, sectionYPos);
+        sectionYPos += 3.5;
+      });
+      
+    } else if (role === 'guitarist') {
+      doc.text(`Feel: ${feel}`, currentX + 5, sectionYPos);
+      sectionYPos += 4;
+      const chords = doc.splitTextToSize(`Chords: ${getChordProgression(key, mode, partType)}`, bubbleWidth - 8);
+      chords.slice(0, 2).forEach(line => {
+        doc.text(line, currentX + 5, sectionYPos);
+        sectionYPos += 3.5;
+      });
+      const rhythm = doc.splitTextToSize(`Rhythm: ${getGuitarRhythm(partType)}`, bubbleWidth - 8);
+      rhythm.slice(0, 1).forEach(line => {
+        doc.text(line, currentX + 5, sectionYPos);
+        sectionYPos += 3.5;
+      });
+      
+    } else if (role === 'keyboardist') {
+      doc.text(`Feel: ${feel}`, currentX + 5, sectionYPos);
+      sectionYPos += 4;
+      const voicing = doc.splitTextToSize(`Voicing: ${getKeyboardVoicing(partType)}`, bubbleWidth - 8);
+      voicing.slice(0, 1).forEach(line => {
+        doc.text(line, currentX + 5, sectionYPos);
+        sectionYPos += 3.5;
+      });
+      const chords = doc.splitTextToSize(`Chords: ${getChordProgression(key, mode, partType)}`, bubbleWidth - 8);
+      chords.slice(0, 2).forEach(line => {
+        doc.text(line, currentX + 5, sectionYPos);
+        sectionYPos += 3.5;
+      });
+      
+    } else if (role === 'vocalist') {
+      doc.text(`Feel: ${feel}`, currentX + 5, sectionYPos);
+      sectionYPos += 4;
+      if (lyrics) {
+        // Auto-size lyrics to fit bubble
+        const maxLyricsH = (bubbleHeight - 5) - (sectionYPos - (yPos + (currentRow * (bubbleHeight + 6)) - 5));
+        let lyricsFontSize = 8;
+        let lyricsLines;
+        while (lyricsFontSize >= 5) {
+          doc.setFontSize(lyricsFontSize);
+          lyricsLines = doc.splitTextToSize(lyrics, bubbleWidth - 10);
+          const lyricsH = lyricsLines.length * lyricsFontSize * 0.35;
+          if (lyricsH <= maxLyricsH || lyricsFontSize <= 5) break;
+          lyricsFontSize -= 0.5;
+        }
+        doc.setFontSize(lyricsFontSize);
+        lyricsLines.forEach(line => {
+          doc.text(line, currentX + 5, sectionYPos);
+          sectionYPos += lyricsFontSize * 0.38;
+        });
+      } else {
+        doc.text('(Instrumental)', currentX + 5, sectionYPos);
+        sectionYPos += 4;
+      }
+      doc.setFontSize(7);
+      const melody = doc.splitTextToSize(`Melody: ${getMelodyNotes(key, mode)}`, bubbleWidth - 8);
+      melody.slice(0, 1).forEach(line => {
+        doc.text(line, currentX + 5, sectionYPos);
+      });
+    }
+    
+    doc.setTextColor(0, 0, 0);
+    currentX += bubbleWidth + bubbleMargin;
+  });
+  
+  // Footer on every page: song metadata + page number
+  const pageCount = doc.internal.getNumberOfPages();
+  const totalDurMin = Math.floor(totalDuration / 60);
+  const totalDurSec = Math.round(totalDuration % 60).toString().padStart(2, '0');
+  const footerSongInfo = `${songTitle}  |  Key: ${key}  |  ${tempo} BPM  |  ${totalMeasures} measures  |  ${totalDurMin}:${totalDurSec}`;
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    // Thin separator line
+    doc.setDrawColor(180, 180, 200);
+    doc.setLineWidth(0.3);
+    doc.line(20, 284, 190, 284);
+    // Song info left
+    doc.setFontSize(7);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(80, 80, 100);
+    doc.text(footerSongInfo, 20, 289);
+    // Page number right
+    doc.setTextColor(120, 120, 140);
+    doc.text(`Page ${i} of ${pageCount}`, 190, 289, { align: 'right' });
+    // Role label center
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(100, 100, 120);
+    doc.text(role.charAt(0).toUpperCase() + role.slice(1), 105, 289, { align: 'center' });
+  }
+  
+  // Save PDF
+  doc.save(`${songTitle.replace(/[^a-z0-9]/gi, '_')}_${role}.pdf`);
+  } catch(e) {
+    alert(`Error generating ${role} PDF: ${e.message}\n\n${e.stack ? e.stack.split('\n').slice(0,4).join('\n') : ''}`);
+    console.error('generateRoleSheet error for', role, e);
+  }
+}
+
+function getDrumPattern(partType, feel) {
+  const patterns = {
+    'intro': 'Light groove, build energy',
+    'verse': 'Steady beat, support vocals',
+    'chorus': 'Full kit, driving rhythm',
+    'bridge': 'Variation, dynamic shift',
+    'outro': 'Gradual fade or strong finish',
+    'solo': 'Support soloist, dynamic fills',
+    'pre-chorus': 'Build intensity, fill on 4',
+    'post-chorus': 'Driving rhythm, accent hits',
+    'interlude': 'Sparse, hold groove',
+    'breakdown': 'Half-time or stripped back',
+    'hook': 'Full kit, punchy',
+    'refrain': 'Steady, support melody'
+  };
+  return patterns[partType.toLowerCase()] || 'Standard groove';
+}
+
+function getDynamics(partType) {
+  const dynamics = {
+    'intro': 'mp - mf (building)',
+    'verse': 'mf (moderate)',
+    'chorus': 'f (strong)',
+    'bridge': 'mp - f (dynamic)',
+    'outro': 'f - pp (fading)',
+    'solo': 'mf - f (supportive)',
+    'pre-chorus': 'mf - f (building)',
+    'post-chorus': 'f (strong)',
+    'interlude': 'mp (sparse)',
+    'breakdown': 'p - mp (stripped)',
+    'hook': 'f (punchy)',
+    'refrain': 'mf (steady)'
+  };
+  return dynamics[partType.toLowerCase()] || 'mf (moderate)';
+}
+
+function getBassPattern(partType) {
+  const patterns = {
+    'intro': 'Root notes, simple pattern',
+    'verse': 'Walking bass or root-fifth',
+    'chorus': 'Driving eighth notes',
+    'bridge': 'Melodic variation',
+    'outro': 'Root notes, fade',
+    'solo': 'Supportive, space for soloist',
+    'pre-chorus': 'Build to root, octave jumps',
+    'post-chorus': 'Driving eighths, lock with kick',
+    'interlude': 'Sparse, hold root',
+    'breakdown': 'Half-time feel, deep root',
+    'hook': 'Punchy root-fifth',
+    'refrain': 'Steady root pattern'
+  };
+  return patterns[partType.toLowerCase()] || 'Root-fifth pattern';
+}
+
+function getChordProgression(key, mode, partType) {
+  const progressions = {
+    'intro': 'I - V',
+    'verse': 'I - IV - V - IV',
+    'chorus': 'I - V - vi - IV',
+    'bridge': 'vi - IV - I - V',
+    'outro': 'I - V - I',
+    'solo': 'I - IV - V (repeat)',
+    'pre-chorus': 'IV - V',
+    'post-chorus': 'I - V',
+    'interlude': 'I - vi',
+    'breakdown': 'i - VII - VI',
+    'hook': 'I - V - vi - IV',
+    'refrain': 'I - IV - I - V'
+  };
+  return progressions[partType.toLowerCase()] || 'I - IV - V';
+}
+
+function getGuitarRhythm(partType) {
+  const rhythms = {
+    'intro': 'Arpeggios or light strumming',
+    'verse': 'Steady strumming pattern',
+    'chorus': 'Power chords, driving rhythm',
+    'bridge': 'Fingerpicking or variation',
+    'outro': 'Sustained chords',
+    'solo': 'Comp chords, space for lead',
+    'pre-chorus': 'Build strumming, muted hits',
+    'post-chorus': 'Power chords, punchy',
+    'interlude': 'Clean picking or silence',
+    'breakdown': 'Heavy chug or silence',
+    'hook': 'Driving power chords',
+    'refrain': 'Steady strumming'
+  };
+  return rhythms[partType.toLowerCase()] || 'Standard strumming';
+}
+
+function getKeyboardVoicing(partType) {
+  const voicings = {
+    'intro': 'Sparse, high register',
+    'verse': 'Comping, mid register',
+    'chorus': 'Full voicings, rich sound',
+    'bridge': 'Variation, different texture',
+    'outro': 'Sustained pads',
+    'solo': 'Comping, support harmony',
+    'pre-chorus': 'Build, rising lines',
+    'post-chorus': 'Full chords, sustain',
+    'interlude': 'Ambient pads or silence',
+    'breakdown': 'Sparse or heavy low voicing',
+    'hook': 'Full, bright voicings',
+    'refrain': 'Mid-register comping'
+  };
+  return voicings[partType.toLowerCase()] || 'Standard voicing';
+}
+
+function getMelodyNotes(key, mode) {
+  return `${key} ${mode} scale, emphasize root and fifth`;
+}
+
+
+// ========================================
+// MINI PROGRESS BAR FUNCTIONS
+// ========================================
+
+function updateMiniProgressBar(timings, totalSeconds) {
+  const progressBar = document.getElementById('mini-progress-bar');
+  if (!progressBar || timings.length === 0) return;
+  
+  // Clear existing sections
+  progressBar.innerHTML = '';
+  
+  // Create a section for each block
+  timings.forEach((timing, index) => {
+    const section = document.createElement('div');
+    section.classList.add('mini-section');
+    
+    // Add the part type class
+    const partType = timing.block.getAttribute('data-part-type') || 'unknown';
+    section.classList.add(partType.toLowerCase());
+    
+    // Set width based on duration proportion
+    const widthPercent = (timing.duration / totalSeconds) * 100;
+    section.style.width = `${widthPercent}%`;
+    
+    // Store timing data for marker positioning
+    section.dataset.blockIndex = index;
+    section.dataset.startTime = timing.block.dataset.startTime || '0';
+    section.dataset.duration = timing.duration;
+    
+    progressBar.appendChild(section);
+  });
+  
+  // Add duration markers
+  const markersContainer = document.getElementById('mini-progress-markers');
+  if (markersContainer) {
+    markersContainer.innerHTML = '';
+    
+    // Dynamically generate marker intervals based on song duration
+    const markerIntervals = [];
+    let interval = 30; // Default 30-second intervals
+    
+    // Adjust interval based on total duration for better readability
+    if (totalSeconds > 600) { // > 10 minutes
+      interval = 60; // 1-minute intervals
+    } else if (totalSeconds > 300) { // > 5 minutes
+      interval = 30; // 30-second intervals
+    } else if (totalSeconds > 120) { // > 2 minutes
+      interval = 30; // 30-second intervals
+    } else {
+      interval = 15; // 15-second intervals for short songs
+    }
+    
+    // Generate intervals from 0 to just before the end
+    for (let time = 0; time < totalSeconds; time += interval) {
+      markerIntervals.push(time);
+    }
+    
+    markerIntervals.forEach(time => {
+      if (time < totalSeconds) { // Changed from <= to < to avoid overlap with end marker
+        const marker = document.createElement('div');
+        marker.classList.add('time-marker');
+        
+        const position = (time / totalSeconds) * 100;
+        marker.style.left = `${position}%`;
+        
+        // Format time as MM:SS
+        const minutes = Math.floor(time / 60);
+        const seconds = time % 60;
+        const timeLabel = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        
+        marker.innerHTML = `
+          <div class="marker-line"></div>
+          <div class="marker-label">${timeLabel}</div>
+        `;
+        
+        markersContainer.appendChild(marker);
+      }
+    });
+    
+    // Add end time marker
+    if (totalSeconds > 0) {
+      const endMarker = document.createElement('div');
+      endMarker.classList.add('time-marker', 'end-marker');
+      endMarker.style.left = '100%';
+      
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = Math.round(totalSeconds % 60);
+      const timeLabel = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+      
+      endMarker.innerHTML = `
+        <div class="marker-line"></div>
+        <div class="marker-label">${timeLabel}</div>
+      `;
+      
+      markersContainer.appendChild(endMarker);
+    }
+  }
+}
+
+function updateMiniProgressMarker(currentTime, totalSeconds) {
+  const marker = document.getElementById('mini-progress-marker');
+  if (!marker) return;
+  
+  // Calculate position as percentage
+  const position = (currentTime / totalSeconds) * 100;
+  marker.style.left = `${Math.min(100, Math.max(0, position))}%`;
+  
+  // Show marker during playback
+  if (!marker.classList.contains('active')) {
+    marker.classList.add('active');
+  }
+  
+  // Highlight the current section
+  const sections = document.querySelectorAll('.mini-section');
+  let cumulativeTime = 0;
+  
+  sections.forEach((section, index) => {
+    const duration = parseFloat(section.dataset.duration);
+    const sectionEnd = cumulativeTime + duration;
+    
+    if (currentTime >= cumulativeTime && currentTime < sectionEnd) {
+      section.classList.add('playing');
+    } else {
+      section.classList.remove('playing');
+    }
+    
+    cumulativeTime = sectionEnd;
+  });
+}
+
+function hideMiniProgressMarker() {
+  const marker = document.getElementById('mini-progress-marker');
+  if (marker) {
+    marker.classList.remove('active');
+  }
+  
+  // Remove playing class from all sections
+  const sections = document.querySelectorAll('.mini-section');
+  sections.forEach(section => section.classList.remove('playing'));
+}
+
+function pulseMiniProgressMarker() {
+  const marker = document.getElementById('mini-progress-marker');
+  if (marker && marker.classList.contains('active')) {
+    marker.classList.remove('pulse');
+    // Force reflow
+    void marker.offsetWidth;
+    marker.classList.add('pulse');
+  }
+}

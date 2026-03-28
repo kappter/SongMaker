@@ -16,7 +16,9 @@
     </header>
     <nav>
         <div class="controls">
-            <button id="play-btn" onclick="togglePlay()">Play</button>
+            <button id="play-btn" onclick="playMusic()">Play</button>
+            <button id="pause-btn" onclick="pauseMusic()" style="display:none;">Pause</button>
+            <button id="stop-btn" onclick="stopMusic()" style="display:none;">Stop</button>
             <button id="sound-btn" onclick="toggleSound()">Sound On</button>
             <button id="theme-btn" onclick="toggleTheme()">Light Mode</button>
             <button onclick="exportSong()">Export</button>
@@ -37,10 +39,19 @@
             <button id="copy-prompt-btn" onclick="copyRiffusionPrompt()">Copy Prompt</button>
             <!-- <button onclick="copyRiffusionPrompt()">Copy Prompt</button> -->
             <button onclick="printSong()">Print</button>
+            <button onclick="exportMIDI()">Export MIDI</button>
+            <button onclick="openReportDialog()">Generate Reports</button>
         </div>
     </nav>
 
     <main>
+        <!-- Mini Progress Tracker -->
+        <div id="mini-progress-container">
+            <div id="mini-progress-bar"></div>
+            <div id="mini-progress-marker"></div>
+            <div id="mini-progress-markers"></div>
+        </div>
+        
         <div class="form-container">
             <button id="toggle-form-btn" onclick="toggleForm()">Show Parameters</button>
             <div id="form-content" class="collapsed">
@@ -178,12 +189,34 @@
         <div id="timeline">
             <!-- Song blocks will be dynamically added here -->
         </div>
+        
+        <!-- Report Generation Dialog -->
+        <div id="report-dialog" class="report-dialog" style="display: none;">
+            <div class="report-dialog-content">
+                <h2>Generate Role-Specific Song Sheets</h2>
+                <p>Select which band member sheets to generate:</p>
+                <div class="role-checkboxes">
+                    <label><input type="checkbox" id="role-all" onchange="toggleAllRoles(this.checked)" checked> All Roles</label>
+                    <label><input type="checkbox" class="role-checkbox" value="drummer" checked> Drummer</label>
+                    <label><input type="checkbox" class="role-checkbox" value="bassist" checked> Bassist</label>
+                    <label><input type="checkbox" class="role-checkbox" value="guitarist" checked> Guitarist</label>
+                    <label><input type="checkbox" class="role-checkbox" value="keyboardist" checked> Keyboardist</label>
+                    <label><input type="checkbox" class="role-checkbox" value="vocalist" checked> Vocalist</label>
+                </div>
+                <div class="report-dialog-buttons">
+                    <button onclick="generateReports()" class="primary-btn">Generate PDFs</button>
+                    <button onclick="closeReportDialog()">Cancel</button>
+                </div>
+            </div>
+        </div>
     </main>
 
     <footer>
         <span id="time-calculator">Current Time: 0:00 / Total Duration: 0:00 | Song Beat: 0 of 0 | Block: 0 of 0 (Measure: 0 of 0)</span>
     </footer>
 
+    <script src="jspdf.min.js"></script>
+    <script src="midi-writer-js.min.js"></script>
     <script src="script.js"></script>
 <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9326be6478ebbfb8',t:'MTc0NTAwNjM3Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
